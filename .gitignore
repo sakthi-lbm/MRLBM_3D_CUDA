@@ -1,3 +1,13 @@
+LDC/
+JET/
+GRID_REFINE/
+CYLINDER/
+INCLINED_CHANNEL/
+INCLINED_POISEUILLE/
+INCLINED_COUETTE/
+lbm
+*.inc
+*.out
 *.o
 *.json
 *.lastcodeanalysissucceeded
@@ -14,7 +24,11 @@
 *.exp
 *.lib
 *.exe
+doc/Reports/*
+doc/Requirements.docx
 bin/*
+src/CUDA/.vs/
+src/CUDA/x64
 *.vcxproj*
 *.sln
 *.vs/
@@ -23,9 +37,3 @@ bin/*
 *.test
 *.pdf
 *.dat
-*sim*
-*log.*
-*CYLINDER/
-*LDC/
-*SAR/
-*PARTICLES/
