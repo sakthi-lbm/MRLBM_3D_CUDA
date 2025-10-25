@@ -14,11 +14,7 @@
 *.exp
 *.lib
 *.exe
-doc/Reports/*
-doc/Requirements.docx
 bin/*
-src/CUDA/.vs/
-src/CUDA/x64
 *.vcxproj*
 *.sln
 *.vs/
@@ -33,14 +29,3 @@ src/CUDA/x64
 *LDC/
 *SAR/
 *PARTICLES/
-MR_LBM/post/*
-MR_LBM/HH_RES/*
-!MR_LBM/post/*.py
-MR_LBM/*.dat
-MR_LBM/TEST/*
-MR_LBM/EnergiaCinetica/*
-MR_LBM/OUTPUT/*
-MR_LBM/2D_LDC/*
-MR_LBM/PARTICLES/*
-MR_LBM/tkeArticle/
-MR_LBM/src/inputSimulation
