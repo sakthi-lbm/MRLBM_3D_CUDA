@@ -7,23 +7,22 @@ __host__ __device__ inline size_t IDX(unsigned int x, unsigned int y)
 {
     return x + (y * NX);
 }
-
-// __host__ __device__ __forceinline__
-//     size_t
-//     IDX_BLOCK(
-//         const unsigned int tx,
-//         const unsigned int ty,
-//         const unsigned int bx,
-//         const unsigned int by)
-// {
-//     return tx + BLOCK_THREAD_X * (ty + BLOCK_THREAD_Y * (bx + GRID_BLOCK_X * by));
-// }
-
-__host__ __device__ __forceinline__ size_t IDX_BLOCK(const unsigned int tx, const unsigned int ty, const unsigned int bx, const unsigned int by)
+__host__ __device__ __forceinline__ size_t IDX_BLOCK(const unsigned int tx,
+                                                     const unsigned int ty,
+                                                     const unsigned int tz,
+                                                     const unsigned int bx,
+                                                     const unsigned int by,
+                                                     const unsigned int bz)
 {
-    const size_t threads_per_block = BLOCK_THREAD_X * BLOCK_THREAD_Y;
-    const size_t block_index = bx + GRID_BLOCK_X * by;
-    const size_t thread_index = tx + BLOCK_THREAD_X * ty;
+    const size_t threads_per_block =
+        BLOCK_THREAD_X * BLOCK_THREAD_Y * BLOCK_THREAD_Z;
+
+    const size_t block_index =
+        bx + GRID_BLOCK_X * (by + GRID_BLOCK_Y * bz);
+
+    const size_t thread_index =
+        tx + BLOCK_THREAD_X * (ty + BLOCK_THREAD_Y * tz);
+
     return thread_index + threads_per_block * block_index;
 }
 
@@ -74,24 +73,5 @@ __host__ __device__ __forceinline__ void GlobalIndexToXY(const size_t global_ind
 }
 
 // for 3D
-// __host__ __device__ __forceinline__
-// size_t IDX_BLOCK_3D(
-//     const unsigned int tx, const unsigned int ty, const unsigned int tz,
-//     const unsigned int bx, const unsigned int by, const unsigned int bz)
-// {
-//     const size_t threads_per_block =
-//         BLOCK_THREAD_X * BLOCK_THREAD_Y * BLOCK_THREAD_Z;
-
-//     const size_t blocks_per_layer =
-//         GRID_BLOCK_X * GRID_BLOCK_Y;
-
-//     const size_t block_index =
-//         bx + GRID_BLOCK_X * (by + GRID_BLOCK_Y * bz);
-
-//     const size_t thread_index =
-//         tx + BLOCK_THREAD_X * (ty + BLOCK_THREAD_Y * tz);
-
-//     return thread_index + threads_per_block * block_index;
-// }
 
 #endif // INDEX_H

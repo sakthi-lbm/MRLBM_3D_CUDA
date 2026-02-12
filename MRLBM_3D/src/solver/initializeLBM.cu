@@ -3,20 +3,22 @@
 
 #include "initializeLBM.cuh"
 
+
 #ifdef CYLINDER
-__device__ __constant__ int d_NB;
-__device__ __constant__ int d_NBCF;
+__constant__ real d_w[Q];
+__constant__ int d_cx[Q];
+__constant__ int d_cy[Q];
+__constant__ int d_cz[Q];
 
-__device__ __constant__ binary_t d_incomings_bcfluid[4][Q];
-__device__ __constant__ binary_t d_outgoings_bcfluid[4][Q];
+__constant__ real d_Hxx[Q];
+__constant__ real d_Hyy[Q];
+__constant__ real d_Hzz[Q];
+__constant__ real d_Hxy[Q];
+__constant__ real d_Hxz[Q];
+__constant__ real d_Hyz[Q];
 
-__device__ __constant__ real d_Hxx[Q];
-__device__ __constant__ real d_Hyy[Q];
-__device__ __constant__ real d_Hxy[Q];
-
-__device__ real d_TotalFx;
-__device__ real d_TotalFy;
-__device__ real d_Totalm;
+__constant__ int d_NB;
+__constant__ int d_NBCF;
 
 #endif
 
@@ -24,45 +26,34 @@ void initialize_domain(nodeVar &dMom, nodeVar &hMom, haloData &gHalo, cylinderVa
 {
     gpu_initialize_Moments_nodeType_GhostInterface<<<grid, block>>>(dMom, gHalo);
     checkKernelExecution();
-
-    initialize_nodeType(hMom);
-    triangular ? initialize_cylinder_nodeType_triangular(hMom) : initialize_cylinder_nodeType(hMom);
-
-    initialize_host_device_constants();
-    write_geometry_files(hMom);
-
-    allocateCylinderMemory(h_cylinder, d_cylinder, NB);
-    buildBoundaryList_updateBoundaryNodeType(hMom, h_cylinder);
-
-    find_incomings_outgoings_cylinder(hMom, h_cylinder, NB);
-    find_incoming_outgoings_bcfluid();
-
-    copyHostToDevice(d_cylinder, h_cylinder, NB);
 }
 
 __global__ void gpu_initialize_Moments_nodeType_GhostInterface(nodeVar fMom, haloData gHalo)
 {
     const unsigned int x = threadIdx.x + blockIdx.x * blockDim.x;
     const unsigned int y = threadIdx.y + blockIdx.y * blockDim.y;
+    const unsigned int z = threadIdx.z + blockIdx.z * blockDim.z;
 
     // bounds check
-    if (x >= NX || y >= NY)
+    if (x >= NX || y >= NY || z >= NZ)
         return;
 
     real rho = RHO_0;
     real ux = toReal(0.0);
     real uy = toReal(0.0);
+    real uz = toReal(0.0);
 
-    real mxx, myy, mxy;
+    real mxx, myy, mzz, mxy, mxz, myz;
 
-    const size_t idx = IDX_BLOCK(threadIdx.x, threadIdx.y, blockIdx.x, blockIdx.y);
+    const size_t idx = IDX_BLOCK(threadIdx.x, threadIdx.y, threadIdx.z,
+                                 blockIdx.x, blockIdx.y, blockIdx.z);
 
     //========================== Initialize nodeTypes and Moments=============================================
-
     fMom.nodeType[idx] = BULK;
     fMom.rho[idx] = rho - RHO_0;
     fMom.ux[idx] = ux;
     fMom.uy[idx] = uy;
+    fMom.uz[idx] = uz;
 
     real pop[Q];
     for (int i = 0; i < Q; i++)
@@ -71,12 +62,27 @@ __global__ void gpu_initialize_Moments_nodeType_GhostInterface(nodeVar fMom, hal
         real udotc = ux * d_cx[i] + uy * d_cy[i];
 
         // Equlibrium populations
-        pop[i] = w[i] * rho * (toReal(1.0) + as2 * udotc + toReal(0.5) * as2 * as2 * udotc * udotc - toReal(0.5) * as2 * umag);
+        pop[i] = d_w[i] * rho * (toReal(1.0) + as2 * udotc + toReal(0.5) * as2 * as2 * udotc * udotc - toReal(0.5) * as2 * umag);
     }
     const real inv_rho = toReal(1.0) / rho;
-    fMom.mxx[idx] = (pop[1] + pop[3] + pop[5] + pop[6] + pop[7] + pop[8]) * inv_rho - cs2;
-    fMom.myy[idx] = (pop[2] + pop[4] + pop[5] + pop[6] + pop[7] + pop[8]) * inv_rho - cs2;
-    fMom.mxy[idx] = (pop[5] - pop[6] + pop[7] - pop[8]) * inv_rho;
+
+    mxx = 0.0, myy = 0.0, mzz = 0.0;
+    mxy = 0.0, mxz = 0.0, myz = 0.0;
+    for (int q = 0; q < Q; q++)
+    {
+        mxx += pop[q] * d_Hxx[q];
+        myy += pop[q] * d_Hyy[q];
+        mzz += pop[q] * d_Hzz[q];
+        mxy += pop[q] * d_Hxy[q];
+        mxz += pop[q] * d_Hxz[q];
+        myz += pop[q] * d_Hyz[q];
+    }
+    fMom.mxx[idx] = mxx * inv_rho;
+    fMom.myy[idx] = myy * inv_rho;
+    fMom.mzz[idx] = mzz * inv_rho;
+    fMom.mxy[idx] = mxy * inv_rho;
+    fMom.mxz[idx] = mxz * inv_rho;
+    fMom.myz[idx] = myz * inv_rho;
 
     //========================== Halo Interface =============================================
     rho = RHO_0 + fMom.rho[idx];
@@ -86,12 +92,14 @@ __global__ void gpu_initialize_Moments_nodeType_GhostInterface(nodeVar fMom, hal
     myy = fMom.myy[idx];
     mxy = fMom.mxy[idx];
 
-    pop_reconstruction(rho, ux, uy, mxx, myy, mxy, pop);
+    pop_reconstruction(rho, ux, uy, uz, mxx, myy, mzz, mxy, mxz, myz, pop);
 
     const unsigned int tx = threadIdx.x; // local thread x id
     const unsigned int ty = threadIdx.y; // local thread y id
+    const unsigned int tz = threadIdx.z; // local thread z id
     const unsigned int bx = blockIdx.x;  // local block x id
     const unsigned int by = blockIdx.y;  // local block y id
+    const unsigned int bz = blockIdx.z;  // local block y id
 
-    pop_save_to_halo(gHalo, tx, ty, bx, by, pop);
+    pop_save_to_halo(gHalo, tx, ty, tz, bx, by, bz, pop);
 }

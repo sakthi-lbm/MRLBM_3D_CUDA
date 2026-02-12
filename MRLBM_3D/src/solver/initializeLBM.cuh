@@ -3,6 +3,7 @@
 
 #include "initializeLBM_inline.cuh"
 
+
 void initialize_domain(nodeVar &dMom, nodeVar &hMom, haloData &gHalo, cylinderVar &h_cylinder, cylinderVar &d_cylinder);
 __global__ void gpu_initialize_Moments_nodeType_GhostInterface(nodeVar fMom, haloData gHalo);
 

@@ -9,9 +9,13 @@ struct nodeVar
     real *rho;
     real *ux;
     real *uy;
+    real *uz;
     real *mxx;
-    real *myy;
     real *mxy;
+    real *mxz;
+    real *myy;
+    real *myz;
+    real *mzz;
 };
 
 struct cylinderVar
@@ -27,6 +31,8 @@ struct haloData
     real *X_EAST;
     real *Y_SOUTH;
     real *Y_NORTH;
+    real *Z_FRONT;
+    real *Z_BACK;
 };
 
 #endif // GLOBAL_STRUCTS_H

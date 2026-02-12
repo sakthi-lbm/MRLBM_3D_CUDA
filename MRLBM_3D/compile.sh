@@ -29,7 +29,10 @@ rm -f ../*sim_${LT}_sm${CompCap} 2>/dev/null
 nvcc -std=c++17 \
     -gencode arch=compute_${CompCap},code=sm_${CompCap} \
     -rdc=true -O3 --restrict \
+     -I. \
     -Iinclude \
+    -Isrc \
+    -Isolver \
     -D ID_SIM=\"$ID_SIM\" \
     $(find src -name "*.cu") \
     -lcudadevrt -lcurand \
