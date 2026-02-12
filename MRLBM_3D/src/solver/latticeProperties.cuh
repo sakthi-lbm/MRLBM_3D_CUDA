@@ -1,0 +1,35 @@
+#ifndef LATTICE_PROPERTIES_CUH
+#define LATTICE_PROPERTIES_CUH
+
+#include "../config.h"
+
+constexpr size_t NUMBER_OF_MOMENTS = 6;
+
+constexpr int Q = 9;  // lattice directions
+constexpr int QF = 3; // lattice directions for halo interface
+constexpr real W0 = 4.0 / 9.0;
+constexpr real W1 = 1.0 / 9.0;
+constexpr real W2 = 1.0 / 36.0;
+
+__device__ constexpr real w[Q] = {
+    W0,
+    W1, W1, W1, W1,
+    W2, W2, W2, W2};
+
+__device__ constexpr int d_cx[Q] = {0, 1, 0, -1, 0, 1, -1, -1, 1};
+__device__ constexpr int d_cy[Q] = {0, 0, 1, 0, -1, 1, 1, -1, -1};
+
+constexpr int h_cx[Q] = {0, 1, 0, -1, 0, 1, -1, -1, 1};
+constexpr int h_cy[Q] = {0, 0, 1, 0, -1, 1, 1, -1, -1};
+
+constexpr int opp[Q] = {0, 3, 4, 1, 2, 7, 8, 5, 6};
+
+constexpr real as2 = 3.0;
+constexpr real cs2 = 1.0 / as2;
+
+constexpr real F_M_0_SCALE = 1.0;
+constexpr real F_M_I_SCALE = as2;
+constexpr real F_M_II_SCALE = as2 * as2 / 2;
+constexpr real F_M_IJ_SCALE = as2 * as2;
+
+#endif // LATTICE_PROPERTIES_CUH
