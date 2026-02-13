@@ -2,7 +2,7 @@
 #include <fstream>
 
 #include "initializeLBM.cuh"
-
+#include HALO_INTERFACE
 
 #ifdef CYLINDER
 __constant__ real d_w[Q];
@@ -88,9 +88,13 @@ __global__ void gpu_initialize_Moments_nodeType_GhostInterface(nodeVar fMom, hal
     rho = RHO_0 + fMom.rho[idx];
     ux = fMom.ux[idx];
     uy = fMom.uy[idx];
+    uz = fMom.uz[idx];
     mxx = fMom.mxx[idx];
     myy = fMom.myy[idx];
+    mzz = fMom.mzz[idx];
     mxy = fMom.mxy[idx];
+    mxz = fMom.mxz[idx];
+    myz = fMom.myz[idx];
 
     pop_reconstruction(rho, ux, uy, uz, mxx, myy, mzz, mxy, mxz, myz, pop);
 
@@ -99,7 +103,7 @@ __global__ void gpu_initialize_Moments_nodeType_GhostInterface(nodeVar fMom, hal
     const unsigned int tz = threadIdx.z; // local thread z id
     const unsigned int bx = blockIdx.x;  // local block x id
     const unsigned int by = blockIdx.y;  // local block y id
-    const unsigned int bz = blockIdx.z;  // local block y id
+    const unsigned int bz = blockIdx.z;  // local block z id
 
     pop_save_to_halo(gHalo, tx, ty, tz, bx, by, bz, pop);
 }

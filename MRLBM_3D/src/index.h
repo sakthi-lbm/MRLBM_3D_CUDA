@@ -36,18 +36,43 @@ __host__ __device__ __forceinline__
     return tx + yOffset + popOffset; // final linear index
 }
 
-__device__ __forceinline__ size_t idxPopX(unsigned int ty, int pop, unsigned int bx, unsigned int by)
+__device__ __forceinline__ size_t idxPopX(
+    const unsigned int ty,  // Local y-thread index
+    const unsigned int tz,  // Local z-thread index
+    const unsigned int pop, // Which population index (0-8 for D3Q27 faces)
+    const unsigned int bx,  // Block x-index
+    const unsigned int by,  // Block y-index
+    const unsigned int bz)  // Block z-index
 {
-    const size_t block_id = bx + GRID_BLOCK_X * by; // stride to jump between blocks in the grid
-    const size_t pop_id = pop + QF * block_id;      // stride to jump between populations in all blocks
-    return ty + BLOCK_THREAD_Y * pop_id;            // stride to jump within a population (along local threads)
+    const size_t block_id = bx + (size_t)GRID_BLOCK_X * (by + (size_t)GRID_BLOCK_Y * bz);
+    const size_t pop_id = pop + (size_t)QF * block_id;
+    return (size_t)ty + (size_t)BLOCK_THREAD_Y * (tz + (size_t)BLOCK_THREAD_Z * pop_id);
 }
 
-__device__ __forceinline__ size_t idxPopY(unsigned int tx, int pop, unsigned int bx, unsigned int by)
+__device__ __forceinline__ size_t idxPopY(
+    const unsigned int tx,  // Local x-thread index
+    const unsigned int tz,  // Local z-thread index
+    const unsigned int pop, // Which population index
+    const unsigned int bx,  // Block x-index
+    const unsigned int by,  // Block y-index
+    const unsigned int bz)  // Block z-index
 {
-    const size_t block_id = bx + GRID_BLOCK_X * by; // stride to jump between blocks in the grid
-    const size_t pop_id = pop + QF * block_id;      // stride to jump between populations in all blocks
-    return tx + BLOCK_THREAD_X * pop_id;            // stride to jump within a population (along local threads)
+    const size_t block_id = (size_t)bx + (size_t)GRID_BLOCK_X * ((size_t)by + (size_t)GRID_BLOCK_Y * bz);
+    const size_t pop_id = (size_t)pop + (size_t)QF * block_id;
+    return (size_t)tx + (size_t)BLOCK_THREAD_X * ((size_t)tz + (size_t)BLOCK_THREAD_Z * pop_id);
+}
+
+__device__ __forceinline__ size_t idxPopZ(
+    const unsigned int tx,  // Local x-thread index
+    const unsigned int ty,  // Local y-thread index
+    const unsigned int pop, // Which population index
+    const unsigned int bx,  // Block x-index
+    const unsigned int by,  // Block y-index
+    const unsigned int bz)  // Block z-index
+{
+    const size_t block_id = (size_t)bx + (size_t)GRID_BLOCK_X * ((size_t)by + (size_t)GRID_BLOCK_Y * bz);
+    const size_t pop_id = (size_t)pop + (size_t)QF * block_id;
+    return (size_t)tx + (size_t)BLOCK_THREAD_X * ((size_t)ty + (size_t)BLOCK_THREAD_Y * pop_id);
 }
 
 __host__ __device__ __forceinline__ size_t idxBoundPop(size_t node, int q)
