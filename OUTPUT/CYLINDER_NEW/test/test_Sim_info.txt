@@ -1,0 +1,49 @@
+========================= SIMULATION INFORMATION =========================
+Simulation ID             : test
+Velocity set              : D2Q9
+Re                        : 100.000000
+Precision                 : float
+NX                        : 176
+NY                        : 80
+Total Grid points         : 14080
+Grid points (in million)  : 0.014080
+
+----------------------------- CYLINDER properties -----------------------------
+Stair-case                : 0
+Triangular                : 1
+Rotated                   : 1
+Diameter                  : 16
+Radius                    : 8
+Center xc                 : 39.500000
+Center yc                 : 39.500000
+Inner cylinder points     : 0
+Inner Bc fluid points     : 0
+
+----------------------------- Lattice Units -----------------------------
+uo                        : 0.100000
+Mach                      : 0.173205
+Viscosity                 : 0.016000
+Tau                       : 0.548000
+Omega                     : 1.824818
+Macr_save                 : 1000
+Nsteps                    : 10000
+
+----------------------------- Physical Units -----------------------------
+L_phy                     : 1.000000
+dx_phy                    : 0.062500
+dt_phy                    : 0.006250
+u_phy                     : 1.000000
+nu_phy                    : 0.010000
+
+----------------------------- CUDA Parameters -----------------------------
+Num of Threads in X       : 32
+Num of Threads in Y       : 4
+Num of Blocks in X        : 6
+Num of Blocks in Y        : 20
+Total threads per block   : 256
+Max. Shared Memory (kb)   : 48
+Shared Memory used (kb)   : 26.000000
+Total Global Memory (Mb)  : 3768
+Global Memory used (kb)   : 52800.000000
+Global Memory used (mb)   : 51.562500
+==========================================================================

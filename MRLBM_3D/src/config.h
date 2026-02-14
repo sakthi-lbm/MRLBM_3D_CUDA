@@ -131,8 +131,12 @@ constexpr dim3 findOptimalBlockDim3D(size_t maxSharedMemBytes, size_t bytesPerTh
 #define HALO_INTERFACE STR(STENCIL_PATH/halo_interface.cuh)
 
 #define CASE_CONSTANTS STR(CASE_PATH/constants.h)
+#define CASE_BOUNDARY STR(CASE_PATH/boundaries.cuh)
 #define CASE_OUTPUTS STR(CASE_PATH/outputs.h)
 #define RECONSTRUCT STR(STENCIL_PATH/REG_ORDER/reconstruction.cuh)
+#define STREAMING STR(STENCIL_PATH/streaming.cuh)
+#define EVAL_MOMENTS STR(STENCIL_PATH/eval_moments.cuh)
+
 
 
 

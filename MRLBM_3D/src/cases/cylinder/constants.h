@@ -31,7 +31,7 @@ constexpr int LS = LN;    // bottom wall from cylinder
 
 constexpr int NX = LW + D + LE; // size x of the grid
 constexpr int NY = LN + D + LS; // size y of the grid
-constexpr int NZ = 4 * D;       // size z of the grid in one GPU
+constexpr int NZ = 5 * D;       // size z of the grid in one GPU
 
 constexpr real XC = LW + 0.5 * (D - 1); // Center of the cylinder Xc
 constexpr real YC = LS + 0.5 * (D - 1); // Center of the cylinder yc

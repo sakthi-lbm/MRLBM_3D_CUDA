@@ -2,8 +2,8 @@
 #define DEFINITIIONS_H
 
 #include "config.h"
-#include LATTICE_PROPERTIES
-#include CASE_CONSTANTS
+// #include LATTICE_PROPERTIES
+// #include CASE_CONSTANTS
 
 constexpr size_t BYTES_PER_GB = (1 << 30);
 constexpr size_t BYTES_PER_MB = (1 << 20);
@@ -30,8 +30,8 @@ constexpr size_t THREADS_PER_BLOCK = BLOCK_THREAD_X * BLOCK_THREAD_Y * BLOCK_THR
 constexpr size_t NUMBER_OF_BLOCKS = GRID_BLOCK_X * GRID_BLOCK_Y * GRID_BLOCK_Z;        // total number of blocks in whole domain
 constexpr size_t TOTAL_NUMBER_OF_THREADS = NUMBER_OF_BLOCKS * THREADS_PER_BLOCK;       // total number of threads in whole domain
 
-constexpr dim3 block(BLOCK_THREAD_X, BLOCK_THREAD_Y); // Number of Block in x, y, z in the grid
-constexpr dim3 grid(GRID_BLOCK_X, GRID_BLOCK_Y);      // Number of threads in x, y, z in a block
+constexpr dim3 block(BLOCK_THREAD_X, BLOCK_THREAD_Y, BLOCK_THREAD_Z); // Number of Block in x, y, z in the grid
+constexpr dim3 grid(GRID_BLOCK_X, GRID_BLOCK_Y, GRID_BLOCK_Z);      // Number of threads in x, y, z in a block
 
 constexpr const size_t BLOCK_FACE_XY = BLOCK_THREAD_X * BLOCK_THREAD_Y;
 constexpr const size_t BLOCK_FACE_XZ = BLOCK_THREAD_X * BLOCK_THREAD_Z;

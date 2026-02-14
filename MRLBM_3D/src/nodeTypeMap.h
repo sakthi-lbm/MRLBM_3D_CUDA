@@ -19,7 +19,7 @@
 */
 
 // --- SPECIAL ---
-constexpr nodeType_t SOLID_NODE = 0;
+constexpr nodeType_t SOLID = 0;
 constexpr nodeType_t BULK = 255;
 
 // --- FACE ---

@@ -26,14 +26,16 @@ __host__ __device__ __forceinline__ size_t IDX_BLOCK(const unsigned int tx,
     return thread_index + threads_per_block * block_index;
 }
 
-__host__ __device__ __forceinline__
-    size_t
-    idxPopBlock(const unsigned int tx, const unsigned int ty, const unsigned int pop)
+__host__ __device__ __forceinline__ size_t idxPopBlock(const unsigned int tx,
+                                                       const unsigned int ty,
+                                                       const unsigned int tz,
+                                                       const unsigned int pop)
 {
-    const size_t popOffset = pop * THREADS_PER_BLOCK; // starting index of this population
-    const size_t yOffset = ty * BLOCK_THREAD_X;       // offset for this row within population
+    const size_t popOffset = pop * THREADS_PER_BLOCK;
+    const size_t zOffset = tz * (BLOCK_THREAD_X * BLOCK_THREAD_Y);
+    const size_t yOffset = ty * BLOCK_THREAD_X;
 
-    return tx + yOffset + popOffset; // final linear index
+    return tx + yOffset + zOffset + popOffset;
 }
 
 __device__ __forceinline__ size_t idxPopX(

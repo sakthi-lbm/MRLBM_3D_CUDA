@@ -26,6 +26,9 @@ void initialize_domain(nodeVar &dMom, nodeVar &hMom, haloData &gHalo, cylinderVa
 {
     gpu_initialize_Moments_nodeType_GhostInterface<<<grid, block>>>(dMom, gHalo);
     checkKernelExecution();
+
+    initialize_nodeType(hMom);
+    write_geometry_files(hMom);
 }
 
 __global__ void gpu_initialize_Moments_nodeType_GhostInterface(nodeVar fMom, haloData gHalo)
@@ -58,8 +61,8 @@ __global__ void gpu_initialize_Moments_nodeType_GhostInterface(nodeVar fMom, hal
     real pop[Q];
     for (int i = 0; i < Q; i++)
     {
-        real umag = ux * ux + uy * uy;
-        real udotc = ux * d_cx[i] + uy * d_cy[i];
+        real umag = ux * ux + uy * uy + uz * uz;
+        real udotc = ux * d_cx[i] + uy * d_cy[i]+ uz * d_cz[i];
 
         // Equlibrium populations
         pop[i] = d_w[i] * rho * (toReal(1.0) + as2 * udotc + toReal(0.5) * as2 * as2 * udotc * udotc - toReal(0.5) * as2 * umag);

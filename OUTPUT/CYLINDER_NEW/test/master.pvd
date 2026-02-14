@@ -1,0 +1,15 @@
+<VTKFile type="Collection" version="0.1">
+	<Collection>
+		<DataSet timestep="0" file="data10000000.vti" />
+		<DataSet timestep="1" file="data10001000.vti" />
+		<DataSet timestep="2" file="data10002000.vti" />
+		<DataSet timestep="3" file="data10003000.vti" />
+		<DataSet timestep="4" file="data10004000.vti" />
+		<DataSet timestep="5" file="data10005000.vti" />
+		<DataSet timestep="6" file="data10006000.vti" />
+		<DataSet timestep="7" file="data10007000.vti" />
+		<DataSet timestep="8" file="data10008000.vti" />
+		<DataSet timestep="9" file="data10009000.vti" />
+		<DataSet timestep="10" file="data10010000.vti" />
+	</Collection>
+</VTKFile>
