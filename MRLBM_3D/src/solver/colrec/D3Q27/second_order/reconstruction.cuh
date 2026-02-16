@@ -4,12 +4,23 @@
 #include "config.h"
 #include "all_headers.h"
 
-__device__ inline void pop_reconstruction(const real rho,
-										  const real ux, const real uy, const real uz,
-										  const real mxx, const real myy, const real mzz,
-										  const real mxy, const real mxz, const real myz,
+__device__ inline void pop_reconstruction(const real rhoVar,
+										  const real uxVar, const real uyVar, const real uzVar,
+										  const real mxxVar, const real myyVar, const real mzzVar,
+										  const real mxyVar, const real mxzVar, const real myzVar,
 										  real *pop)
 {
+	const real rho = rhoVar * F_M_0_SCALE;
+	const real ux = uxVar * F_M_I_SCALE;
+	const real uy = uyVar * F_M_I_SCALE;
+	const real uz = uzVar * F_M_I_SCALE;
+	const real mxx = mxxVar * F_M_II_SCALE;
+	const real myy = myyVar * F_M_II_SCALE;
+	const real mzz = mzzVar * F_M_II_SCALE;
+	const real mxy = mxyVar * F_M_IJ_SCALE;
+	const real mxz = mxzVar * F_M_IJ_SCALE;
+	const real myz = myzVar * F_M_IJ_SCALE;
+
 	real multiplyTerm = rho * W0;
 	const real pics2 = toReal(1.0) - cs2 * (mxx + myy + mzz);
 

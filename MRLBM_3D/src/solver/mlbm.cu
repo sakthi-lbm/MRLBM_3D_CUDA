@@ -1,21 +1,18 @@
 #include "mlbm.cuh"
 
-__device__ void inline moment_collision(real &ux, real &uy, real &uz,
+__device__ void inline moment_collision(const real ux, const real uy, const real uz,
                                         real &mxx, real &myy, real &mzz,
                                         real &mxy, real &mxz, real &myz)
 {
     const real omegaVar = OMEGA;
-    const real t_omegaVar = toReal(1.0) - omegaVar;
-    const real omegaVar_d2 = toReal(0.5) * omegaVar;
+    const real omega_m1 = toReal(1.0) - omegaVar;
 
-    // equation 90
-    mxx = (t_omegaVar * (mxx) + omegaVar_d2 * ux * ux);
-    myy = (t_omegaVar * (myy) + omegaVar_d2 * uy * uy);
-    mzz = (t_omegaVar * (mzz) + omegaVar_d2 * uz * uz);
-
-    mxy = (t_omegaVar * (mxy) + omegaVar * ux * uy);
-    mxz = (t_omegaVar * (mxz) + omegaVar * ux * uz);
-    myz = (t_omegaVar * (myz) + omegaVar * uy * uz);
+    mxx = omega_m1 * mxx + omegaVar * ux * ux;
+    myy = omega_m1 * myy + omegaVar * uy * uy;
+    mzz = omega_m1 * mzz + omegaVar * uz * uz;
+    mxy = omega_m1 * mxy + omegaVar * ux * uy;
+    mxz = omega_m1 * mxz + omegaVar * ux * uz;
+    myz = omega_m1 * myz + omegaVar * uy * uz;
 }
 
 __global__ void streaming_and_evaluate_Mom(const cylinderVar cylinder, nodeVar fMom,
@@ -67,12 +64,11 @@ __global__ void streaming_and_evaluate_Mom(const cylinderVar cylinder, nodeVar f
 
     // Loading populations from the halo layers to local thread
     pop_load_from_halo(fHalo, tx, ty, tz, bx, by, bz, pop);
-     
 
     //========================== Moments evaluation ========================================
     if (nodeType == BULK)
     {
-    //    printf("oKKK::%d\n", toInt(nodeType));
+        //    printf("oKKK::%d\n", toInt(nodeType));
         evaluate_moments(rho, ux, uy, uz, mxx, myy, mzz, mxy, mxz, myz, pop);
     }
     else
@@ -98,9 +94,11 @@ __global__ void streaming_and_evaluate_Mom(const cylinderVar cylinder, nodeVar f
         // {
         //     boundary_condition(nodeType, fMom, pop, rho, ux, uy, mxx, myy, mxy);
         // }
-        
+
         boundary_condition(nodeType, fMom, pop, rho, ux, uy, uz, mxx, myy, mzz, mxy, mxz, myz);
     }
+
+    __syncthreads();
 
     fMom.rho[idx] = rho - RHO_0; // Incoming density rhoI only for cylinder boundary nodes
     fMom.ux[idx] = ux;

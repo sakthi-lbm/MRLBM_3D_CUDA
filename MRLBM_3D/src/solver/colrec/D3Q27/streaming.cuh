@@ -34,14 +34,14 @@ __device__ inline void save_pop(real *s_pop, const real *pop)
 
 __device__ inline void streaming(const real *s_pop, real *pop)
 {
-    const unsigned short int xp1 = (threadIdx.x + 1 + BLOCK_THREAD_X) % BLOCK_THREAD_X;
-    const unsigned short int xm1 = (threadIdx.x - 1 + BLOCK_THREAD_X) % BLOCK_THREAD_X;
+    const unsigned int xp1 = (threadIdx.x + 1 + BLOCK_THREAD_X) % BLOCK_THREAD_X;
+    const unsigned int xm1 = (threadIdx.x - 1 + BLOCK_THREAD_X) % BLOCK_THREAD_X;
 
-    const unsigned short int yp1 = (threadIdx.y + 1 + BLOCK_THREAD_Y) % BLOCK_THREAD_Y;
-    const unsigned short int ym1 = (threadIdx.y - 1 + BLOCK_THREAD_Y) % BLOCK_THREAD_Y;
+    const unsigned int yp1 = (threadIdx.y + 1 + BLOCK_THREAD_Y) % BLOCK_THREAD_Y;
+    const unsigned int ym1 = (threadIdx.y - 1 + BLOCK_THREAD_Y) % BLOCK_THREAD_Y;
 
-    const unsigned short int zp1 = (threadIdx.z + 1 + BLOCK_THREAD_Z) % BLOCK_THREAD_Z;
-    const unsigned short int zm1 = (threadIdx.z - 1 + BLOCK_THREAD_Z) % BLOCK_THREAD_Z;
+    const unsigned int zp1 = (threadIdx.z + 1 + BLOCK_THREAD_Z) % BLOCK_THREAD_Z;
+    const unsigned int zm1 = (threadIdx.z - 1 + BLOCK_THREAD_Z) % BLOCK_THREAD_Z;
 
     pop[1] = s_pop[idxPopBlock(xm1, threadIdx.y, threadIdx.z, 0)];
     pop[2] = s_pop[idxPopBlock(xp1, threadIdx.y, threadIdx.z, 1)];

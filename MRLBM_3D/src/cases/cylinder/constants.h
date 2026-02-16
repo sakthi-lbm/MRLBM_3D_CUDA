@@ -8,7 +8,7 @@
 #define GPU_INDEX 0
 
 #define X_PERIODIC 0 // or 0
-#define Y_PERIODIC 1 // or 0
+#define Y_PERIODIC 0 // or 0
 #define Z_PERIODIC 1 // or 0
 
 constexpr bool rotated_coordinates = true;
@@ -19,14 +19,14 @@ constexpr MassBC BCF_MASS_CONSERV = MassBC::Equilibrium;
 
 constexpr int BLOCK_SIZE = 16; // Maxmum block based on the register load
 
-constexpr int D = 16;    // Diameter of the cylinder
+constexpr int D = 8;    // Diameter of the cylinder
 constexpr int R = D / 2; // radius of the cylinder
 constexpr real D_WALL = toReal(D);
 constexpr real R_WALL = 0.5 * D_WALL;
 
-constexpr int LW = 2 * D; // inlet from cylinder
-constexpr int LE = 8 * D; // outlet from cylinder
-constexpr int LN = 2 * D; // top wall from cylinder (y-dir)
+constexpr int LW = 8 * D; // inlet from cylinder
+constexpr int LE = 24 * D; // outlet from cylinder
+constexpr int LN = 5 * D; // top wall from cylinder (y-dir)
 constexpr int LS = LN;    // bottom wall from cylinder
 
 constexpr int NX = LW + D + LE; // size x of the grid

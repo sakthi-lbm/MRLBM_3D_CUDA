@@ -118,8 +118,8 @@ inline std::string getSimInfoString()
     out << std::setw(labelWidth) << "Max. Shared Memory (kb)" << " : " << MAX_SHARED_MEM_BYTES / BYTES_PER_KB << "\n";
     out << std::setw(labelWidth) << "Shared Memory used (kb)" << " : " << static_cast<double>(USED_SHARED_MEMORY) / BYTES_PER_KB << "\n";
     out << std::setw(labelWidth) << "Total Global Memory (Mb)" << " : " << prop.totalGlobalMem / BYTES_PER_MB << "\n";
-    out << std::setw(labelWidth) << "Global Memory used (kb)" << " : " << static_cast<double>(USED_GLOBAL_MEMORY) / BYTES_PER_KB << "\n";
-    out << std::setw(labelWidth) << "Global Memory used (mb)" << " : " << static_cast<double>(USED_GLOBAL_MEMORY) / BYTES_PER_MB << "\n";
+    out << std::setw(labelWidth) << "Moments Memory (Global) used (mb)" << " : " << static_cast<double>(USED_GLOBAL_MEMORY) << "\n";
+    out << std::setw(labelWidth) << "Halo Memory (Global) used (mb)" << " : " << static_cast<double>(HALO_GLOBAL_MEMORY) << "\n";
     out << "==========================================================================\n";
 
     return out.str();
