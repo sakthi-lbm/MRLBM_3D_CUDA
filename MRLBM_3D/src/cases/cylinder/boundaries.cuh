@@ -135,26 +135,34 @@ __device__ inline void boundary_condition(nodeType_t nodeType, nodeVar fMom, rea
         const real mxz_I = ((pop[9] + pop[19] + pop[23]) - (pop[15] + pop[21] + pop[26])) * inv_rho_I;
         const real myz_I = (pop[11] + pop[12] - pop[17] - pop[18] + pop[19] - pop[21] - pop[23] + pop[26]) * inv_rho_I;
 
-        // const real rhob = RHO_0 + fMom.rho[IDX_BLOCK(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)];
-        // const real uxb = fMom.ux[IDX_BLOCK(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)];
-        // const real uyb = fMom.uy[IDX_BLOCK(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)];
-        // const real uzb = fMom.uz[IDX_BLOCK(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)];
+        size_t idx;
+        if constexpr (!NEUMANN_OUTLET)
+        {
+            idx = IDX_BLOCK(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z);
+            const real rhob = RHO_0 + fMom.rho[idx];
+            const real uxb = fMom.ux[idx];
+            const real uyb = fMom.uy[idx];
+            const real uzb = fMom.uz[idx];
 
-        // const real rhoi = RHO_0 + fMom.rho[IDX_BLOCK(threadIdx.x - 1, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)];
-        // const real uxi = fMom.ux[IDX_BLOCK(threadIdx.x - 1, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)];
-        // const real uyi = fMom.uy[IDX_BLOCK(threadIdx.x - 1, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)];
-        // const real uzi = fMom.uz[IDX_BLOCK(threadIdx.x - 1, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z)];
+            idx = IDX_BLOCK(threadIdx.x - 1, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z);
+            const real rhoi = RHO_0 + fMom.rho[idx];
+            const real uxi = fMom.ux[idx];
+            const real uyi = fMom.uy[idx];
+            const real uzi = fMom.uz[idx];
 
-        // rho = (1.0 - U_MAX) * rhob + U_MAX * rhoi;
-        // ux = (1.0 - U_MAX) * uxb + U_MAX * uxi;
-        // uy = (1.0 - U_MAX) * uyb + U_MAX * uyi;
-        // uz = (1.0 - U_MAX) * uzb + U_MAX * uzi;
-
-        const size_t idx = IDX_BLOCK(threadIdx.x - 1, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z);
-        rho = RHO_0 + fMom.rho[idx];
-        ux = fMom.ux[idx];
-        uy = fMom.uy[idx];
-        uz = fMom.uz[idx];
+            rho = (1.0 - U_MAX) * rhob + U_MAX * rhoi;
+            ux = (1.0 - U_MAX) * uxb + U_MAX * uxi;
+            uy = (1.0 - U_MAX) * uyb + U_MAX * uyi;
+            uz = (1.0 - U_MAX) * uzb + U_MAX * uzi;
+        }
+        else
+        {
+            idx = IDX_BLOCK(threadIdx.x - 1, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z);
+            rho = RHO_0 + fMom.rho[idx];
+            ux = fMom.ux[idx];
+            uy = fMom.uy[idx];
+            uz = fMom.uz[idx];
+        }
 
         // ux = U_MAX;
         // uy = 0.0;
@@ -162,8 +170,8 @@ __device__ inline void boundary_condition(nodeType_t nodeType, nodeVar fMom, rea
 
         // rho = -toReal(6) * rho_I / (toReal(5) + toReal(3) * ux - toReal(3) * ux * ux);
 
-        mxx = ux * ux;
-        // mxx = (toReal(9) * mxx_I * rho_I + rho - toReal(3) * ux * rho) / (toReal(6) * rho);
+        // mxx = ux * ux;
+        mxx = (toReal(9) * mxx_I * rho_I + rho - toReal(3) * ux * rho) / (toReal(6) * rho);
         myy = toReal(6) * myy_I * rho_I / (toReal(5) * rho);
         mzz = toReal(6) * mzz_I * rho_I / (toReal(5) * rho);
         mxy = (toReal(6) * mxy_I * rho_I - uy * rho) / (toReal(3) * rho);
@@ -266,6 +274,7 @@ __device__ inline void boundary_condition(nodeType_t nodeType, nodeVar fMom, rea
         const real inv_rho_I = toReal(1) / rho_I;
 
         const real mxy_I = -(pop[14] + pop[24] + pop[25]) * inv_rho_I;
+        const real myz_I = (pop[11] - pop[17] - pop[24] + pop[25]) * inv_rho_I;
 
         rho = toReal(36) * rho_I * (toReal(1) + mxy_I - mxy_I * OMEGA) / (toReal(24) + OMEGA);
         ux = toReal(0);
@@ -277,7 +286,7 @@ __device__ inline void boundary_condition(nodeType_t nodeType, nodeVar fMom, rea
         mzz = toReal(0);
         mxy = (toReal(36) * mxy_I * rho_I + rho) / (toReal(9) * rho);
         mxz = toReal(0);
-        myz = toReal(0);
+        myz = toReal(12) * myz_I * rho_I / (toReal(5) * rho);
 
         return;
     }
@@ -287,6 +296,7 @@ __device__ inline void boundary_condition(nodeType_t nodeType, nodeVar fMom, rea
         const real inv_rho_I = toReal(1) / rho_I;
 
         const real mxy_I = (pop[8] + pop[20] + pop[22]) * inv_rho_I;
+        const real myz_I = (pop[12] - pop[18] + pop[20] - pop[22]) * inv_rho_I;
 
         rho = toReal(36) * rho_I * (toReal(1) - mxy_I + mxy_I * OMEGA) / (toReal(24) + OMEGA);
         ux = toReal(0);
@@ -298,7 +308,7 @@ __device__ inline void boundary_condition(nodeType_t nodeType, nodeVar fMom, rea
         mzz = toReal(0);
         mxy = (toReal(36) * mxy_I * rho_I - rho) / (toReal(9) * rho);
         mxz = toReal(0);
-        myz = toReal(0);
+        myz = toReal(12) * myz_I * rho_I / (toReal(5) * rho);
 
         return;
     }
@@ -308,8 +318,9 @@ __device__ inline void boundary_condition(nodeType_t nodeType, nodeVar fMom, rea
         const real inv_rho_I = toReal(1) / rho_I;
 
         const real mxz_I = -(pop[16] + pop[22] + pop[25]) * inv_rho_I;
+        const real myz_I = (pop[11] - pop[18] - pop[22] + pop[25]) * inv_rho_I;
 
-        rho = toReal(36) * rho_I * (toReal(1) - mxz_I - mxz_I * OMEGA) / (toReal(24) + OMEGA);
+        rho = toReal(36) * rho_I * (toReal(1) + mxz_I - mxz_I * OMEGA) / (toReal(24) + OMEGA);
         ux = toReal(0);
         uy = toReal(0);
         uz = toReal(0);
@@ -319,7 +330,7 @@ __device__ inline void boundary_condition(nodeType_t nodeType, nodeVar fMom, rea
         mzz = toReal(0);
         mxy = toReal(0);
         mxz = (toReal(36) * mxz_I * rho_I + rho) / (toReal(9) * rho);
-        myz = toReal(0);
+        myz = toReal(12) * myz_I * rho_I / (toReal(5) * rho);
 
         return;
     }
@@ -329,6 +340,7 @@ __device__ inline void boundary_condition(nodeType_t nodeType, nodeVar fMom, rea
         const real inv_rho_I = toReal(1) / rho_I;
 
         const real mxz_I = (pop[10] + pop[20] + pop[24]) * inv_rho_I;
+        const real myz_I = (pop[12] - pop[17] + pop[20] - pop[24]) * inv_rho_I;
 
         rho = toReal(36) * rho_I * (toReal(1) - mxz_I + mxz_I * OMEGA) / (toReal(24) + OMEGA);
         ux = toReal(0);
@@ -340,7 +352,7 @@ __device__ inline void boundary_condition(nodeType_t nodeType, nodeVar fMom, rea
         mzz = toReal(0);
         mxy = toReal(0);
         mxz = (toReal(36) * mxz_I * rho_I - rho) / (toReal(9) * rho);
-        myz = toReal(0);
+        myz = toReal(12) * myz_I * rho_I / (toReal(5) * rho);
 
         return;
     }
@@ -394,7 +406,7 @@ __device__ inline void boundary_condition(nodeType_t nodeType, nodeVar fMom, rea
         const real inv_rho_I = toReal(1) / rho_I;
 
         const real mxz_I = (pop[9] + pop[19] + pop[23]) * inv_rho_I;
-        const real myz_I = (pop[11]-pop[18]+pop[19]-pop[23])* inv_rho_I; 
+        const real myz_I = (pop[11] - pop[18] + pop[19] - pop[23]) * inv_rho_I;
 
         rho = toReal(36) * rho_I * (toReal(1) - mxz_I + mxz_I * OMEGA) / (toReal(24) + OMEGA);
         ux = toReal(0);
@@ -416,7 +428,7 @@ __device__ inline void boundary_condition(nodeType_t nodeType, nodeVar fMom, rea
         const real inv_rho_I = toReal(1) / rho_I;
 
         const real mxz_I = -(pop[15] + pop[21] + pop[26]) * inv_rho_I;
-        const real myz_I = (pop[12]-pop[17]-pop[21]+pop[26])* inv_rho_I; 
+        const real myz_I = (pop[12] - pop[17] - pop[21] + pop[26]) * inv_rho_I;
 
         rho = toReal(36) * rho_I * (toReal(1) + mxz_I - mxz_I * OMEGA) / (toReal(24) + OMEGA);
         ux = toReal(0);
