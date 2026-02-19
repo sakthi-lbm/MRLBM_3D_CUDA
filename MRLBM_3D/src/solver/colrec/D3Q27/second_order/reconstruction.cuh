@@ -21,8 +21,10 @@ __device__ inline void pop_reconstruction(const real rhoVar,
 	const real mxz = mxzVar * F_M_IJ_SCALE;
 	const real myz = myzVar * F_M_IJ_SCALE;
 
+	const real mtrace = mxx + myy + mzz;
+
 	real multiplyTerm = rho * W0;
-	const real pics2 = toReal(1.0) - cs2 * (mxx + myy + mzz);
+	const real pics2 = toReal(1.0) - cs2 * mtrace;
 
 	pop[0] = multiplyTerm * (pics2);
 
@@ -49,14 +51,14 @@ __device__ inline void pop_reconstruction(const real rhoVar,
 	pop[18] = multiplyTerm * (pics2 - uy + uz + myy + mzz - myz);
 
 	multiplyTerm = rho * W3;
-	pop[19] = multiplyTerm * (pics2 + ux + uy + uz + mxx + myy + mzz + (mxy + mxz + myz));
-	pop[20] = multiplyTerm * (pics2 - ux - uy - uz + mxx + myy + mzz + (mxy + mxz + myz));
-	pop[21] = multiplyTerm * (pics2 + ux + uy - uz + mxx + myy + mzz + (mxy - mxz - myz));
-	pop[22] = multiplyTerm * (pics2 - ux - uy + uz + mxx + myy + mzz + (mxy - mxz - myz));
-	pop[23] = multiplyTerm * (pics2 + ux - uy + uz + mxx + myy + mzz - (mxy - mxz + myz));
-	pop[24] = multiplyTerm * (pics2 - ux + uy - uz + mxx + myy + mzz - (mxy - mxz + myz));
-	pop[25] = multiplyTerm * (pics2 - ux + uy + uz + mxx + myy + mzz - (mxy + mxz - myz));
-	pop[26] = multiplyTerm * (pics2 + ux - uy - uz + mxx + myy + mzz - (mxy + mxz - myz));
+	pop[19] = multiplyTerm * (pics2 + ux + uy + uz + mtrace + (mxy + mxz + myz));
+	pop[20] = multiplyTerm * (pics2 - ux - uy - uz + mtrace + (mxy + mxz + myz));
+	pop[21] = multiplyTerm * (pics2 + ux + uy - uz + mtrace + (mxy - mxz - myz));
+	pop[22] = multiplyTerm * (pics2 - ux - uy + uz + mtrace + (mxy - mxz - myz));
+	pop[23] = multiplyTerm * (pics2 + ux - uy + uz + mtrace - (mxy - mxz + myz));
+	pop[24] = multiplyTerm * (pics2 - ux + uy - uz + mtrace - (mxy - mxz + myz));
+	pop[25] = multiplyTerm * (pics2 - ux + uy + uz + mtrace - (mxy + mxz - myz));
+	pop[26] = multiplyTerm * (pics2 + ux - uy - uz + mtrace - (mxy + mxz - myz));
 }
 
 #endif // !RECONSTRUCTION_CUH

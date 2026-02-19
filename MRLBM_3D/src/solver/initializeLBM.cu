@@ -31,7 +31,7 @@ void initialize_domain(nodeVar &dMom, nodeVar &hMom, haloData &gHalo, cylinderVa
     write_geometry_files(hMom);
 }
 
-__global__ void gpu_initialize_Moments_nodeType_GhostInterface(nodeVar fMom, haloData gHalo)
+__global__ void gpu_initialize_Moments_nodeType_GhostInterface(nodeVar dMom, haloData gHalo)
 {
     const unsigned int x = threadIdx.x + blockIdx.x * blockDim.x;
     const unsigned int y = threadIdx.y + blockIdx.y * blockDim.y;
@@ -47,25 +47,16 @@ __global__ void gpu_initialize_Moments_nodeType_GhostInterface(nodeVar fMom, hal
     real uz = toReal(0.0);
 
     real mxx, myy, mzz, mxy, mxz, myz;
-
-    const size_t idx = IDX_BLOCK(threadIdx.x, threadIdx.y, threadIdx.z,
-                                 blockIdx.x, blockIdx.y, blockIdx.z);
+    real pop[Q];
 
     //========================== Initialize nodeTypes and Moments=============================================
-    fMom.nodeType[idx] = BULK;
-    fMom.rho[idx] = rho - RHO_0;
-    fMom.ux[idx] = ux;
-    fMom.uy[idx] = uy;
-    fMom.uz[idx] = uz;
-
-    real pop[Q];
-    for (int i = 0; i < Q; i++)
+    const real umag = ux * ux + uy * uy + uz * uz;
+    for (int q = 0; q < Q; q++)
     {
-        real umag = ux * ux + uy * uy + uz * uz;
-        real udotc = ux * d_cx[i] + uy * d_cy[i]+ uz * d_cz[i];
+        real udotc = ux * d_cx[q] + uy * d_cy[q] + uz * d_cz[q];
 
         // Equlibrium populations
-        pop[i] = d_w[i] * rho * (toReal(1.0) + as2 * udotc + toReal(0.5) * as2 * as2 * udotc * udotc - toReal(0.5) * as2 * umag);
+        pop[q] = d_w[q] * rho * (toReal(1.0) + as2 * udotc + toReal(0.5) * as2 * as2 * udotc * udotc - toReal(0.5) * as2 * umag);
     }
     const real inv_rho = toReal(1.0) / rho;
 
@@ -80,25 +71,29 @@ __global__ void gpu_initialize_Moments_nodeType_GhostInterface(nodeVar fMom, hal
         mxz += pop[q] * d_Hxz[q];
         myz += pop[q] * d_Hyz[q];
     }
-    fMom.mxx[idx] = mxx * inv_rho;
-    fMom.myy[idx] = myy * inv_rho;
-    fMom.mzz[idx] = mzz * inv_rho;
-    fMom.mxy[idx] = mxy * inv_rho;
-    fMom.mxz[idx] = mxz * inv_rho;
-    fMom.myz[idx] = myz * inv_rho;
+    mxx *= inv_rho;
+    myy *= inv_rho;
+    mzz *= inv_rho;
+    mxy *= inv_rho;
+    mxz *= inv_rho;
+    myz *= inv_rho;
+
+    //=================== Writing moments to global memory======================================
+    const size_t idx = IDX_BLOCK(threadIdx.x, threadIdx.y, threadIdx.z,
+                                 blockIdx.x, blockIdx.y, blockIdx.z);
+    dMom.nodeType[idx] = BULK;
+    dMom.rho[idx] = rho - RHO_0;
+    dMom.ux[idx] = ux;
+    dMom.uy[idx] = uy;
+    dMom.uz[idx] = uz;
+    dMom.mxx[idx] = mxx;
+    dMom.myy[idx] = myy;
+    dMom.mzz[idx] = mzz;
+    dMom.mxy[idx] = mxy;
+    dMom.mxz[idx] = mxz;
+    dMom.myz[idx] = myz;
 
     //========================== Halo Interface =============================================
-    rho = RHO_0 + fMom.rho[idx];
-    ux = fMom.ux[idx];
-    uy = fMom.uy[idx];
-    uz = fMom.uz[idx];
-    mxx = fMom.mxx[idx];
-    myy = fMom.myy[idx];
-    mzz = fMom.mzz[idx];
-    mxy = fMom.mxy[idx];
-    mxz = fMom.mxz[idx];
-    myz = fMom.myz[idx];
-
     pop_reconstruction(rho, ux, uy, uz, mxx, myy, mzz, mxy, mxz, myz, pop);
 
     const unsigned int tx = threadIdx.x; // local thread x id

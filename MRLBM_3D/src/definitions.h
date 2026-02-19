@@ -10,7 +10,7 @@ constexpr size_t BYTES_PER_MB = (1 << 20);
 constexpr size_t BYTES_PER_KB = (1 << 10);
 
 constexpr size_t MAX_SHARED_MEM_BYTES = 48 * BYTES_PER_KB; // 48 kb shared memory
-constexpr size_t SHARED_MEM_PER_THREAD = (Q - 1) * sizeof(real);
+constexpr size_t SHARED_MEM_PER_THREAD = (Q) * sizeof(real);
 
 constexpr dim3 OPTIMAL_BLOCK = findOptimalBlockDim3D(MAX_SHARED_MEM_BYTES, SHARED_MEM_PER_THREAD); // optimal block size that fits into 42kb of shared memory
 
@@ -48,7 +48,7 @@ constexpr size_t NUM_HALO_FACE_XZ = BLOCK_FACE_XZ * NUMBER_OF_BLOCKS;
 constexpr size_t NUM_HALO_FACE_YZ = BLOCK_FACE_YZ * NUMBER_OF_BLOCKS;
 constexpr size_t TOTAL_HALO_NODES = BLOCK_HALO_SIZE * NUMBER_OF_BLOCKS;
 
-constexpr size_t USED_SHARED_MEMORY = SHARED_MEM_PER_THREAD * THREADS_PER_BLOCK;
+constexpr size_t USED_SHARED_MEMORY = SHARED_MEM_PER_THREAD * THREADS_PER_BLOCK/ BYTES_PER_KB;
 constexpr size_t USED_GLOBAL_MEMORY = NUM_LBM_NODES * ((NUMBER_OF_MOMENTS * sizeof(real)) + sizeof(nodeType_t)) / BYTES_PER_MB;
 constexpr size_t HALO_GLOBAL_MEMORY = TOTAL_HALO_NODES * QF * sizeof(real) / BYTES_PER_MB;
 

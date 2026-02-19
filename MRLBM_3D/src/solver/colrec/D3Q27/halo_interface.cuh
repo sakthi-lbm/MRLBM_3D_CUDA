@@ -1,7 +1,7 @@
 #ifndef HALO_INTERFACE_H
 #define HALO_INTERFACE_H
 
-__device__ inline void pop_load_from_halo(haloData fHalo, unsigned int tx, unsigned int ty, unsigned int tz,
+__device__ __forceinline__ void pop_load_from_halo(haloData fHalo, unsigned int tx, unsigned int ty, unsigned int tz,
                                           unsigned int bx, unsigned int by, unsigned int bz, real *pop)
 {
     const unsigned int txm1 = (tx - 1 + blockDim.x) % blockDim.x;
@@ -105,7 +105,7 @@ __device__ inline void pop_load_from_halo(haloData fHalo, unsigned int tx, unsig
     }
 }
 
-__device__ inline void pop_save_to_halo(haloData gHalo, unsigned int tx, unsigned int ty, unsigned int tz,
+__device__ __forceinline__ void pop_save_to_halo(haloData gHalo, unsigned int tx, unsigned int ty, unsigned int tz,
                                         unsigned int bx, unsigned int by, unsigned int bz, real *pop)
 {
     if (tx == 0)
