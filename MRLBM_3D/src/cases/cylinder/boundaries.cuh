@@ -236,7 +236,7 @@ __device__ inline void boundary_condition(nodeType_t nodeType, nodeVar dMom, rea
         const real rho_I = pop[0] + pop[1] + pop[3] + pop[4] + pop[5] + pop[6] + pop[7] + pop[9] + pop[11] + pop[12] + pop[13] + pop[15] + pop[17] + pop[18] + pop[19] + pop[21] + pop[23] + pop[26];
         const real inv_rho_I = toReal(1) / rho_I;
 
-        const real mxx_I = (pop[1] + pop[7] + pop[9] + pop[13] + pop[15] + pop[19] + pop[21] + pop[23] + pop[26]) * inv_rho_I - cs2;
+        // const real mxx_I = (pop[1] + pop[7] + pop[9] + pop[13] + pop[15] + pop[19] + pop[21] + pop[23] + pop[26]) * inv_rho_I - cs2;
         const real myy_I = (pop[3] + pop[4] + pop[7] + pop[11] + pop[12] + pop[13] + pop[17] + pop[18] + pop[19] + pop[21] + pop[23] + pop[26]) * inv_rho_I - cs2;
         const real mzz_I = (pop[5] + pop[6] + pop[9] + pop[11] + pop[12] + pop[15] + pop[17] + pop[18] + pop[19] + pop[21] + pop[23] + pop[26]) * inv_rho_I - cs2;
         const real mxy_I = ((pop[7] + pop[19] + pop[21]) - (pop[13] + pop[23] + pop[26])) * inv_rho_I;
@@ -739,7 +739,7 @@ __device__ inline void boundary_condition(nodeType_t nodeType, nodeVar dMom, rea
     }
     case NORTH_EAST_FRONT:
     {
-        const real rho_I = pop[0] + pop[1] + pop[3] + pop[5] + pop[7] + pop[9] + pop[11] + pop[19];
+        // const real rho_I = pop[0] + pop[1] + pop[3] + pop[5] + pop[7] + pop[9] + pop[11] + pop[19];
 
         // rho = toReal(216) * rho_I / toReal(125);
         // ux = toReal(0);
@@ -766,7 +766,7 @@ __device__ inline void boundary_condition(nodeType_t nodeType, nodeVar dMom, rea
     }
     case NORTH_EAST_BACK:
     {
-        const real rho_I = pop[0] + pop[1] + pop[3] + pop[6] + pop[7] + pop[15] + pop[17] + pop[21];
+        // const real rho_I = pop[0] + pop[1] + pop[3] + pop[6] + pop[7] + pop[15] + pop[17] + pop[21];
 
         // rho = toReal(216) * rho_I / toReal(125);
         // ux = toReal(0);
@@ -793,7 +793,7 @@ __device__ inline void boundary_condition(nodeType_t nodeType, nodeVar dMom, rea
     }
     case SOUTH_EAST_FRONT:
     {
-        const real rho_I = pop[0] + pop[1] + pop[4] + pop[5] + pop[9] + pop[13] + pop[18] + pop[23];
+        // const real rho_I = pop[0] + pop[1] + pop[4] + pop[5] + pop[9] + pop[13] + pop[18] + pop[23];
 
         // rho = toReal(216) * rho_I / toReal(125);
         // ux = toReal(0);
@@ -820,7 +820,7 @@ __device__ inline void boundary_condition(nodeType_t nodeType, nodeVar dMom, rea
     }
     case SOUTH_EAST_BACK:
     {
-        const real rho_I = pop[0] + pop[1] + pop[4] + pop[6] + pop[12] + pop[13] + pop[15] + pop[26];
+        // const real rho_I = pop[0] + pop[1] + pop[4] + pop[6] + pop[12] + pop[13] + pop[15] + pop[26];
 
         // rho = toReal(216) * rho_I / toReal(125);
         // ux = toReal(0);

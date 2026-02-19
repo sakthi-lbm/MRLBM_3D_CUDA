@@ -9,7 +9,7 @@
 
 #define X_PERIODIC 0 // or 0
 #define Y_PERIODIC 0 // or 0
-#define Z_PERIODIC 0 // or 0
+#define Z_PERIODIC 1 // or 0
 
 constexpr bool CONVECTIVE_OUTLET = false;
 constexpr bool NEUMANN_CURRENT_UPDATE = true;
@@ -21,19 +21,19 @@ constexpr MassBC BCF_MASS_CONSERV = MassBC::Equilibrium;
 
 constexpr int BLOCK_SIZE = 16; // Maxmum block based on the register load
 
-constexpr int D = 8;     // Diameter of the cylinder
+constexpr int D = 32;     // Diameter of the cylinder
 constexpr int R = D / 2; // radius of the cylinder
 constexpr real D_WALL = toReal(D);
 constexpr real R_WALL = 0.5 * D_WALL;
 
-constexpr int LW = 8 * D;  // inlet from cylinder
-constexpr int LE = 50 * D; // outlet from cylinder
-constexpr int LN = 5 * D;  // top wall from cylinder (y-dir)
+constexpr int LW = 2 * D;  // inlet from cylinder
+constexpr int LE = 4 * D; // outlet from cylinder
+constexpr int LN = 2 * D;  // top wall from cylinder (y-dir)
 constexpr int LS = LN;     // bottom wall from cylinder
 
 constexpr int NX = LW + D + LE; // size x of the grid
 constexpr int NY = LN + D + LS; // size y of the grid
-constexpr int NZ = 5 * D;       // size z of the grid in one GPU
+constexpr int NZ = 3 * D;       // size z of the grid in one GPU
 
 constexpr real XC = LW + 0.5 * (D - 1); // Center of the cylinder Xc
 constexpr real YC = LS + 0.5 * (D - 1); // Center of the cylinder yc

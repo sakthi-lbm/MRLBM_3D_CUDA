@@ -28,6 +28,7 @@ void initialize_domain(nodeVar &dMom, nodeVar &hMom, haloData &gHalo, cylinderVa
     checkKernelExecution();
 
     initialize_nodeType(hMom);
+    initialize_cylinder_nodeType(hMom);
     write_geometry_files(hMom);
 }
 
