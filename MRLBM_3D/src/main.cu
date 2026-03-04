@@ -26,14 +26,16 @@ int main()
 
     allocateHostMemory(h_fMom);
     allocateDeviceMemory(d_fMom);
-    allocateHaloInterfaceMemory(fHalo_interface, gHalo_interface);
-
+    // allocateHaloInterfaceMemory(fHalo_interface, gHalo_interface);
     initialize_host_device_constants();
     initialize_domain(d_fMom, h_fMom, gHalo_interface, h_cylinder, d_cylinder);
 
     copyMomentsDeviceToHost(h_fMom, d_fMom);
     copyNodeTypeHostToDevice(d_fMom, h_fMom);
-    copyHaloInterfaces(fHalo_interface, gHalo_interface);
+    // copyHaloInterfaces(fHalo_interface, gHalo_interface);
+    std::cout << "OKKKK5" << std::endl;
+
+    
 
     writeSimInfo();
     for (int iter = 0; iter <= MAX_ITER; iter++)

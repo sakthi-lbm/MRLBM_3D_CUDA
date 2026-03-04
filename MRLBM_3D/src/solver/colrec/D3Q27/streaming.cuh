@@ -1,36 +1,72 @@
 #ifndef STREAMING_CUH
 #define STREAMING_CUH
 
-__device__ inline void save_pop(real *s_pop, const real *pop)
+__device__ __forceinline__ void streaming(const moments &smem, real *pop)
 {
-    // save populations in shared memory
-    const unsigned int tx = threadIdx.x;
-    const unsigned int ty = threadIdx.y;
-    const unsigned int tz = threadIdx.z;
+    const unsigned int tx = threadIdx.x + HALO;
+    const unsigned int ty = threadIdx.y + HALO;
+    const unsigned int tz = threadIdx.z + HALO;
+
+    const real c1 = as2;
+    const real c2 = toReal(0.5) * as2 * as2;
 
 #pragma unroll
     for (int q = 0; q < Q; q++)
     {
-        s_pop[idxPopBlock(tx, ty, tz, q)] = pop[q];
+        const real cx = toReal(d_cx[q]);
+        const real cy = toReal(d_cy[q]);
+        const real cz = toReal(d_cz[q]);
+
+        int xs = tx - cx;
+        int ys = ty - cy;
+        int zs = tz - cz;
+
+        const real rho = smem.rho[zs][ys][xs];
+        const real ux = smem.ux[zs][ys][xs];
+        const real uy = smem.uy[zs][ys][xs];
+        const real uz = smem.uz[zs][ys][xs];
+
+        const real mxx = smem.mxx[zs][ys][xs];
+        const real myy = smem.myy[zs][ys][xs];
+        const real mzz = smem.mzz[zs][ys][xs];
+        const real mxy = smem.mxy[zs][ys][xs];
+        const real mxz = smem.mxz[zs][ys][xs];
+        const real myz = smem.myz[zs][ys][xs];
+
+        const real w = d_w[q];
+        const real Hxx = d_Hxx[q];
+        const real Hyy = d_Hyy[q];
+        const real Hzz = d_Hzz[q];
+
+        const real Hxy = d_Hxy[q];
+        const real Hxz = d_Hxz[q];
+        const real Hyz = d_Hyz[q];
+
+        const real vel_term = (ux * cx + uy * cy + uz * cz);
+        real mom_term = Hxx * mxx + Hyy * myy + Hzz * mzz;
+
+        mom_term += toReal(2.0) * (Hxy * mxy + Hxz * mxz + Hyz * myz);
+
+        pop[q] = w * rho * (toReal(1.0) + c1 * vel_term + c2 * mom_term);
     }
 }
 
-__device__ inline void streaming(const real *s_pop, real *pop)
-{
-    const unsigned int tx = threadIdx.x;
-    const unsigned int ty = threadIdx.y;
-    const unsigned int tz = threadIdx.z;
+// __device__ inline void streaming(const real *s_pop, real *pop)
+// {
+//     const unsigned int tx = threadIdx.x;
+//     const unsigned int ty = threadIdx.y;
+//     const unsigned int tz = threadIdx.z;
 
-#pragma unroll
-    for (int q = 0; q < Q; q++)
-    {
-        int xs = (tx - d_cx[q] + BLOCK_THREAD_X) % BLOCK_THREAD_X;
-        int ys = (ty - d_cy[q] + BLOCK_THREAD_Y) % BLOCK_THREAD_Y;
-        int zs = (tz - d_cz[q] + BLOCK_THREAD_Z) % BLOCK_THREAD_Z;
+// #pragma unroll
+//     for (int q = 0; q < Q; q++)
+//     {
+//         int xs = (tx - d_cx[q] + BLOCK_THREAD_X) % BLOCK_THREAD_X;
+//         int ys = (ty - d_cy[q] + BLOCK_THREAD_Y) % BLOCK_THREAD_Y;
+//         int zs = (tz - d_cz[q] + BLOCK_THREAD_Z) % BLOCK_THREAD_Z;
 
-        pop[q] = s_pop[idxPopBlock(xs, ys, zs, q)];
-    }
-}
+//         pop[q] = s_pop[idxPopBlock(xs, ys, zs, q)];
+//     }
+// }
 
 // __device__ inline void save_pop(real *s_pop, const real *pop)
 // {

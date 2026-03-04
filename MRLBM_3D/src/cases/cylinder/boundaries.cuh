@@ -202,7 +202,7 @@ __device__ inline void update_neumaan_density_velocity(nodeVar dMom, real &rho, 
     }
 }
 
-__device__ inline void boundary_condition(nodeType_t nodeType, nodeVar dMom, real *pop, real *s_pop,
+__device__ inline void boundary_condition(nodeType_t nodeType, nodeVar dMom, real *pop, moments s_mom,
                                           real &rho, real &ux, real &uy, real &uz,
                                           real &mxx, real &myy, real &mzz,
                                           real &mxy, real &mxz, real &myz)
@@ -245,7 +245,7 @@ __device__ inline void boundary_condition(nodeType_t nodeType, nodeVar dMom, rea
 
         if constexpr (NEUMANN_CURRENT_UPDATE)
         {
-            current_update_neumaan_density_velocity(s_pop, rho, ux, uy, uz);
+            // current_update_neumaan_density_velocity(s_pop, rho, ux, uy, uz);
         }
         else
         {
@@ -467,7 +467,7 @@ __device__ inline void boundary_condition(nodeType_t nodeType, nodeVar dMom, rea
 
         if constexpr (NEUMANN_CURRENT_UPDATE)
         {
-            current_update_neumaan_density_velocity(s_pop, rho, ux, uy, uz);
+            // current_update_neumaan_density_velocity(s_pop, rho, ux, uy, uz);
         }
         else
         {
@@ -499,7 +499,7 @@ __device__ inline void boundary_condition(nodeType_t nodeType, nodeVar dMom, rea
 
         if constexpr (NEUMANN_CURRENT_UPDATE)
         {
-            current_update_neumaan_density_velocity(s_pop, rho, ux, uy, uz);
+            // current_update_neumaan_density_velocity(s_pop, rho, ux, uy, uz);
         }
         else
         {
@@ -532,7 +532,7 @@ __device__ inline void boundary_condition(nodeType_t nodeType, nodeVar dMom, rea
 
         if constexpr (NEUMANN_CURRENT_UPDATE)
         {
-            current_update_neumaan_density_velocity(s_pop, rho, ux, uy, uz);
+            // current_update_neumaan_density_velocity(s_pop, rho, ux, uy, uz);
         }
         else
         {
@@ -565,7 +565,7 @@ __device__ inline void boundary_condition(nodeType_t nodeType, nodeVar dMom, rea
 
         if constexpr (NEUMANN_CURRENT_UPDATE)
         {
-            current_update_neumaan_density_velocity(s_pop, rho, ux, uy, uz);
+            // current_update_neumaan_density_velocity(s_pop, rho, ux, uy, uz);
         }
         else
         {
@@ -748,7 +748,7 @@ __device__ inline void boundary_condition(nodeType_t nodeType, nodeVar dMom, rea
 
         if constexpr (NEUMANN_CURRENT_UPDATE)
         {
-            current_update_neumaan_density_velocity(s_pop, rho, ux, uy, uz);
+            // current_update_neumaan_density_velocity(s_pop, rho, ux, uy, uz);
         }
         else
         {
@@ -775,7 +775,7 @@ __device__ inline void boundary_condition(nodeType_t nodeType, nodeVar dMom, rea
 
         if constexpr (NEUMANN_CURRENT_UPDATE)
         {
-            current_update_neumaan_density_velocity(s_pop, rho, ux, uy, uz);
+            // current_update_neumaan_density_velocity(s_pop, rho, ux, uy, uz);
         }
         else
         {
@@ -802,7 +802,7 @@ __device__ inline void boundary_condition(nodeType_t nodeType, nodeVar dMom, rea
 
         if constexpr (NEUMANN_CURRENT_UPDATE)
         {
-            current_update_neumaan_density_velocity(s_pop, rho, ux, uy, uz);
+            // current_update_neumaan_density_velocity(s_pop, rho, ux, uy, uz);
         }
         else
         {
@@ -829,7 +829,7 @@ __device__ inline void boundary_condition(nodeType_t nodeType, nodeVar dMom, rea
 
         if constexpr (NEUMANN_CURRENT_UPDATE)
         {
-            current_update_neumaan_density_velocity(s_pop, rho, ux, uy, uz);
+            // current_update_neumaan_density_velocity(s_pop, rho, ux, uy, uz);
         }
         else
         {

@@ -28,7 +28,7 @@ void initialize_domain(nodeVar &dMom, nodeVar &hMom, haloData &gHalo, cylinderVa
     checkKernelExecution();
 
     initialize_nodeType(hMom);
-    initialize_cylinder_nodeType(hMom);
+    // initialize_cylinder_nodeType(hMom);
     write_geometry_files(hMom);
 }
 
@@ -94,15 +94,4 @@ __global__ void gpu_initialize_Moments_nodeType_GhostInterface(nodeVar dMom, hal
     dMom.mxz[idx] = mxz;
     dMom.myz[idx] = myz;
 
-    //========================== Halo Interface =============================================
-    pop_reconstruction(rho, ux, uy, uz, mxx, myy, mzz, mxy, mxz, myz, pop);
-
-    const unsigned int tx = threadIdx.x; // local thread x id
-    const unsigned int ty = threadIdx.y; // local thread y id
-    const unsigned int tz = threadIdx.z; // local thread z id
-    const unsigned int bx = blockIdx.x;  // local block x id
-    const unsigned int by = blockIdx.y;  // local block y id
-    const unsigned int bz = blockIdx.z;  // local block z id
-
-    pop_save_to_halo(gHalo, tx, ty, tz, bx, by, bz, pop);
 }

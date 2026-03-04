@@ -18,11 +18,25 @@ struct nodeVar
     real *mzz;
 };
 
+struct moments
+{
+    real rho[TILE_Z][TILE_Y][TILE_X];
+    real ux[TILE_Z][TILE_Y][TILE_X];
+    real uy[TILE_Z][TILE_Y][TILE_X];
+    real uz[TILE_Z][TILE_Y][TILE_X];
+    real mxx[TILE_Z][TILE_Y][TILE_X];
+    real mxy[TILE_Z][TILE_Y][TILE_X];
+    real mxz[TILE_Z][TILE_Y][TILE_X];
+    real myy[TILE_Z][TILE_Y][TILE_X];
+    real myz[TILE_Z][TILE_Y][TILE_X];
+    real mzz[TILE_Z][TILE_Y][TILE_X];
+};
+
 struct cylinderVar
 {
-    size_t *boundaryList;   // size NB
-    binary_t *incomings; // size NB x Q
-    binary_t *outgoings; // size NB x Q
+    size_t *boundaryList; // size NB
+    binary_t *incomings;  // size NB x Q
+    binary_t *outgoings;  // size NB x Q
 };
 
 struct haloData

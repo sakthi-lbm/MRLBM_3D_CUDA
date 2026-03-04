@@ -12,7 +12,7 @@
 #define Z_PERIODIC 1 // or 0
 
 constexpr bool CONVECTIVE_OUTLET = false;
-constexpr bool NEUMANN_CURRENT_UPDATE = true;
+constexpr bool NEUMANN_CURRENT_UPDATE = false;
 constexpr bool rotated_coordinates = true;
 constexpr bool triangular = true;
 

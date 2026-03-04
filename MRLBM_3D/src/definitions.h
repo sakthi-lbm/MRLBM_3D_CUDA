@@ -10,7 +10,7 @@ constexpr size_t BYTES_PER_MB = (1 << 20);
 constexpr size_t BYTES_PER_KB = (1 << 10);
 
 constexpr size_t MAX_SHARED_MEM_BYTES = 48 * BYTES_PER_KB; // 48 kb shared memory
-constexpr size_t SHARED_MEM_PER_THREAD = (Q) * sizeof(real);
+constexpr size_t SHARED_MEM_PER_THREAD = (NUMBER_OF_MOMENTS) * sizeof(real);
 
 constexpr dim3 OPTIMAL_BLOCK = findOptimalBlockDim3D(MAX_SHARED_MEM_BYTES, SHARED_MEM_PER_THREAD); // optimal block size that fits into 42kb of shared memory
 
@@ -18,9 +18,9 @@ constexpr dim3 OPTIMAL_BLOCK = findOptimalBlockDim3D(MAX_SHARED_MEM_BYTES, SHARE
 // constexpr size_t BLOCK_THREAD_Y = OPTIMAL_BLOCK.y; //// Number of threads in y direction
 // constexpr size_t BLOCK_THREAD_Z = OPTIMAL_BLOCK.z; //// Number of threads in z direction
 
-constexpr size_t BLOCK_THREAD_X = 8; // Number of threads in x direction
-constexpr size_t BLOCK_THREAD_Y = 8; //// Number of threads in y direction
-constexpr size_t BLOCK_THREAD_Z = 4; //// Number of threads in z direction
+constexpr size_t BLOCK_THREAD_X = 16; // Number of threads in x direction
+constexpr size_t BLOCK_THREAD_Y = 4;  //// Number of threads in y direction
+constexpr size_t BLOCK_THREAD_Z = 4;  //// Number of threads in z direction
 
 constexpr size_t GRID_BLOCK_X = (NX + BLOCK_THREAD_X - 1) / BLOCK_THREAD_X; // Number of blocks in x direction
 constexpr size_t GRID_BLOCK_Y = (NY + BLOCK_THREAD_Y - 1) / BLOCK_THREAD_Y; // Number of blocks in y direction
@@ -48,7 +48,13 @@ constexpr size_t NUM_HALO_FACE_XZ = BLOCK_FACE_XZ * NUMBER_OF_BLOCKS;
 constexpr size_t NUM_HALO_FACE_YZ = BLOCK_FACE_YZ * NUMBER_OF_BLOCKS;
 constexpr size_t TOTAL_HALO_NODES = BLOCK_HALO_SIZE * NUMBER_OF_BLOCKS;
 
-constexpr size_t USED_SHARED_MEMORY = SHARED_MEM_PER_THREAD * THREADS_PER_BLOCK/ BYTES_PER_KB;
+constexpr size_t HALO = 1;
+constexpr size_t TILE_X = BLOCK_THREAD_X + 2 * HALO;
+constexpr size_t TILE_Y = BLOCK_THREAD_Y + 2 * HALO;
+constexpr size_t TILE_Z = BLOCK_THREAD_Z + 2 * HALO;
+constexpr size_t BLOCK_WITH_HALO = TILE_X * TILE_Y * TILE_Z;
+
+constexpr size_t USED_SHARED_MEMORY = SHARED_MEM_PER_THREAD * BLOCK_WITH_HALO / BYTES_PER_KB;
 constexpr size_t USED_GLOBAL_MEMORY = NUM_LBM_NODES * ((NUMBER_OF_MOMENTS * sizeof(real)) + sizeof(nodeType_t)) / BYTES_PER_MB;
 constexpr size_t HALO_GLOBAL_MEMORY = TOTAL_HALO_NODES * QF * sizeof(real) / BYTES_PER_MB;
 

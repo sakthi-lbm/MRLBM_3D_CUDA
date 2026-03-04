@@ -3,9 +3,9 @@
 
 #include "config.h"
 
-__host__ __device__ inline size_t IDX(unsigned int x, unsigned int y)
+__host__ __device__ __forceinline__ size_t IDX(unsigned int x, unsigned int y, unsigned int z)
 {
-    return x + (y * NX);
+    return x + NX * (y + NY * z);
 }
 __host__ __device__ __forceinline__ size_t IDX_BLOCK(const unsigned int tx,
                                                      const unsigned int ty,

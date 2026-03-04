@@ -33,52 +33,30 @@ __global__ void streaming_and_evaluate_Mom(const cylinderVar cylinder, nodeVar d
     if (x >= NX || y >= NY || z >= NZ)
         return;
 
-    __shared__ real s_pop[THREADS_PER_BLOCK * Q]; // allocate populations except stationay population in a block
+    real rho;
+    real ux, uy, uz;
+    real mxx, myy, mzz, mxy, mxz, myz;
 
-    // Loading moments from the global memory
     const size_t idx = IDX_BLOCK(tx, ty, tz, bx, by, bz);
+    const nodeType_t nodetype = dMom.nodeType[idx];
 
-    nodeType_t nodeType = dMom.nodeType[idx];
-    real rho = RHO_0 + dMom.rho[idx];
-    real ux = dMom.ux[idx];
-    real uy = dMom.uy[idx];
-    real uz = dMom.uz[idx];
-    real mxx = dMom.mxx[idx];
-    real myy = dMom.myy[idx];
-    real mzz = dMom.mzz[idx];
-    real mxy = dMom.mxy[idx];
-    real mxz = dMom.mxz[idx];
-    real myz = dMom.myz[idx];
+    __shared__ moments s_mom;
 
-    real pop[Q];
-    // construct populations from the loaded moments
-    pop_reconstruction(rho, ux, uy, uz, mxx, myy, mzz, mxy, mxz, myz, pop);
-
-    // copy the constructed populations to the shared memory for the streaming
-    save_pop(s_pop, pop);
+    load_shared_moments(dMom, s_mom);
     __syncthreads();
 
     // STREAMING
-    streaming(s_pop, pop);
-
-    // Loading populations from the halo layers to local thread
-    pop_load_from_halo(fHalo, tx, ty, tz, bx, by, bz, pop);
-
-    // updating shared memory pop with streamed populations for neumann condition
-    if constexpr (NEUMANN_CURRENT_UPDATE)
-    {
-        save_pop(s_pop, pop);
-        __syncthreads();
-    }
+    real pop[Q];
+    streaming(s_mom, pop);
 
     //========================== Moments evaluation ========================================
-    if (nodeType == BULK)
+    if (nodetype == BULK)
     {
         evaluate_moments(rho, ux, uy, uz, mxx, myy, mzz, mxy, mxz, myz, pop);
     }
     else
     {
-        boundary_condition(nodeType, dMom, pop, s_pop, rho, ux, uy, uz, mxx, myy, mzz, mxy, mxz, myz);
+        boundary_condition(nodetype, dMom, pop, s_mom, rho, ux, uy, uz, mxx, myy, mzz, mxy, mxz, myz);
     }
 
     dMom.rho[idx] = rho - RHO_0; // Incoming density rhoI only for cylinder boundary nodes
@@ -125,13 +103,6 @@ __global__ void collision_halo_update(const cylinderVar cylinder, nodeVar dMom, 
 
     // Collision on moment space
     moment_collision(ux, uy, uz, mxx, myy, mzz, mxy, mxz, myz);
-
-    // Regularized populations using post-collisional moments
-    real pop[Q];
-    pop_reconstruction(rho, ux, uy, uz, mxx, myy, mzz, mxy, mxz, myz, pop);
-
-    // updating halo interface with this regularized populations
-    pop_save_to_halo(gHalo, tx, ty, tz, bx, by, bz, pop);
 
     // writing Post-collisional moments into global memory
     dMom.rho[idx] = rho - RHO_0;
