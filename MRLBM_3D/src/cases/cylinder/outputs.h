@@ -10,11 +10,11 @@
 
 constexpr int SCALE = D / U_MAX;
 // constexpr int MACR_SAVE = 100 * SCALE; // interval of output file saving
-constexpr int MACR_SAVE = 100;   // interval of output file saving
+constexpr int MACR_SAVE = 1;   // interval of output file saving
 constexpr int TSTAR = 1000;      // staionary state to start statistics
 constexpr int STAT_PERIOD = 100; // period over which statistics are sampled
 // constexpr int MAX_ITER = (TSTAR + STAT_PERIOD) * SCALE;
-constexpr int MAX_ITER = 10000;
+constexpr int MAX_ITER = 100;
 constexpr int STAT_END = MAX_ITER;
 constexpr int STAT_START = TSTAR * SCALE;
 

@@ -3,9 +3,8 @@
 
 #include "initializeLBM_inline.cuh"
 
-
-void initialize_domain(nodeVar &dMom, nodeVar &hMom, haloData &gHalo, cylinderVar &h_cylinder, cylinderVar &d_cylinder);
-__global__ void gpu_initialize_Moments_nodeType_GhostInterface(nodeVar dMom, haloData gHalo);
+void initialize_domain(nodeVar &dMom, nodeVar &hMom, cylinderVar &h_cylinder, cylinderVar &d_cylinder);
+__global__ void gpu_initialize_Moments_nodeType(nodeVar dMom);
 
 inline void allocateCylinderMemory(cylinderVar &h_cylinder, cylinderVar &d_cylinder, const size_t nb)
 {

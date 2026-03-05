@@ -22,9 +22,9 @@ __constant__ int d_NBCF;
 
 #endif
 
-void initialize_domain(nodeVar &dMom, nodeVar &hMom, haloData &gHalo, cylinderVar &h_cylinder, cylinderVar &d_cylinder)
+void initialize_domain(nodeVar &dMom, nodeVar &hMom, cylinderVar &h_cylinder, cylinderVar &d_cylinder)
 {
-    gpu_initialize_Moments_nodeType_GhostInterface<<<grid, block>>>(dMom, gHalo);
+    gpu_initialize_Moments_nodeType<<<grid, block>>>(dMom);
     checkKernelExecution();
 
     initialize_nodeType(hMom);
@@ -32,7 +32,7 @@ void initialize_domain(nodeVar &dMom, nodeVar &hMom, haloData &gHalo, cylinderVa
     write_geometry_files(hMom);
 }
 
-__global__ void gpu_initialize_Moments_nodeType_GhostInterface(nodeVar dMom, haloData gHalo)
+__global__ void gpu_initialize_Moments_nodeType(nodeVar dMom)
 {
     const unsigned int x = threadIdx.x + blockIdx.x * blockDim.x;
     const unsigned int y = threadIdx.y + blockIdx.y * blockDim.y;

@@ -15,8 +15,7 @@ __device__ void inline moment_collision(const real ux, const real uy, const real
     myz = omega_m1 * myz + omegaVar * uy * uz;
 }
 
-__global__ void streaming_and_evaluate_Mom(const cylinderVar cylinder, nodeVar dMom,
-                                           haloData fHalo, haloData gHalo, const int iter)
+__global__ void streaming_and_evaluate_Mom(const cylinderVar cylinder, nodeVar dMom, const int iter)
 {
 
     const unsigned int x = threadIdx.x + blockIdx.x * blockDim.x;
@@ -71,7 +70,7 @@ __global__ void streaming_and_evaluate_Mom(const cylinderVar cylinder, nodeVar d
     dMom.myz[idx] = myz; // Incoming Moment myzI only for cylinder boundary nodes
 }
 
-__global__ void collision_halo_update(const cylinderVar cylinder, nodeVar dMom, haloData fHalo, haloData gHalo, const int iter)
+__global__ void collision_halo_update(const cylinderVar cylinder, nodeVar dMom, const int iter)
 {
     const unsigned int x = threadIdx.x + blockIdx.x * blockDim.x;
     const unsigned int y = threadIdx.y + blockIdx.y * blockDim.y;

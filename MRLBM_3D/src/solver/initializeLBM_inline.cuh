@@ -134,16 +134,20 @@ inline void initialize_cylinder_nodeType(nodeVar &hMom)
                                                       zn / BLOCK_THREAD_Z)];
 #else
                     if (zn < 0 || zn >= NZ)
+                    {
                         node[q] = SOLID;
+                    }
+
                     else
+                    {
                         node[q] = hMom.nodeType[IDX_BLOCK(xn % BLOCK_THREAD_X,
                                                           yn % BLOCK_THREAD_Y,
                                                           zn % BLOCK_THREAD_Z,
                                                           xn / BLOCK_THREAD_X,
                                                           yn / BLOCK_THREAD_Y,
                                                           zn / BLOCK_THREAD_Z)];
+                    }
 
-                    endif
 #endif
                 }
 
@@ -273,16 +277,20 @@ inline void initialize_cylinder_nodeType_triangular(nodeVar &hMom)
                                                       zn / BLOCK_THREAD_Z)];
 #else
                     if (zn < 0 || zn >= NZ)
+                    {
                         node[q] = SOLID;
+                    }
+
                     else
+                    {
                         node[q] = hMom.nodeType[IDX_BLOCK(xn % BLOCK_THREAD_X,
                                                           yn % BLOCK_THREAD_Y,
                                                           zn % BLOCK_THREAD_Z,
                                                           xn / BLOCK_THREAD_X,
                                                           yn / BLOCK_THREAD_Y,
                                                           zn / BLOCK_THREAD_Z)];
+                    }
 
-                    endif
 #endif
                 }
 

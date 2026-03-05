@@ -18,8 +18,8 @@ constexpr dim3 OPTIMAL_BLOCK = findOptimalBlockDim3D(MAX_SHARED_MEM_BYTES, SHARE
 // constexpr size_t BLOCK_THREAD_Y = OPTIMAL_BLOCK.y; //// Number of threads in y direction
 // constexpr size_t BLOCK_THREAD_Z = OPTIMAL_BLOCK.z; //// Number of threads in z direction
 
-constexpr size_t BLOCK_THREAD_X = 16; // Number of threads in x direction
-constexpr size_t BLOCK_THREAD_Y = 4;  //// Number of threads in y direction
+constexpr size_t BLOCK_THREAD_X = 8; // Number of threads in x direction
+constexpr size_t BLOCK_THREAD_Y = 8;  //// Number of threads in y direction
 constexpr size_t BLOCK_THREAD_Z = 4;  //// Number of threads in z direction
 
 constexpr size_t GRID_BLOCK_X = (NX + BLOCK_THREAD_X - 1) / BLOCK_THREAD_X; // Number of blocks in x direction

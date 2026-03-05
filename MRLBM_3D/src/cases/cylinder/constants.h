@@ -8,7 +8,7 @@
 #define GPU_INDEX 0
 
 #define X_PERIODIC 0 // or 0
-#define Y_PERIODIC 0 // or 0
+#define Y_PERIODIC 1 // or 0
 #define Z_PERIODIC 1 // or 0
 
 constexpr bool CONVECTIVE_OUTLET = false;

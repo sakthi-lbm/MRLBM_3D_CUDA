@@ -6,10 +6,8 @@
 #include STREAMING
 #include EVAL_MOMENTS
 
-__global__ void streaming_and_evaluate_Mom(const cylinderVar cylinder, nodeVar fMom,
-                                           haloData fHalo, haloData gHalo, const int iter);
-__global__ void collision_halo_update(const cylinderVar cylinder, nodeVar fMom,
-                                      haloData fHalo, haloData gHalo, const int iter);
+__global__ void streaming_and_evaluate_Mom(const cylinderVar cylinder, nodeVar fMom, const int iter);
+__global__ void collision_halo_update(const cylinderVar cylinder, nodeVar fMom, const int iter);
 
 __device__ __forceinline__ void load_moments(const unsigned int sx,
                                              const unsigned int sy,
@@ -17,6 +15,7 @@ __device__ __forceinline__ void load_moments(const unsigned int sx,
                                              const size_t gidx,
                                              const nodeVar &dMom, moments &smem)
 {
+    // printf("Thread: sx=%u sy=%u sz=%u\n", sx, sy, sz);
     smem.rho[sz][sy][sx] = RHO_0 + dMom.rho[gidx];
     smem.ux[sz][sy][sx] = dMom.ux[gidx];
     smem.uy[sz][sy][sx] = dMom.uy[gidx];
@@ -33,110 +32,290 @@ __device__ __forceinline__ void load_moments(const unsigned int sx,
 
 __device__ __forceinline__ void load_shared_moments(const nodeVar &dMom, moments &smem)
 {
-    const unsigned int x = threadIdx.x + blockIdx.x * BLOCK_THREAD_X;
-    const unsigned int y = threadIdx.y + blockIdx.y * BLOCK_THREAD_Y;
-    const unsigned int z = threadIdx.z + blockIdx.z * BLOCK_THREAD_Z;
+    const unsigned int sx = threadIdx.x + HALO;
+    const unsigned int sy = threadIdx.y + HALO;
+    const unsigned int sz = threadIdx.z + HALO;
 
-    const unsigned int tx = threadIdx.x + HALO;
-    const unsigned int ty = threadIdx.y + HALO;
-    const unsigned int tz = threadIdx.z + HALO;
+    const unsigned int tx = threadIdx.x;
+    const unsigned int ty = threadIdx.y;
+    const unsigned int tz = threadIdx.z;
 
-    size_t gidx;
-    // ---------------- interior ----------------
-    gidx = IDX(x, y, z);
-    load_moments(tx, ty, tz, gidx, dMom, smem);
+    const unsigned int bx = blockIdx.x;
+    const unsigned int by = blockIdx.y;
+    const unsigned int bz = blockIdx.z;
 
-    int x_west = x - HALO;
-    if (x_west < 0)
-        x_west += NX;
-    int x_east = x + BLOCK_THREAD_X;
-    if (x_east >= NX)
-        x_east -= NX;
+    // WEST
+    int tx_west = tx - HALO;
+    int bx_west = bx;
+    if (tx_west < 0)
+    {
+        tx_west += BLOCK_THREAD_X;
+        bx_west -= 1;
+        if (bx_west < 0)
+            bx_west = GRID_BLOCK_X - 1;
+    }
 
-    int y_south = y - HALO;
-    if (y_south < 0)
-        y_south += NY;
-    int y_north = y + BLOCK_THREAD_Y;
-    if (y_north >= NY)
-        y_north -= NY;
+    // EAST
+    int tx_east = tx + HALO;
+    int bx_east = bx;
+    if (tx_east >= BLOCK_THREAD_X)
+    {
+        tx_east -= BLOCK_THREAD_X;
+        bx_east += 1;
+        if (bx_east >= GRID_BLOCK_X)
+            bx_east = 0;
+    }
 
-    int z_back = z - HALO;
-    if (z_back < 0)
-        z_back += NZ;
-    int z_front = z + BLOCK_THREAD_Z;
-    if (z_front >= NZ)
-        z_front -= NZ;
+    // SOUTH
+    int ty_south = ty - HALO;
+    int by_south = by;
+    if (ty_south < 0)
+    {
+        ty_south += BLOCK_THREAD_Y;
+        by_south -= 1;
+        if (by_south < 0)
+            by_south = GRID_BLOCK_Y - 1;
+    }
+
+    // NORTH
+    int ty_north = ty + HALO;
+    int by_north = by;
+    if (ty_north >= BLOCK_THREAD_Y)
+    {
+        ty_north -= BLOCK_THREAD_Y;
+        by_north += 1;
+        if (by_north >= GRID_BLOCK_Y)
+            by_north = 0;
+    }
+
+    // BACK
+    int tz_back = tz - HALO;
+    int bz_back = bz;
+    if (tz_back < 0)
+    {
+        tz_back += BLOCK_THREAD_Z;
+        bz_back -= 1;
+        if (bz_back < 0)
+            bz_back = GRID_BLOCK_Z - 1;
+    }
+
+    // FRONT
+    int tz_front = tz + HALO;
+    int bz_front = bz;
+    if (tz_front >= BLOCK_THREAD_Z)
+    {
+        tz_front -= BLOCK_THREAD_Z;
+        bz_front += 1;
+        if (bz_front >= GRID_BLOCK_Z)
+            bz_front = 0;
+    }
+
+    // ========================================= INTERIOR ==============================================
+    load_moments(sx, sy, sz,
+                 IDX_BLOCK(tx, ty, tz, bx, by, bz),
+                 dMom, smem);
+
+    __syncthreads();
     // ========================================= FACE HALOS ==============================================
-    if (threadIdx.x < HALO)
+    //------------------------- West -------------------------------
+    if (tx == 0 && ty > 0 && ty < BLOCK_THREAD_Y - 1 && tz > 0 && tz < BLOCK_THREAD_Z - 1)
     {
-        gidx = IDX(x_west, y, z);
-        load_moments(tx - HALO, ty, tz, gidx, dMom, smem);
-
-        gidx = IDX(x_east, y, z);
-        load_moments(tx + BLOCK_THREAD_X, ty, tz, gidx, dMom, smem);
+        // printf("Thread: tx=%u ty=%u tz=%u|bx=%u by=%u bz=%u | tx_west=%d bx_west=%d\n",
+        //        tx, ty, tz,bx,by,bz, tx_west, bx_west);
+        load_moments(sx - HALO, sy, sz,
+                     IDX_BLOCK(tx_west, ty, tz, bx_west, by, bz),
+                     dMom, smem);
     }
 
-    if (threadIdx.y < HALO)
+    //------------------------- East -------------------------------
+    if (tx == BLOCK_THREAD_X - 1 && ty > 0 && ty < BLOCK_THREAD_Y - 1 && tz > 0 && tz < BLOCK_THREAD_Z - 1)
     {
-        gidx = IDX(x, y_south, z);
-        load_moments(tx, ty - HALO, tz, gidx, dMom, smem);
-
-        gidx = IDX(x, y_north, z);
-        load_moments(tx, ty + BLOCK_THREAD_Y, tz, gidx, dMom, smem);
+        load_moments(sx + HALO, sy, sz,
+                     IDX_BLOCK(tx_east, ty, tz, bx_east, by, bz),
+                     dMom, smem);
     }
 
-    if (threadIdx.z < HALO)
+    //------------------------- South -------------------------------
+    if (ty == 0 && tx > 0 && tx < BLOCK_THREAD_X - 1 && tz > 0 && tz < BLOCK_THREAD_Z - 1)
     {
-        gidx = IDX(x, y, z_back);
-        load_moments(tx, ty, tz - HALO, gidx, dMom, smem);
-
-        gidx = IDX(x, y, z_front);
-        load_moments(tx, ty, tz + BLOCK_THREAD_Z, gidx, dMom, smem);
+        load_moments(sx, sy - HALO, sz,
+                     IDX_BLOCK(tx, ty_south, tz, bx, by_south, bz),
+                     dMom, smem);
     }
 
+    //------------------------- North -------------------------------
+    if (ty == BLOCK_THREAD_Y - 1 && tx > 0 && tx < BLOCK_THREAD_X - 1 && tz > 0 && tz < BLOCK_THREAD_Z - 1)
+    {
+        load_moments(sx, sy + HALO, sz,
+                     IDX_BLOCK(tx, ty_north, tz, bx, by_north, bz),
+                     dMom, smem);
+    }
+
+    //------------------------- Back -------------------------------
+    if (tz == 0 && tx > 0 && tx < BLOCK_THREAD_X - 1 && ty > 0 && ty < BLOCK_THREAD_Y - 1)
+    {
+        load_moments(sx, sy, sz - HALO,
+                     IDX_BLOCK(tx, ty, tz_back, bx, by, bz_back),
+                     dMom, smem);
+    }
+
+    //------------------------- Front-------------------------------
+    if (tz == BLOCK_THREAD_Z - 1 && tx > 0 && tx < BLOCK_THREAD_X - 1 && ty > 0 && ty < BLOCK_THREAD_Y - 1)
+    {
+        load_moments(sx, sy, sz + HALO,
+                     IDX_BLOCK(tx, ty, tz_front, bx, by, bz_front),
+                     dMom, smem);
+    }
+    __syncthreads();
     // ========================================= EDGE HALOS ==============================================
-    if (threadIdx.x < HALO && threadIdx.y < HALO)
+    if (tx == 0 && ty == 0 && tz > 0 && tz < BLOCK_THREAD_Z - 1)
     {
-        // 4 edges in XY plane
-        load_moments(tx - HALO, ty - HALO, tz, IDX(x_west, y_south, z), dMom, smem);
-        load_moments(tx + BLOCK_THREAD_X, ty - HALO, tz, IDX(x_east, y_south, z), dMom, smem);
-        load_moments(tx - HALO, ty + BLOCK_THREAD_Y, tz, IDX(x_west, y_north, z), dMom, smem);
-        load_moments(tx + BLOCK_THREAD_X, ty + BLOCK_THREAD_Y, tz, IDX(x_east, y_north, z), dMom, smem);
+        // WEST-SOUTH
+        load_moments(sx - HALO, sy - HALO, sz,
+                     IDX_BLOCK(tx_west, ty_south, tz, bx_west, by_south, bz),
+                     dMom, smem);
+    }
+    if (tx == 0 && ty == BLOCK_THREAD_Y - 1 && tz > 0 && tz < BLOCK_THREAD_Z - 1)
+    {
+        // WEST-NORTH
+        load_moments(sx - HALO, sy + HALO, sz,
+                     IDX_BLOCK(tx_west, ty_north, tz, bx_west, by_north, bz),
+                     dMom, smem);
+    }
+    if (tx == 0 && tz == 0 && ty > 0 && ty < BLOCK_THREAD_Y - 1)
+    {
+        // WEST-BACK
+        load_moments(sx - HALO, sy, sz - HALO,
+                     IDX_BLOCK(tx_west, ty, tz_back, bx_west, by, bz_back),
+                     dMom, smem);
+    }
+    if (tx == 0 && tz == BLOCK_THREAD_Z - 1 && ty > 0 && ty < BLOCK_THREAD_Y - 1)
+    {
+        // WEST-FRONT
+        load_moments(sx - HALO, sy, sz + HALO,
+                     IDX_BLOCK(tx_west, ty, tz_front, bx_west, by, bz_front),
+                     dMom, smem);
     }
 
-    if (threadIdx.x < HALO && threadIdx.z < HALO)
+    if (tx == BLOCK_THREAD_X - 1 && ty == 0 && tz > 0 && tz < BLOCK_THREAD_Z - 1)
     {
-        // 4 edges in XZ plane
-        load_moments(tx - HALO, ty, tz - HALO, IDX(x_west, y, z_back), dMom, smem);
-        load_moments(tx + BLOCK_THREAD_X, ty, tz - HALO, IDX(x_east, y, z_back), dMom, smem);
-        load_moments(tx - HALO, ty, tz + BLOCK_THREAD_Z, IDX(x_west, y, z_front), dMom, smem);
-        load_moments(tx + BLOCK_THREAD_X, ty, tz + BLOCK_THREAD_Z, IDX(x_east, y, z_front), dMom, smem);
+        // EAST-SOUTH
+        load_moments(sx + HALO, sy - HALO, sz,
+                     IDX_BLOCK(tx_east, ty_south, tz, bx_east, by_south, bz),
+                     dMom, smem);
+    }
+    if (tx == BLOCK_THREAD_X - 1 && ty == BLOCK_THREAD_Y - 1 && tz > 0 && tz < BLOCK_THREAD_Z - 1)
+    {
+        // EAST-NORTH
+        load_moments(sx + HALO, sy + HALO, sz,
+                     IDX_BLOCK(tx_east, ty_north, tz, bx_east, by_north, bz),
+                     dMom, smem);
+    }
+    if (tx == BLOCK_THREAD_X - 1 && tz == 0 && ty > 0 && ty < BLOCK_THREAD_Y - 1)
+    {
+        // EAST-BACK
+        load_moments(sx + HALO, sy, sz - HALO,
+                     IDX_BLOCK(tx_east, ty, tz_back, bx_east, by, bz_back),
+                     dMom, smem);
+    }
+    if (tx == BLOCK_THREAD_X - 1 && tz == BLOCK_THREAD_Z - 1 && ty > 0 && ty < BLOCK_THREAD_Y - 1)
+    {
+        // EAST-FRONT
+        load_moments(sx + HALO, sy, sz + HALO,
+                     IDX_BLOCK(tx_east, ty, tz_front, bx_east, by, bz_front),
+                     dMom, smem);
     }
 
-    if (threadIdx.y < HALO && threadIdx.z < HALO)
+    // --------------------------------------- YZ-Plane ----------------------------------------
+    if (ty == 0 && tz == 0 && tx > 0 && tx < BLOCK_THREAD_X - 1)
     {
-
-        // 4 edges in YZ plane
-        load_moments(tx, ty - HALO, tz - HALO, IDX(x, y_south, z_back), dMom, smem);
-        load_moments(tx, ty + BLOCK_THREAD_Y, tz - HALO, IDX(x, y_north, z_back), dMom, smem);
-        load_moments(tx, ty - HALO, tz + BLOCK_THREAD_Z, IDX(x, y_south, z_front), dMom, smem);
-        load_moments(tx, ty + BLOCK_THREAD_Y, tz + BLOCK_THREAD_Z, IDX(x, y_north, z_front), dMom, smem);
+        // SOUTH-BACK
+        load_moments(sx, sy - HALO, sz - HALO,
+                     IDX_BLOCK(tx, ty_south, tz_back, bx, by_south, bz_back),
+                     dMom, smem);
     }
-
+    if (ty == 0 && tz == BLOCK_THREAD_Z - 1 && tx > 0 && tx < BLOCK_THREAD_X - 1)
+    {
+        // SOUTH-FRONT
+        load_moments(sx, sy - HALO, sz + HALO,
+                     IDX_BLOCK(tx, ty_south, tz_front, bx, by_south, bz_front),
+                     dMom, smem);
+    }
+    if (ty == BLOCK_THREAD_Y - 1 && tz == 0 && tx > 0 && tx < BLOCK_THREAD_X - 1)
+    {
+        // NORTH-BACK
+        load_moments(sx, sy + HALO, sz - HALO,
+                     IDX_BLOCK(tx, ty_north, tz_back, bx, by_north, bz_back),
+                     dMom, smem);
+    }
+    if (ty == BLOCK_THREAD_Y - 1 && tz == BLOCK_THREAD_Z - 1 && tx > 0 && tx < BLOCK_THREAD_X - 1)
+    {
+        // NORTH-FRONT
+        load_moments(sx, sy + HALO, sz + HALO,
+                     IDX_BLOCK(tx, ty_north, tz_front, bx, by_north, bz_front),
+                     dMom, smem);
+    }
+    __syncthreads();
     // ========================================= CORNERS ==============================================
-    if (threadIdx.x < HALO && threadIdx.y < HALO && threadIdx.z < HALO)
+    // Bottom-back (z - HALO)
+    if (tx == 0 && ty == 0 && tz == 0)
     {
-        // Bottom-back
-        load_moments(tx - HALO, ty - HALO, tz - HALO, IDX(x_west, y_south, z_back), dMom, smem);
-        load_moments(tx + BLOCK_THREAD_X, ty - HALO, tz - HALO, IDX(x_east, y_south, z_back), dMom, smem);
-        load_moments(tx - HALO, ty + BLOCK_THREAD_Y, tz - HALO, IDX(x_west, y_north, z_back), dMom, smem);
-        load_moments(tx + BLOCK_THREAD_X, ty + BLOCK_THREAD_Y, tz - HALO, IDX(x_east, y_north, z_back), dMom, smem);
-
-        // Top-front
-        load_moments(tx - HALO, ty - HALO, tz + BLOCK_THREAD_Z, IDX(x_west, y_south, z_front), dMom, smem);
-        load_moments(tx + BLOCK_THREAD_X, ty - HALO, tz + BLOCK_THREAD_Z, IDX(x_east, y_south, z_front), dMom, smem);
-        load_moments(tx - HALO, ty + BLOCK_THREAD_Y, tz + BLOCK_THREAD_Z, IDX(x_west, y_north, z_front), dMom, smem);
-        load_moments(tx + BLOCK_THREAD_X, ty + BLOCK_THREAD_Y, tz + BLOCK_THREAD_Z, IDX(x_east, y_north, z_front), dMom, smem);
+        // WEST-SOUTH-BACK
+        load_moments(sx - HALO, sy - HALO, sz - HALO,
+                     IDX_BLOCK(tx_west, ty_south, tz_back, bx_west, by_south, bz_back),
+                     dMom, smem);
     }
+    if (tx == 0 && ty == 0 && tz == BLOCK_THREAD_Z - 1)
+    {
+        // WEST-SOUTH-FRONT
+        load_moments(sx - HALO, sy - HALO, sz + HALO,
+                     IDX_BLOCK(tx_west, ty_south, tz_front, bx_west, by_south, bz_front),
+                     dMom, smem);
+    }
+    if (tx == 0 && ty == BLOCK_THREAD_Y - 1 && tz == 0)
+    {
+        // WEST-NORTH-BACK
+        load_moments(sx - HALO, sy + HALO, sz - HALO,
+                     IDX_BLOCK(tx_west, ty_north, tz_back, bx_west, by_north, bz_back),
+                     dMom, smem);
+    }
+    if (tx == 0 && ty == BLOCK_THREAD_Y - 1 && tz == BLOCK_THREAD_Z - 1)
+    {
+        // WEST-NORTH-FRONT
+        load_moments(sx - HALO, sy + HALO, sz + HALO,
+                     IDX_BLOCK(tx_west, ty_north, tz_front, bx_west, by_north, bz_front),
+                     dMom, smem);
+    }
+
+    // EAST SIDE
+    if (tx == BLOCK_THREAD_X - 1 && ty == 0 && tz == 0)
+    {
+        // EAST-SOUTH-BACK
+        load_moments(sx + HALO, sy - HALO, sz - HALO,
+                     IDX_BLOCK(tx_east, ty_south, tz_back, bx_east, by_south, bz_back),
+                     dMom, smem);
+    }
+    if (tx == BLOCK_THREAD_X - 1 && ty == 0 && tz == BLOCK_THREAD_Z - 1)
+    {
+        // EAST-SOUTH-FRONT
+        load_moments(sx + HALO, sy - HALO, sz + HALO,
+                     IDX_BLOCK(tx_east, ty_south, tz_front, bx_east, by_south, bz_front),
+                     dMom, smem);
+    }
+    if (tx == BLOCK_THREAD_X - 1 && ty == BLOCK_THREAD_Y - 1 && tz == 0)
+    {
+        // EAST-NORTH-BACK
+        load_moments(sx + HALO, sy + HALO, sz - HALO,
+                     IDX_BLOCK(tx_east, ty_north, tz_back, bx_east, by_north, bz_back),
+                     dMom, smem);
+    }
+    if (tx == BLOCK_THREAD_X - 1 && ty == BLOCK_THREAD_Y - 1 && tz == BLOCK_THREAD_Z - 1)
+    {
+        // EAST-NORTH-FRONT
+        load_moments(sx + HALO, sy + HALO, sz + HALO,
+                     IDX_BLOCK(tx_east, ty_north, tz_front, bx_east, by_north, bz_front),
+                     dMom, smem);
+    }
+    __syncthreads();
 }
 #endif // MLBM_H

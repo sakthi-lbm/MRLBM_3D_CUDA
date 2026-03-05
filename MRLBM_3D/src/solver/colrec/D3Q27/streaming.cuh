@@ -1,6 +1,10 @@
 #ifndef STREAMING_CUH
 #define STREAMING_CUH
 
+#include <assert.h>
+
+
+
 __device__ __forceinline__ void streaming(const moments &smem, real *pop)
 {
     const unsigned int tx = threadIdx.x + HALO;
@@ -13,13 +17,17 @@ __device__ __forceinline__ void streaming(const moments &smem, real *pop)
 #pragma unroll
     for (int q = 0; q < Q; q++)
     {
-        const real cx = toReal(d_cx[q]);
-        const real cy = toReal(d_cy[q]);
-        const real cz = toReal(d_cz[q]);
+        const int cx = toReal(d_cx[q]);
+        const int cy = toReal(d_cy[q]);
+        const int cz = toReal(d_cz[q]);
 
         int xs = tx - cx;
         int ys = ty - cy;
         int zs = tz - cz;
+
+        assert(xs >= 0 && xs < TILE_X);
+        assert(ys >= 0 && ys < TILE_Y);
+        assert(zs >= 0 && zs < TILE_Z);
 
         const real rho = smem.rho[zs][ys][xs];
         const real ux = smem.ux[zs][ys][xs];
@@ -42,7 +50,7 @@ __device__ __forceinline__ void streaming(const moments &smem, real *pop)
         const real Hxz = d_Hxz[q];
         const real Hyz = d_Hyz[q];
 
-        const real vel_term = (ux * cx + uy * cy + uz * cz);
+        const real vel_term = (ux * toReal(cx) + uy * toReal(cy) + uz * toReal(cz));
         real mom_term = Hxx * mxx + Hyy * myy + Hzz * mzz;
 
         mom_term += toReal(2.0) * (Hxy * mxy + Hxz * mxz + Hyz * myz);

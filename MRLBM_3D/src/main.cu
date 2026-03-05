@@ -18,35 +18,25 @@ int main()
     // variable declaration
     nodeVar h_fMom;
     nodeVar d_fMom;
-    haloData fHalo_interface;
-    haloData gHalo_interface;
-
     cylinderVar h_cylinder = {};
     cylinderVar d_cylinder = {};
 
     allocateHostMemory(h_fMom);
     allocateDeviceMemory(d_fMom);
-    // allocateHaloInterfaceMemory(fHalo_interface, gHalo_interface);
     initialize_host_device_constants();
-    initialize_domain(d_fMom, h_fMom, gHalo_interface, h_cylinder, d_cylinder);
+    initialize_domain(d_fMom, h_fMom, h_cylinder, d_cylinder);
 
     copyMomentsDeviceToHost(h_fMom, d_fMom);
     copyNodeTypeHostToDevice(d_fMom, h_fMom);
-    // copyHaloInterfaces(fHalo_interface, gHalo_interface);
-    std::cout << "OKKKK5" << std::endl;
-
-    
 
     writeSimInfo();
-    for (int iter = 0; iter <= MAX_ITER; iter++)
+    for (int iter = 0; iter <= 0; iter++)
     {
-        streaming_and_evaluate_Mom<<<grid, block>>>(d_cylinder, d_fMom, fHalo_interface, gHalo_interface, iter);
+        streaming_and_evaluate_Mom<<<grid, block>>>(d_cylinder, d_fMom, iter);
         checkKernelExecution();
 
-        collision_halo_update<<<grid, block>>>(d_cylinder, d_fMom, fHalo_interface, gHalo_interface, iter);
+        // collision_halo_update<<<grid, block>>>(d_cylinder, d_fMom, iter);
         checkKernelExecution();
-
-        swapHaloInterfaces(fHalo_interface, gHalo_interface);
 
         if (iter % MACR_SAVE == 0)
         {
