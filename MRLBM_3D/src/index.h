@@ -82,21 +82,31 @@ __host__ __device__ __forceinline__ size_t idxBoundPop(size_t node, int q)
     return q + node * Q;
 }
 
-__host__ __device__ __forceinline__ void GlobalIndexToXY(const size_t global_index, unsigned int &x, unsigned int &y)
+__host__ __device__ __forceinline__ void GlobalIndexToXYZ(const size_t global_index,
+                                                          unsigned int &x,
+                                                          unsigned int &y,
+                                                          unsigned int &z)
 {
-    const size_t threads_per_block = BLOCK_THREAD_X * BLOCK_THREAD_Y;
+    const size_t threads_per_block =
+        BLOCK_THREAD_X * BLOCK_THREAD_Y * BLOCK_THREAD_Z;
 
     const size_t block_index = global_index / threads_per_block;
     const size_t thread_index = global_index % threads_per_block;
 
+    // block coordinates
     const size_t bx = block_index % GRID_BLOCK_X;
-    const size_t by = block_index / GRID_BLOCK_X;
+    const size_t by = (block_index / GRID_BLOCK_X) % GRID_BLOCK_Y;
+    const size_t bz = block_index / (GRID_BLOCK_X * GRID_BLOCK_Y);
 
+    // thread coordinates inside block
     const size_t tx = thread_index % BLOCK_THREAD_X;
-    const size_t ty = thread_index / BLOCK_THREAD_X;
+    const size_t ty = (thread_index / BLOCK_THREAD_X) % BLOCK_THREAD_Y;
+    const size_t tz = thread_index / (BLOCK_THREAD_X * BLOCK_THREAD_Y);
 
+    // global coordinates
     x = bx * BLOCK_THREAD_X + tx;
     y = by * BLOCK_THREAD_Y + ty;
+    z = bz * BLOCK_THREAD_Z + tz;
 }
 
 // for 3D

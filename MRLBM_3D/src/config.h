@@ -63,6 +63,11 @@ __host__ __device__ inline constexpr nodeType_t toNodeTypeT(T value)
     return static_cast<nodeType_t>(value);
 }
 
+__host__ __device__ inline constexpr real rabs(real x)
+{
+    return (x < real(0)) ? -x : x;
+}
+
 // ================= Enums =================
 
 enum class MassBC : int

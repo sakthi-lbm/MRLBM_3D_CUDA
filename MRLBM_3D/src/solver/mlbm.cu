@@ -78,7 +78,15 @@ __global__ void streaming_and_evaluate_Mom(const cylinderVar cylinder, nodeVar d
     }
     else
     {
-        boundary_condition(nodeType, dMom, pop, s_pop, rho, ux, uy, uz, mxx, myy, mzz, mxy, mxz, myz);
+        if (nodeType >= INNER_NODE && nodeType < (INNER_NODE + d_NB))
+        {
+            const nodeType_t nodeTag = nodeType - INNER_NODE;
+            evaluate_incoming_moments_rotated(x, y, z, nodeTag, cylinder, pop, rho, mxx, myy, mzz, mxy, mxz, myz);
+        }
+        else
+        {
+            boundary_condition(nodeType, dMom, pop, s_pop, rho, ux, uy, uz, mxx, myy, mzz, mxy, mxz, myz);
+        }
     }
 
     dMom.rho[idx] = rho - RHO_0; // Incoming density rhoI only for cylinder boundary nodes
@@ -91,6 +99,57 @@ __global__ void streaming_and_evaluate_Mom(const cylinderVar cylinder, nodeVar d
     dMom.mxy[idx] = mxy; // Incoming Moment mxyI only for cylinder boundary nodes
     dMom.mxz[idx] = mxz; // Incoming Moment mxzI only for cylinder boundary nodes
     dMom.myz[idx] = myz; // Incoming Moment myzI only for cylinder boundary nodes
+}
+
+__global__ void apply_bc_cylinder(const int NB, const int NODE_TYPE, const cylinderVar &cylinder,
+                                  nodeVar &fMom, const real UX_PRIME, const real UY_PRIME, const real UZ_PRIME,
+                                  const real D_WALL, const int iter)
+{
+
+    // boundary index
+    const unsigned int i = threadIdx.x + blockIdx.x * blockDim.x;
+    if (i >= NB)
+        return;
+
+    // global index loaded from the boundary list
+    const size_t idx = cylinder.boundaryList[i];
+
+    // converting global index to the gloabl coordinates
+    unsigned int x, y, z;
+    GlobalIndexToXYZ(idx, x, y, z);
+
+    const nodeType_t nodeType = fMom.nodeType[idx];
+    real rho = RHO_0 + fMom.rho[idx]; // Incoming density rhoI
+    real ux = fMom.ux[idx];
+    real uy = fMom.uy[idx];
+    real uz = fMom.uz[idx];
+    real mxx = fMom.mxx[idx]; // Incoming Moment mxxI
+    real myy = fMom.myy[idx]; // Incoming Moment myyI
+    real mzz = fMom.mzz[idx]; // Incoming Moment mzzI
+    real mxy = fMom.mxy[idx]; // Incoming Moment mxyI
+    real mxz = fMom.mxz[idx]; // Incoming Moment mxzI
+    real myz = fMom.myz[idx]; // Incoming Moment myzI
+
+    // printf("i: %d, x: %d, y: %d, nodetype: %d \n", i, x, y, nodeType);
+
+    if (nodeType >= NODE_TYPE && nodeType < (NODE_TYPE + NB))
+    {
+        cylinder_boundary_condition_rotated(x, y, z, cylinder, nodeType, fMom, rho, ux, uy, uz,
+                                            mxx, myy, mzz, mxy, mxz, myz, UX_PRIME, UY_PRIME, UZ_PRIME,
+                                            NODE_TYPE, D_WALL, iter);
+    }
+
+    // writing  moments into global memory (being done only for cylinder block)
+    fMom.rho[idx] = rho - RHO_0;
+    fMom.ux[idx] = ux;
+    fMom.uy[idx] = uy;
+    fMom.uz[idx] = uz;
+    fMom.mxx[idx] = mxx;
+    fMom.myy[idx] = myy;
+    fMom.mzz[idx] = mzz;
+    fMom.mxy[idx] = mxy;
+    fMom.mxz[idx] = mxz;
+    fMom.myz[idx] = myz;
 }
 
 __global__ void collision_halo_update(const cylinderVar cylinder, nodeVar dMom, haloData fHalo, haloData gHalo, const int iter)

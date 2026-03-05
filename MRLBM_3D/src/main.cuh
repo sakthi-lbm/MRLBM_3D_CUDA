@@ -1,7 +1,6 @@
 #ifndef MAIN_CUH
 #define MAIN_CUH
 
-
 #include "saveData.cuh"
 
 // ---------------Host memory allocation----------------------

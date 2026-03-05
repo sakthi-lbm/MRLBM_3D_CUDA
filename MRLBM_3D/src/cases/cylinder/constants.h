@@ -7,6 +7,8 @@
 #define CYLINDER
 #define GPU_INDEX 0
 
+#define CYLINDER
+
 #define X_PERIODIC 0 // or 0
 #define Y_PERIODIC 0 // or 0
 #define Z_PERIODIC 1 // or 0
@@ -21,15 +23,15 @@ constexpr MassBC BCF_MASS_CONSERV = MassBC::Equilibrium;
 
 constexpr int BLOCK_SIZE = 16; // Maxmum block based on the register load
 
-constexpr int D = 32;     // Diameter of the cylinder
+constexpr int D = 32;    // Diameter of the cylinder
 constexpr int R = D / 2; // radius of the cylinder
 constexpr real D_WALL = toReal(D);
 constexpr real R_WALL = 0.5 * D_WALL;
 
-constexpr int LW = 2 * D;  // inlet from cylinder
+constexpr int LW = 2 * D; // inlet from cylinder
 constexpr int LE = 4 * D; // outlet from cylinder
-constexpr int LN = 2 * D;  // top wall from cylinder (y-dir)
-constexpr int LS = LN;     // bottom wall from cylinder
+constexpr int LN = 2 * D; // top wall from cylinder (y-dir)
+constexpr int LS = LN;    // bottom wall from cylinder
 
 constexpr int NX = LW + D + LE; // size x of the grid
 constexpr int NY = LN + D + LS; // size y of the grid
@@ -47,6 +49,7 @@ constexpr real delx = 1.0; // sqrt (dx2 + dy2) for interpolation
 
 constexpr real UXP_CYLINDER = 0.0;
 constexpr real UYP_CYLINDER = 0.0;
+constexpr real UZP_CYLINDER = 0.0;
 
 constexpr real VISC = U_MAX * toReal(NY - 1) / RE;
 constexpr real TAU = 0.5 + 3.0 * VISC;

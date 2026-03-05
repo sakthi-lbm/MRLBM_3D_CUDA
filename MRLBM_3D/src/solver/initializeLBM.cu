@@ -30,6 +30,13 @@ void initialize_domain(nodeVar &dMom, nodeVar &hMom, haloData &gHalo, cylinderVa
     initialize_nodeType(hMom);
     initialize_cylinder_nodeType(hMom);
     write_geometry_files(hMom);
+
+    allocateCylinderMemory(h_cylinder, d_cylinder, NB);
+    buildBoundaryList_updateBoundaryNodeType(hMom, h_cylinder);
+
+    find_incomings_outgoings_cylinder(hMom, h_cylinder, NB);
+
+    copyHostToDevice(d_cylinder, h_cylinder, NB);
 }
 
 __global__ void gpu_initialize_Moments_nodeType_GhostInterface(nodeVar dMom, haloData gHalo)

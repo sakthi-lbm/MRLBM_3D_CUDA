@@ -41,6 +41,18 @@ int main()
         streaming_and_evaluate_Mom<<<grid, block>>>(d_cylinder, d_fMom, fHalo_interface, gHalo_interface, iter);
         checkKernelExecution();
 
+#ifdef CYLINDER
+        const size_t CYLINDER_NODES = 128;
+        const dim3 boundary_block(CYLINDER_NODES);
+
+        const size_t CYLINDER_GRID_BLOCK = (NB + CYLINDER_NODES - 1) / CYLINDER_NODES;
+        const dim3 boundary_grid(CYLINDER_GRID_BLOCK);
+
+        apply_bc_cylinder<<<boundary_grid, boundary_block>>>(NB, INNER_NODE, d_cylinder, d_fMom,
+                                                             UXP_CYLINDER, UYP_CYLINDER,UZP_CYLINDER,
+                                                             D_WALL, iter);
+        checkKernelExecution();
+#endif
         collision_halo_update<<<grid, block>>>(d_cylinder, d_fMom, fHalo_interface, gHalo_interface, iter);
         checkKernelExecution();
 

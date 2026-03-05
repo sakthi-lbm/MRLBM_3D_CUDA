@@ -120,7 +120,6 @@ inline void initialize_cylinder_nodeType(nodeVar &hMom)
                     xn = x + h_cx[q];
                     yn = y + h_cy[q];
                     zn = z + h_cz[q];
-
 #if Z_PERIODIC
                     if (zn < 0)
                         zn += NZ;
@@ -161,10 +160,6 @@ inline void initialize_cylinder_nodeType(nodeVar &hMom)
                 // Process only boundary solid nodes
                 if (node[0] == SOLID && anyFluid)
                 {
-                    const real x_diff = toReal(x) - XC;
-                    const real y_diff = toReal(y) - YC;
-                    const real radius = sqrt(x_diff * x_diff + y_diff * y_diff);
-
                     constexpr int NUM_BITS = 8;
                     constexpr int DIRS_PER_BIT = 7;
 
@@ -202,9 +197,9 @@ inline void initialize_cylinder_nodeType(nodeVar &hMom)
                                                  x / BLOCK_THREAD_X,
                                                  y / BLOCK_THREAD_Y,
                                                  z / BLOCK_THREAD_Z);
-                    if (z == 0)
+                    // if (z == 0)
                         count++;
-                    hMom.nodeType[idx] = toNodeTypeT(INNER_NODE + node_tag);
+                    hMom.nodeType[idx] = INNER_NODE + toNodeTypeT(node_tag);
                 }
             }
         }
@@ -213,6 +208,7 @@ inline void initialize_cylinder_nodeType(nodeVar &hMom)
     std::cout << "inner: " << NB << std::endl;
 }
 
+/********************not done yet */
 inline void initialize_cylinder_nodeType_triangular(nodeVar &hMom)
 {
     for (int z = 0; z < NZ; z++)
@@ -300,10 +296,6 @@ inline void initialize_cylinder_nodeType_triangular(nodeVar &hMom)
                 // Process only boundary solid nodes
                 if (node[0] == SOLID && anyFluid)
                 {
-                    const real x_diff = toReal(x) - XC;
-                    const real y_diff = toReal(y) - YC;
-                    const real radius = sqrt(x_diff * x_diff + y_diff * y_diff);
-
                     constexpr int NUM_BITS = 8;
                     constexpr int DIRS_PER_BIT = 7;
 
@@ -440,6 +432,116 @@ inline void write_geometry_files(nodeVar hMom)
     // optional: close files (done automatically on destruction)
     faces_file.close();
     fluid_file.close();
+}
+
+inline void buildBoundaryList_updateBoundaryNodeType(nodeVar &hMom, cylinderVar &h_cylinder)
+{
+    int count = 0;
+    for (int z = 0; z < NZ; z++)
+    {
+        for (int y = (LS - 2); y < (LS + D + 2); y++)
+        {
+            for (int x = (LW - 2); x < (LW + D + 2); x++)
+            {
+                const size_t idx = IDX_BLOCK(x % BLOCK_THREAD_X,
+                                             y % BLOCK_THREAD_Y,
+                                             z % BLOCK_THREAD_Z,
+                                             x / BLOCK_THREAD_X,
+                                             y / BLOCK_THREAD_Y,
+                                             z / BLOCK_THREAD_Z);
+
+                if (hMom.nodeType[idx] >= INNER_NODE && hMom.nodeType[idx] < (INNER_NODE + 256))
+                {
+                    if (count >= NB)
+                    {
+                        printf("ERROR: boundaryList overflow\n");
+                        exit(EXIT_FAILURE);
+                    }
+                    h_cylinder.boundaryList[count] = idx;
+                    count++;
+                }
+            }
+        }
+    }
+
+    if (count != NB)
+    {
+        printf("ERROR: Boundary count mismatch! count=%d NB=%d\n", count, NB);
+        exit(EXIT_FAILURE);
+    }
+
+    // updating boundary nodetype with idx
+    for (int i = 0; i < NB; i++)
+    {
+        const size_t idx = h_cylinder.boundaryList[i];
+        hMom.nodeType[idx] = toNodeTypeT(INNER_NODE) + i;
+    }
+}
+
+inline void find_incomings_outgoings_cylinder(const nodeVar &hMom, cylinderVar &h_cylinder, const int nb)
+{
+    if (nb <= 0)
+        return;
+    const size_t nbytes = toSize_t(nb) * toSize_t(Q) * sizeof(binary_t);
+
+    memset(h_cylinder.incomings, 1, nbytes);
+    memset(h_cylinder.outgoings, 0, nbytes);
+
+    for (int i = 0; i < nb; i++)
+    {
+        const size_t global_index = h_cylinder.boundaryList[i];
+        unsigned int x, y, z;
+        GlobalIndexToXYZ(global_index, x, y, z);
+        // std::cout << "Boundary node " << i << " at (x, y,z) = (" << x << ", " << y << ")\n";
+
+        nodeType_t neighbour;
+        for (int q = 0; q < Q; q++)
+        {
+            int xn = x + h_cx[q];
+            int yn = y + h_cy[q];
+            int zn = z + h_cz[q];
+#if Z_PERIODIC
+            if (zn < 0)
+                zn += NZ;
+            else if (zn >= NZ)
+                zn -= NZ;
+            neighbour = hMom.nodeType[IDX_BLOCK(xn % BLOCK_THREAD_X,
+                                                yn % BLOCK_THREAD_Y,
+                                                zn % BLOCK_THREAD_Z,
+                                                xn / BLOCK_THREAD_X,
+                                                yn / BLOCK_THREAD_Y,
+                                                zn / BLOCK_THREAD_Z)];
+#else
+            if (zn < 0 || zn >= NZ)
+                node[q] = SOLID;
+            else
+                neighbour = hMom.nodeType[IDX_BLOCK(xn % BLOCK_THREAD_X,
+                                                    yn % BLOCK_THREAD_Y,
+                                                    zn % BLOCK_THREAD_Z,
+                                                    xn / BLOCK_THREAD_X,
+                                                    yn / BLOCK_THREAD_Y,
+                                                    zn / BLOCK_THREAD_Z)];
+
+            endif
+#endif
+            // if any neighbour is solid the incoming from that node is 0
+            if (neighbour == SOLID)
+            {
+                h_cylinder.incomings[idxBoundPop(i, opp[q])] = 0;
+            }
+        }
+
+        for (int q = 0; q < Q; q++)
+        {
+            const int opp_dir = opp[q];
+            // outgoing is opposite of the incomings
+            if (h_cylinder.incomings[idxBoundPop(i, opp_dir)] == 1)
+                h_cylinder.outgoings[idxBoundPop(i, q)] = 1;
+            // std::cout << " q=" << q
+            //           << " incoming=" << static_cast<int>(h_cylinder.incomings[idxBoundPop(i, q)])
+            //           << " outgoing=" << static_cast<int>(h_cylinder.outgoings[idxBoundPop(i, q)]) << "\n";
+        }
+    }
 }
 
 #endif // INITIALIZE_LBM_INLINE_H
