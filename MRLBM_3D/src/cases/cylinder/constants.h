@@ -5,9 +5,8 @@
 #include LATTICE_PROPERTIES
 
 #define CYLINDER
-#define GPU_INDEX 0
 
-#define CYLINDER
+#define GPU_INDEX 0
 
 #define X_PERIODIC 0 // or 0
 #define Y_PERIODIC 0 // or 0
@@ -29,7 +28,7 @@ constexpr real D_WALL = toReal(D);
 constexpr real R_WALL = 0.5 * D_WALL;
 
 constexpr int LW = 2 * D; // inlet from cylinder
-constexpr int LE = 4 * D; // outlet from cylinder
+constexpr int LE = 10 * D; // outlet from cylinder
 constexpr int LN = 2 * D; // top wall from cylinder (y-dir)
 constexpr int LS = LN;    // bottom wall from cylinder
 

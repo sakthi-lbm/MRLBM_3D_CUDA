@@ -1,7 +1,7 @@
 #include <iostream>
 #include "cylinder_helpers.cuh"
 
-__device__ void numerical_solution_rhoeq_rotated(const unsigned int x, const unsigned int y, const cylinderVar &cylinder,
+__device__ void numerical_solution_rhoeq_rotated(real unit_nx, real unit_ny, const cylinderVar &cylinder,
                                                  const nodeType_t nodeType,
                                                  const real ux_prime, const real uy_prime, const real uz_prime,
                                                  const real mxx_prime, const real myy_prime, const real mzz_prime,
@@ -11,16 +11,8 @@ __device__ void numerical_solution_rhoeq_rotated(const unsigned int x, const uns
 {
     const nodeType_t nodeTag = nodeType - toNodeTypeT(NODE_TYPE);
 
-    // Defining coordinate trasform variables:sint, cost, sin2t, cos2t
-    const real xb = toReal(x);
-    const real yb = toReal(y);
-    const real x_diff = xb - XC;
-    const real y_diff = yb - YC;
-
-    const real radius2 = x_diff * x_diff + y_diff * y_diff;
-    const real inv_radius = rsqrt(radius2);
-    const real cos_theta = x_diff * inv_radius;
-    const real sin_theta = y_diff * inv_radius;
+    const real cos_theta = unit_nx;
+    const real sin_theta = unit_ny;
     const real sin_two_theta = toReal(2.0) * sin_theta * cos_theta;
     const real cos_two_theta = cos_theta * cos_theta - sin_theta * sin_theta;
 
@@ -106,9 +98,9 @@ __device__ void numerical_solution_rhoeq_rotated(const unsigned int x, const uns
     const real b1 = toReal(2.0) * F13_xy_prime;
     const real b2 = toReal(2.0) * F13_xz_prime;
     const real c1 = Rxy - mxx_prime * F11_xy_prime - myy_prime * F22_xy_prime - mzz_prime * F33_xy_prime -
-                    myz_prime * F23_xy_prime;
+                    toReal(2.0) * myz_prime * F23_xy_prime;
     const real c2 = Rxz - mxx_prime * F11_xz_prime - myy_prime * F22_xz_prime - mzz_prime * F33_xz_prime -
-                    myz_prime * F23_xz_prime;
+                    toReal(2.0) * myz_prime * F23_xz_prime;
 
     const real denominator = a2 * b1 - a1 * b2;
     const real inv_denom = toReal(1.0) / denominator;
@@ -118,6 +110,7 @@ __device__ void numerical_solution_rhoeq_rotated(const unsigned int x, const uns
     ux = ux_prime * cos_theta - uy_prime * sin_theta;
     uy = ux_prime * sin_theta + uy_prime * cos_theta;
     uz = uz_prime;
+
     mxx = mxx_prime * cos_theta * cos_theta + myy_prime * sin_theta * sin_theta - mxy_prime * sin_two_theta;
     myy = mxx_prime * sin_theta * sin_theta + myy_prime * cos_theta * cos_theta + mxy_prime * sin_two_theta;
     mzz = mzz_prime;

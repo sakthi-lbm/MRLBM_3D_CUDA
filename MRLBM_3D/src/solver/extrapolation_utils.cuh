@@ -79,7 +79,6 @@ __device__ inline void rotate_velocity_moments(const real x, const real y,
     const real cos_theta = x_diff * inv_radius;
     const real sin_theta = y_diff * inv_radius;
     const real sin_two_theta = toReal(2.0) * sin_theta * cos_theta;
-    const real cos_two_theta = cos_theta * cos_theta - sin_theta * sin_theta;
 
     ux_prime = ux * cos_theta + uy * sin_theta;
     uy_prime = -ux * sin_theta + uy * cos_theta;
@@ -87,6 +86,33 @@ __device__ inline void rotate_velocity_moments(const real x, const real y,
     mxx_prime = mxx * cos_theta * cos_theta + myy * sin_theta * sin_theta + mxy * sin_two_theta;
     myy_prime = mxx * sin_theta * sin_theta + myy * cos_theta * cos_theta - mxy * sin_two_theta;
     myz_prime = myz * cos_theta - mxz * sin_theta;
+}
+
+__device__ __forceinline__ VelocityMoments initerpolate_and_rotate(const real x, const real y, const real z,
+                                                                   const nodeVar &dMom)
+{
+    VelocityMoments vm;
+
+    const real ux = bilinear_interpolation(x, y, z, dMom.ux);
+    const real uy = bilinear_interpolation(x, y, z, dMom.uy);
+    const real uz = bilinear_interpolation(x, y, z, dMom.uz);
+
+    const real mxx = bilinear_interpolation(x, y, z, dMom.mxx);
+    const real myy = bilinear_interpolation(x, y, z, dMom.myy);
+    const real mzz = bilinear_interpolation(x, y, z, dMom.mzz);
+    const real mxy = bilinear_interpolation(x, y, z, dMom.mxy);
+    const real mxz = bilinear_interpolation(x, y, z, dMom.mxz);
+    const real myz = bilinear_interpolation(x, y, z, dMom.myz);
+
+    // Rotate velocity & moments
+    rotate_velocity_moments(x, y, ux, uy, mxx, myy, mxy, mxz, myz,
+                            vm.ux, vm.uy, vm.mxx, vm.myy, vm.myz);
+
+    // Copy z components directly
+    vm.uz = uz;
+    vm.mzz = mzz;
+
+    return vm;
 }
 
 #endif // EXTRAPOLATION_UTILS_H

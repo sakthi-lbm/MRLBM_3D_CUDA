@@ -198,7 +198,7 @@ inline void initialize_cylinder_nodeType(nodeVar &hMom)
                                                  y / BLOCK_THREAD_Y,
                                                  z / BLOCK_THREAD_Z);
                     // if (z == 0)
-                        count++;
+                    count++;
                     hMom.nodeType[idx] = INNER_NODE + toNodeTypeT(node_tag);
                 }
             }
@@ -492,7 +492,6 @@ inline void find_incomings_outgoings_cylinder(const nodeVar &hMom, cylinderVar &
         const size_t global_index = h_cylinder.boundaryList[i];
         unsigned int x, y, z;
         GlobalIndexToXYZ(global_index, x, y, z);
-        // std::cout << "Boundary node " << i << " at (x, y,z) = (" << x << ", " << y << ")\n";
 
         nodeType_t neighbour;
         for (int q = 0; q < Q; q++)
@@ -531,15 +530,18 @@ inline void find_incomings_outgoings_cylinder(const nodeVar &hMom, cylinderVar &
             }
         }
 
+        if (z == 0)
+            std::cout << "Boundary node " << i << " at (x, y,z) = (" << x << ", " << y << ")\n";
         for (int q = 0; q < Q; q++)
         {
             const int opp_dir = opp[q];
             // outgoing is opposite of the incomings
             if (h_cylinder.incomings[idxBoundPop(i, opp_dir)] == 1)
                 h_cylinder.outgoings[idxBoundPop(i, q)] = 1;
-            // std::cout << " q=" << q
-            //           << " incoming=" << static_cast<int>(h_cylinder.incomings[idxBoundPop(i, q)])
-            //           << " outgoing=" << static_cast<int>(h_cylinder.outgoings[idxBoundPop(i, q)]) << "\n";
+            if (z == 0)
+                std::cout << " q=" << q
+                          << " incoming=" << static_cast<int>(h_cylinder.incomings[idxBoundPop(i, q)])
+                          << " outgoing=" << static_cast<int>(h_cylinder.outgoings[idxBoundPop(i, q)]) << "\n";
         }
     }
 }

@@ -8,7 +8,7 @@ corners = np.loadtxt("corners.dat", usecols=(0,1,2))
 fig = plt.figure()
 ax = fig.add_subplot(projection='3d')
 
-#ax.scatter(*faces.T,   s=4,  label="Faces")
+ax.scatter(*faces.T,   s=4,  label="Faces")
 ax.scatter(*edges.T,   s=8,  label="Edges")
 ax.scatter(*corners.T, s=20, label="Corners")
 

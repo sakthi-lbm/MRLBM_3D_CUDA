@@ -28,6 +28,8 @@ void initialize_domain(nodeVar &dMom, nodeVar &hMom, haloData &gHalo, cylinderVa
     checkKernelExecution();
 
     initialize_nodeType(hMom);
+
+#ifdef CYLINDER
     initialize_cylinder_nodeType(hMom);
     write_geometry_files(hMom);
 
@@ -37,6 +39,7 @@ void initialize_domain(nodeVar &dMom, nodeVar &hMom, haloData &gHalo, cylinderVa
     find_incomings_outgoings_cylinder(hMom, h_cylinder, NB);
 
     copyHostToDevice(d_cylinder, h_cylinder, NB);
+#endif
 }
 
 __global__ void gpu_initialize_Moments_nodeType_GhostInterface(nodeVar dMom, haloData gHalo)
@@ -61,7 +64,11 @@ __global__ void gpu_initialize_Moments_nodeType_GhostInterface(nodeVar dMom, hal
     const real umag = ux * ux + uy * uy + uz * uz;
     for (int q = 0; q < Q; q++)
     {
-        real udotc = ux * d_cx[q] + uy * d_cy[q] + uz * d_cz[q];
+        const real cx = toReal(d_cx[q]);
+        const real cy = toReal(d_cy[q]);
+        const real cz = toReal(d_cz[q]);
+
+        const real udotc = ux * cx + uy * cy + uz * cz;
 
         // Equlibrium populations
         pop[q] = d_w[q] * rho * (toReal(1.0) + as2 * udotc + toReal(0.5) * as2 * as2 * udotc * udotc - toReal(0.5) * as2 * umag);

@@ -20,9 +20,22 @@ struct nodeVar
 
 struct cylinderVar
 {
-    size_t *boundaryList;   // size NB
-    binary_t *incomings; // size NB x Q
-    binary_t *outgoings; // size NB x Q
+    size_t *boundaryList; // size NB
+    binary_t *incomings;  // size NB x Q
+    binary_t *outgoings;  // size NB x Q
+};
+
+struct VelocityMoments
+{
+    real ux;
+    real uy;
+    real uz;
+    real mxx;
+    real myy;
+    real mzz;
+    real mxy;
+    real mxz;
+    real myz;
 };
 
 struct haloData
