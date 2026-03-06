@@ -11,6 +11,15 @@ __device__ void evaluate_incoming_moments_rotated(const unsigned int x, const un
                                                   const real *pop, real &rhoVar,
                                                   real &mxx, real &myy, real &mzz,
                                                   real &mxy, real &mxz, real &myz);
+                                                  
+__device__ void cylinder_boundary_condition_rotated(const unsigned int x, const unsigned int y, const unsigned int z,
+                                                    const cylinderVar &cylinder,
+                                                    const nodeType_t nodeType, const nodeVar &dMom,
+                                                    real &rhoVar, real &ux, real &uy, real &uz,
+                                                    real &mxx, real &myy, real &mzz,
+                                                    real &mxy, real &mxz, real &myz,
+                                                    const real UX_PRIME, const real UY_PRIME, const real UZ_PRIME,
+                                                    const int NODE_TYPE, const real D_WALL, const int iter);
 
 #endif
 

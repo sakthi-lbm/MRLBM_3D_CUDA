@@ -47,4 +47,46 @@ __device__ __forceinline__ real bilinear_interpolation(const real x, const real 
     return interp_val;
 }
 
+__device__ inline real extrapolation_quadratic(const real delta,
+                                               const real val_w, const real val_f1, const real val_f2)
+{
+    const real delta_over_delx = delta / delx;
+    const real delta_over_delx2 = delta_over_delx * delta_over_delx;
+    const real coeff_p1 = toReal(1.0) - toReal(0.5) * delta_over_delx2 + toReal(1.5) * delta_over_delx;
+    const real coeff_p2 = delta_over_delx2 - toReal(2.0) * delta_over_delx;
+    const real coeff_p3 = -toReal(0.5) * (delta_over_delx2 - delta_over_delx);
+
+    const real extrapolated_value = coeff_p1 * val_w + coeff_p2 * val_f1 + coeff_p3 * val_f2;
+
+    return extrapolated_value;
+}
+
+__device__ inline void rotate_velocity_moments(const real x, const real y,
+                                               const real ux, const real uy,
+                                               const real mxx, const real myy,
+                                               const real mxy, const real mxz, const real myz,
+                                               real &ux_prime, real &uy_prime,
+                                               real &mxx_prime, real &myy_prime, real &myz_prime)
+{
+    const real xc = toReal(XC);
+    const real yc = toReal(YC);
+    const real x_diff = x - xc;
+    const real y_diff = y - yc;
+
+    const real radius2 = x_diff * x_diff + y_diff * y_diff;
+    const real inv_radius = rsqrt(radius2);
+
+    const real cos_theta = x_diff * inv_radius;
+    const real sin_theta = y_diff * inv_radius;
+    const real sin_two_theta = toReal(2.0) * sin_theta * cos_theta;
+    const real cos_two_theta = cos_theta * cos_theta - sin_theta * sin_theta;
+
+    ux_prime = ux * cos_theta + uy * sin_theta;
+    uy_prime = -ux * sin_theta + uy * cos_theta;
+
+    mxx_prime = mxx * cos_theta * cos_theta + myy * sin_theta * sin_theta + mxy * sin_two_theta;
+    myy_prime = mxx * sin_theta * sin_theta + myy * cos_theta * cos_theta - mxy * sin_two_theta;
+    myz_prime = myz * cos_theta - mxz * sin_theta;
+}
+
 #endif // EXTRAPOLATION_UTILS_H

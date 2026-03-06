@@ -142,24 +142,39 @@ __device__ void cylinder_boundary_condition_rotated(const unsigned int x, const 
     const real myz2 = bilinear_interpolation(x2, y2, zb, dMom.myz);
 
     // Converting Cartesian moments to Rotated moments
-    real ux1_prime, uy1_prime, uz1_prime, mxx1_prime, myy1_prime, mzz1_prime, mxy1_prime, mxz1_prime, myz1_prime;
-    real ux2_prime, uy2_prime, uz2_prime, mxx2_prime, myy2_prime, mzz2_prime, mxy2_prime, mxz2_prime, myz2_prime;
+    real ux1_prime, uy1_prime, uz1_prime, mxx1_prime, myy1_prime, mzz1_prime, myz1_prime;
+    real ux2_prime, uy2_prime, uz2_prime, mxx2_prime, myy2_prime, mzz2_prime, myz2_prime;
 
-    rotate_velocity_moments(x1, y1, ux1, uy1, mxx1, myy1, mxy1, ux1_prime, uy1_prime, mxx1_prime, myy1_prime, mxy1_prime);
-    rotate_velocity_moments(x2, y2, ux2, uy2, mxx2, myy2, mxy2, ux2_prime, uy2_prime, mxx2_prime, myy2_prime, mxy2_prime);
+    rotate_velocity_moments(x1, y1, ux1, uy1, mxx1, myy1, mxy1, mxz1, myz1,
+                            ux1_prime, uy1_prime, mxx1_prime, myy1_prime, myz1_prime);
+    rotate_velocity_moments(x2, y2, ux2, uy2, mxx2, myy2, mzz2, mxy2, mxz2,
+                            ux2_prime, uy2_prime, mxx2_prime, myy2_prime, myz2_prime);
+
+    // no rotation for z component
+    uz1_prime = uz1;
+    uz2_prime = uz2;
+
+    mzz1_prime = mzz1;
+    mzz2_prime = mzz2;
 
     const real uxw_prime = UX_PRIME; //
     const real uyw_prime = UY_PRIME; //
+    const real uzw_prime = UZ_PRIME; //
     const real mxxw_prime = UX_PRIME * UX_PRIME;
     const real myyw_prime = UY_PRIME * UY_PRIME;
+    const real mzzw_prime = UZ_PRIME * UZ_PRIME;
+    const real myzw_prime = UY_PRIME * UZ_PRIME;
 
     // if (iter > MAX_ITER / 2)
     //     printf("node:%d,mxxw:%.12f, myyw:%.12f\n", toInt(NODE_TYPE), mxxw_prime, myyw_prime);
 
     const real ux_prime = extrapolation_quadratic(delta, uxw_prime, ux1_prime, ux2_prime);
     const real uy_prime = extrapolation_quadratic(delta, uyw_prime, uy1_prime, uy2_prime);
+    const real uz_prime = extrapolation_quadratic(delta, uzw_prime, uz1_prime, uz2_prime);
     const real mxx_prime = extrapolation_quadratic(delta, mxxw_prime, mxx1_prime, mxx2_prime);
     const real myy_prime = extrapolation_quadratic(delta, myyw_prime, myy1_prime, myy2_prime);
+    const real mzz_prime = extrapolation_quadratic(delta, mzzw_prime, mzz1_prime, mzz2_prime);
+    const real myz_prime = extrapolation_quadratic(delta, myzw_prime, myz1_prime, myz2_prime);
 
     // ux = extrapolation_hybrid(delta, uxw_prime, ux1_prime, ux2_prime);
     // uy = extrapolation_hybrid(delta, uyw_prime, uy1_prime, uy2_prime);
@@ -169,7 +184,7 @@ __device__ void cylinder_boundary_condition_rotated(const unsigned int x, const 
 
     if constexpr (MASS_CONSERV == MassBC ::Equilibrium)
     {
-        numerical_solution_rhoeq_rotated(x, y, cylinder, nodeType, ux_prime, uy_prime, mxx_prime, myy_prime, rhoVar, ux, uy, mxx, myy, mxy, NODE_TYPE);
+        // numerical_solution_rhoeq_rotated(x, y, cylinder, nodeType, ux_prime, uy_prime, mxx_prime, myy_prime, rhoVar, ux, uy, mxx, myy, mxy, NODE_TYPE);
     }
     else if constexpr (MASS_CONSERV == MassBC ::Strong)
     {
@@ -177,7 +192,7 @@ __device__ void cylinder_boundary_condition_rotated(const unsigned int x, const 
     }
     else if constexpr (MASS_CONSERV == MassBC ::Weak)
     {
-        numerical_solution_weak_rotated(x, y, cylinder, nodeType, ux_prime, uy_prime, mxx_prime, myy_prime, rhoVar, ux, uy, mxx, myy, mxy, NODE_TYPE);
+        // numerical_solution_weak_rotated(x, y, cylinder, nodeType, ux_prime, uy_prime, mxx_prime, myy_prime, rhoVar, ux, uy, mxx, myy, mxy, NODE_TYPE);
     }
 }
 
