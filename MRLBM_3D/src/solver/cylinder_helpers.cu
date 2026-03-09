@@ -7,7 +7,7 @@ __device__ void numerical_solution_rhoeq_rotated(real unit_nx, real unit_ny, con
                                                  const real mxx_prime, const real myy_prime, const real mzz_prime,
                                                  const real myz_prime, real &rhoVar, real &ux, real &uy, real &uz,
                                                  real &mxx, real &myy, real &mzz, real &mxy, real &mxz, real &myz,
-                                                 const nodeType_t NODE_TYPE)
+                                                 const nodeType_t NODE_TYPE, const int iter)
 {
     const nodeType_t nodeTag = nodeType - toNodeTypeT(NODE_TYPE);
 
@@ -56,7 +56,9 @@ __device__ void numerical_solution_rhoeq_rotated(real unit_nx, real unit_ny, con
         const real wq = d_w[q];
         const real common_factor = common_base_factor * wq;
 
-        if (cylinder.incomings[idxBoundPop(nodeTag, q)])
+        uint32_t incomingMask = cylinder.incomingMask[nodeTag];
+        // if (cylinder.incomings[idxBoundPop(nodeTag, q)])
+        if (incomingMask & (1u << q))
         {
             const real A_i = wq * (toReal(1.0) + as2 * (ux_prime * cx_prime + uy_prime * cy_prime +
                                                         uz_prime * cz_prime));
@@ -94,11 +96,12 @@ __device__ void numerical_solution_rhoeq_rotated(real unit_nx, real unit_ny, con
     const real Rxz = E_prime * mxzI_prime - D_xz_prime;
 
     const real a1 = toReal(2.0) * F12_xy_prime;
-    const real a2 = toReal(2.0) * F12_xz_prime;
     const real b1 = toReal(2.0) * F13_xy_prime;
-    const real b2 = toReal(2.0) * F13_xz_prime;
     const real c1 = Rxy - mxx_prime * F11_xy_prime - myy_prime * F22_xy_prime - mzz_prime * F33_xy_prime -
                     toReal(2.0) * myz_prime * F23_xy_prime;
+
+    const real a2 = toReal(2.0) * F12_xz_prime;
+    const real b2 = toReal(2.0) * F13_xz_prime;
     const real c2 = Rxz - mxx_prime * F11_xz_prime - myy_prime * F22_xz_prime - mzz_prime * F33_xz_prime -
                     toReal(2.0) * myz_prime * F23_xz_prime;
 
@@ -119,6 +122,19 @@ __device__ void numerical_solution_rhoeq_rotated(real unit_nx, real unit_ny, con
     myz = mxz_prime * sin_theta + myz_prime * cos_theta;
 
     rhoVar = rhoI_prime / E_prime;
+
+    // if (iter == 0)
+    // {
+    //     printf(" rho'=%e ux'=%e uy'=%e uz'=%e mxx'=%e myy'=%e mzz'=%e mxy'=%e mxz'=%e myz'=%e | "
+    //            "ux=%e uy=%e uz=%e mxx=%e myy=%e mzz=%e mxy=%e mxz=%e myz=%e rho=%e E'=%e\n",
+    //            rhoI_prime, ux_prime, uy_prime, uz_prime,
+    //            mxx_prime, myy_prime, mzz_prime,
+    //            mxy_prime, mxz_prime, myz_prime,
+    //            ux, uy, uz,
+    //            mxx, myy, mzz,
+    //            mxy, mxz, myz,
+    //            rhoVar, E_prime);
+    // }
 }
 
 __device__ void numerical_solution_strong_rotated(const unsigned int x, const unsigned int y, const cylinderVar &cylinder,

@@ -70,11 +70,11 @@ inline std::string getSimInfoString()
     out << "========================= SIMULATION INFORMATION =========================\n";
     out << std::left;
     out << std::setw(labelWidth) << "Simulation ID" << " : " << ID_SIM << "\n";
-    out << std::setw(labelWidth) << "Velocity set" << " : D2Q9\n";
+    out << std::setw(labelWidth) << "Velocity set" << " : D3Q" << Q << "\n";
     out << std::setw(labelWidth) << "Re" << " : " << RE << "\n";
     out << std::setw(labelWidth) << "Precision" << " : " << precision << "\n";
-    out << std::setw(labelWidth) << "NX" << " : " << NX << "\n";
-    out << std::setw(labelWidth) << "NY" << " : " << NY << "\n";
+    out << std::setw(labelWidth) << std::left << "Grid size" << " : " << NX << " x "
+        << NY << " x " << NZ << "\n";
     out << std::setw(labelWidth) << "Total Grid points" << " : " << NX * NY << "\n";
     out << std::setw(labelWidth) << "Grid points (in million)" << " : " << toReal(NX * NY) / 1000000.0 << "\n";
 
@@ -110,16 +110,30 @@ inline std::string getSimInfoString()
     out << std::setw(labelWidth) << "nu_phy" << " : " << nu_phy << "\n";
     out << "\n";
     out << "----------------------------- CUDA Parameters -----------------------------\n";
-    out << std::setw(labelWidth) << "Num of Threads in X" << " : " << BLOCK_THREAD_X << "\n";
-    out << std::setw(labelWidth) << "Num of Threads in Y" << " : " << BLOCK_THREAD_Y << "\n";
-    out << std::setw(labelWidth) << "Num of Blocks in X" << " : " << GRID_BLOCK_X << "\n";
-    out << std::setw(labelWidth) << "Num of Blocks in Y" << " : " << GRID_BLOCK_Y << "\n";
+    out << std::setw(labelWidth) << std::left << "Block size" << " : " << BLOCK_THREAD_X << " x "
+        << BLOCK_THREAD_Y << " x "
+        << BLOCK_THREAD_Z << "\n";
     out << std::setw(labelWidth) << "Total threads per block" << " : " << THREADS_PER_BLOCK << "\n";
-    out << std::setw(labelWidth) << "Max. Shared Memory (kb)" << " : " << MAX_SHARED_MEM_BYTES / BYTES_PER_KB << "\n";
-    out << std::setw(labelWidth) << "Shared Memory used (kb)" << " : " << static_cast<double>(USED_SHARED_MEMORY) / BYTES_PER_KB << "\n";
-    out << std::setw(labelWidth) << "Total Global Memory (Mb)" << " : " << prop.totalGlobalMem / BYTES_PER_MB << "\n";
-    out << std::setw(labelWidth) << "Moments Memory (Global) used (mb)" << " : " << static_cast<double>(USED_GLOBAL_MEMORY) << "\n";
-    out << std::setw(labelWidth) << "Halo Memory (Global) used (mb)" << " : " << static_cast<double>(HALO_GLOBAL_MEMORY) << "\n";
+    out << std::setw(labelWidth) << std::left << "Grid size" << " : " << GRID_BLOCK_X << " x "
+        << GRID_BLOCK_Y << " x "
+        << GRID_BLOCK_Z << "\n";
+    out << std::setw(labelWidth) << "Total blocks"
+        << " : " << NUMBER_OF_BLOCKS << "\n";
+
+    out << std::setw(labelWidth) << "Max Shared Memory (KB)"
+        << " : " << MAX_SHARED_MEM_BYTES / BYTES_PER_KB << "\n";
+
+    out << std::setw(labelWidth) << "Shared Memory used (KB)"
+        << " : " << static_cast<double>(USED_SHARED_MEMORY_BYTES) / BYTES_PER_KB << "\n";
+
+    out << std::setw(labelWidth) << "Total Global Memory (MB)"
+        << " : " << static_cast<double>(prop.totalGlobalMem) / BYTES_PER_MB << "\n";
+
+    out << std::setw(labelWidth) << "Moments Memory used (MB)"
+        << " : " << static_cast<double>(USED_GLOBAL_MEMORY_BYTES) / BYTES_PER_MB << "\n";
+
+    out << std::setw(labelWidth) << "Halo Memory used (MB)"
+        << " : " << static_cast<double>(HALO_GLOBAL_MEMORY_BYTES) / BYTES_PER_MB << "\n";
     out << "==========================================================================\n";
 
     return out.str();
@@ -204,6 +218,34 @@ inline void gpu_properties()
         std::cout << "  Max Threads per Block: " << prop.maxThreadsPerBlock << std::endl;
         std::cout << std::endl;
     }
+}
+
+__host__ inline void time_elapsing_count(timestep &step_end, timestep &step_start, size_t step)
+{
+    step_end = std::chrono::high_resolution_clock::now();
+    double step_time = std::chrono::duration<double>(step_end - step_start).count();
+
+    // Calculate MLUPS for the current step
+    real MLUPS = (NUM_LBM_NODES * MACR_SAVE / 1e6) / step_time;
+
+    std::cout << "Elapsed time: " << step_time << " seconds" << std::endl;
+    std::cout << "MLUPS: " << MLUPS << std::endl;
+
+    // Calculate remaining time
+    size_t steps_remaining = MAX_ITER - step;
+    double total_seconds_remaining = steps_remaining * NUM_LBM_NODES / 1e6 / MLUPS;
+
+    // Convert to hours, minutes, seconds
+    size_t hours = static_cast<size_t>(total_seconds_remaining) / 3600;
+    size_t minutes = static_cast<size_t>((total_seconds_remaining - hours * 3600) / 60);
+    size_t seconds = static_cast<size_t>(total_seconds_remaining) % 60;
+
+    std::cout << "Estimated time left: "
+              << hours << "h "
+              << minutes << "min "
+              << seconds << "s" << std::endl;
+
+    step_start = std::chrono::high_resolution_clock::now();
 }
 
 #endif

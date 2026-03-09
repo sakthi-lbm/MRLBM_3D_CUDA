@@ -6,7 +6,7 @@
 
 __device__ void evaluate_incoming_moments_rotated(const unsigned int x, const unsigned int y, const unsigned int z,
                                                   const nodeType_t nodeTag, const cylinderVar &cylinder,
-                                                  const real *pop, real &rhoVar,
+                                                  const real *pop, real &rho,
                                                   real &mxx, real &myy, real &mzz,
                                                   real &mxy, real &mxz, real &myz)
 {
@@ -29,10 +29,13 @@ __device__ void evaluate_incoming_moments_rotated(const unsigned int x, const un
     real mxzI_prime = toReal(0.0);
     real myzI_prime = toReal(0.0);
 
+    uint32_t incomingMask = cylinder.incomingMask[nodeTag];
     for (int q = 0; q < Q; q++)
     {
-        if (cylinder.incomings[idxBoundPop(nodeTag, q)])
+        // if (cylinder.incomings[idxBoundPop(nodeTag, q)])
+        if (incomingMask & (1u << q))
         {
+            // printf("nodeTag: %d, q: %d ", q, toInt(nodeTag));
             const real cx = toReal(d_cx[q]);
             const real cy = toReal(d_cy[q]);
             const real cz = toReal(d_cz[q]);
@@ -57,11 +60,11 @@ __device__ void evaluate_incoming_moments_rotated(const unsigned int x, const un
             myzI_prime += pop[q] * Hyz_prime;
         }
     }
-    if (rhoI_prime <= 0.0)
-        return;
+    // if (rhoI_prime <= 0.0)
+    //     return;
     const real inv_rho = toReal(1.0) / rhoI_prime;
 
-    rhoVar = rhoI_prime;
+    rho = rhoI_prime;
     mxx = mxxI_prime * inv_rho;
     myy = myyI_prime * inv_rho;
     mzz = mzzI_prime * inv_rho;
@@ -74,7 +77,7 @@ __device__ void cylinder_boundary_condition_rotated(const unsigned int x, const 
                                                     const unsigned int z,
                                                     const cylinderVar &cylinder,
                                                     const nodeType_t nodeType, const nodeVar &dMom,
-                                                    real &rhoVar, real &ux, real &uy, real &uz,
+                                                    real &rho, real &ux, real &uy, real &uz,
                                                     real &mxx, real &myy, real &mzz,
                                                     real &mxy, real &mxz, real &myz,
                                                     const real UX_PRIME, const real UY_PRIME, const real UZ_PRIME,
@@ -131,7 +134,7 @@ __device__ void cylinder_boundary_condition_rotated(const unsigned int x, const 
     real mzz_prime = extrapolation_quadratic(delta, vmw.mzz, vm1.mzz, vm2.mzz);
     real myz_prime = extrapolation_quadratic(delta, vmw.myz, vm1.myz, vm2.myz);
 
-    printf("ux: %.8f, uy: %.8f, uy: %.8f\n", ux, uy, uz);
+    // printf("ux: %.8f, uy: %.8f, uy: %.8f\n", ux, uy, uz);
 
     ux_prime = vmw.ux;
     uy_prime = vmw.uy;
@@ -145,7 +148,7 @@ __device__ void cylinder_boundary_condition_rotated(const unsigned int x, const 
     {
         numerical_solution_rhoeq_rotated(unit_nx, unit_ny, cylinder, nodeType, ux_prime, uy_prime, uz_prime,
                                          mxx_prime, myy_prime, mzz_prime, myz_prime,
-                                         rhoVar, ux, uy, uz, mxx, myy, mzz, mxy, mxz, myz, NODE_TYPE);
+                                         rho, ux, uy, uz, mxx, myy, mzz, mxy, mxz, myz, NODE_TYPE, iter);
     }
     else if constexpr (MASS_CONSERV == MassBC ::Strong)
     {

@@ -20,9 +20,11 @@ struct nodeVar
 
 struct cylinderVar
 {
-    size_t *boundaryList; // size NB
-    binary_t *incomings;  // size NB x Q
-    binary_t *outgoings;  // size NB x Q
+    size_t *boundaryList;   // size NB
+    binary_t *incomings;    // size NB x Q
+    binary_t *outgoings;    // size NB x Q
+    uint32_t *incomingMask; // NB
+    uint32_t *outgoingMask; // NB
 };
 
 struct VelocityMoments

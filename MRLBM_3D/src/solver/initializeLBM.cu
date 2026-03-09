@@ -33,12 +33,14 @@ void initialize_domain(nodeVar &dMom, nodeVar &hMom, haloData &gHalo, cylinderVa
     initialize_cylinder_nodeType(hMom);
     write_geometry_files(hMom);
 
+    initialize_host_device_constants();
+
     allocateCylinderMemory(h_cylinder, d_cylinder, NB);
     buildBoundaryList_updateBoundaryNodeType(hMom, h_cylinder);
 
     find_incomings_outgoings_cylinder(hMom, h_cylinder, NB);
-
     copyHostToDevice(d_cylinder, h_cylinder, NB);
+
 #endif
 }
 

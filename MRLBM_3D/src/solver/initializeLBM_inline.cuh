@@ -49,6 +49,8 @@ inline void initialize_host_device_constants()
 
     check_tau();
     check_mach();
+
+    checkCudaErrors(cudaMemcpyToSymbol(d_NB, &NB, sizeof(int)));
 }
 
 inline void initialize_nodeType(nodeVar &hMom)
@@ -489,6 +491,9 @@ inline void find_incomings_outgoings_cylinder(const nodeVar &hMom, cylinderVar &
 
     for (int i = 0; i < nb; i++)
     {
+        uint32_t incomingMask = (1u << Q) - 1;
+        uint32_t outgoingMask = 0;
+
         const size_t global_index = h_cylinder.boundaryList[i];
         unsigned int x, y, z;
         GlobalIndexToXYZ(global_index, x, y, z);
@@ -527,21 +532,44 @@ inline void find_incomings_outgoings_cylinder(const nodeVar &hMom, cylinderVar &
             if (neighbour == SOLID)
             {
                 h_cylinder.incomings[idxBoundPop(i, opp[q])] = 0;
+                // clear incoming bit
+                incomingMask &= ~(1u << opp[q]);
             }
         }
 
-        if (z == 0)
-            std::cout << "Boundary node " << i << " at (x, y,z) = (" << x << ", " << y << ")\n";
         for (int q = 0; q < Q; q++)
         {
             const int opp_dir = opp[q];
             // outgoing is opposite of the incomings
             if (h_cylinder.incomings[idxBoundPop(i, opp_dir)] == 1)
                 h_cylinder.outgoings[idxBoundPop(i, q)] = 1;
-            if (z == 0)
+            if (incomingMask & (1u << opp[q]))
+            {
+                outgoingMask |= (1u << q);
+            }
+        }
+        h_cylinder.incomingMask[i] = incomingMask;
+        h_cylinder.outgoingMask[i] = outgoingMask;
+
+        // debuggig
+        if (z == 0)
+        {
+            std::cout << "Boundary node " << i << " at (x, y,z) = (" << x << ", " << y << ")\n";
+            for (int q = 0; q < Q; q++)
+            {
+                binary_t incomingArray = h_cylinder.incomings[idxBoundPop(i, q)];
+                binary_t outgoingArray = h_cylinder.outgoings[idxBoundPop(i, q)];
+
+                binary_t incomingMaskBit = (incomingMask >> q) & 1u;
+                binary_t outgoingMaskBit = (outgoingMask >> q) & 1u;
+
                 std::cout << " q=" << q
-                          << " incoming=" << static_cast<int>(h_cylinder.incomings[idxBoundPop(i, q)])
-                          << " outgoing=" << static_cast<int>(h_cylinder.outgoings[idxBoundPop(i, q)]) << "\n";
+                          << " incomingArray=" << static_cast<int>(incomingArray)
+                          << " outgoingArray=" << static_cast<int>(outgoingArray)
+                          << " incomingMask=" << static_cast<int>(incomingMaskBit)
+                          << " outgoingMask=" << static_cast<int>(outgoingMaskBit)
+                          << "\n";
+            }
         }
     }
 }

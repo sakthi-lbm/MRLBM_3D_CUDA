@@ -13,10 +13,16 @@ inline void allocateCylinderMemory(cylinderVar &h_cylinder, cylinderVar &d_cylin
     checkCudaErrors(cudaMallocHost(&h_cylinder.incomings, nb * Q * sizeof(binary_t)));
     checkCudaErrors(cudaMallocHost(&h_cylinder.outgoings, nb * Q * sizeof(binary_t)));
 
+    cudaMallocHost(&h_cylinder.incomingMask, nb * sizeof(uint32_t));
+    cudaMallocHost(&h_cylinder.outgoingMask, nb * sizeof(uint32_t));
+
     // Device Memory
     checkCudaErrors(cudaMalloc(&d_cylinder.boundaryList, nb * sizeof(size_t)));
     checkCudaErrors(cudaMalloc(&d_cylinder.incomings, nb * Q * sizeof(binary_t)));
     checkCudaErrors(cudaMalloc(&d_cylinder.outgoings, nb * Q * sizeof(binary_t)));
+
+    cudaMalloc(&d_cylinder.incomingMask, nb * sizeof(uint32_t));
+    cudaMalloc(&d_cylinder.outgoingMask, nb * sizeof(uint32_t));
 }
 
 inline void freeCylinderMemory(cylinderVar &h_cylinder, cylinderVar &d_cylinder)
@@ -37,6 +43,8 @@ inline void copyHostToDevice(cylinderVar &d_cylinder, cylinderVar &h_cylinder, c
     checkCudaErrors(cudaMemcpy(d_cylinder.boundaryList, h_cylinder.boundaryList, nb * sizeof(size_t), cudaMemcpyHostToDevice));
     checkCudaErrors(cudaMemcpy(d_cylinder.incomings, h_cylinder.incomings, nb * Q * sizeof(binary_t), cudaMemcpyHostToDevice));
     checkCudaErrors(cudaMemcpy(d_cylinder.outgoings, h_cylinder.outgoings, nb * Q * sizeof(binary_t), cudaMemcpyHostToDevice));
+    checkCudaErrors(cudaMemcpy(d_cylinder.incomingMask, h_cylinder.incomingMask, nb * sizeof(uint32_t), cudaMemcpyHostToDevice));
+    checkCudaErrors(cudaMemcpy(d_cylinder.outgoingMask, h_cylinder.outgoingMask, nb * sizeof(uint32_t), cudaMemcpyHostToDevice));
 }
 
 #endif // INITIALIZELBM_H

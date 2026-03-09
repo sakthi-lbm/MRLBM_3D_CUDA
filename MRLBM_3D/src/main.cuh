@@ -114,4 +114,52 @@ inline void copyNodeTypeHostToDevice(nodeVar &d_fMom, const nodeVar &h_fMom)
                                cudaMemcpyHostToDevice));
 }
 
+//-------------- Freeing host memory---------------------------
+inline void freeHostMemory(nodeVar &h_fMom)
+{
+    cudaFreeHost(h_fMom.nodeType);
+    cudaFreeHost(h_fMom.rho);
+    cudaFreeHost(h_fMom.ux);
+    cudaFreeHost(h_fMom.uy);
+    cudaFreeHost(h_fMom.uz);
+    cudaFreeHost(h_fMom.mxx);
+    cudaFreeHost(h_fMom.myy);
+    cudaFreeHost(h_fMom.mzz);
+    cudaFreeHost(h_fMom.mxy);
+    cudaFreeHost(h_fMom.mxz);
+    cudaFreeHost(h_fMom.myz);
+}
+
+//--------------- Freeing device Memory------------------------
+inline void freeDeviceMemory(nodeVar &d_fMom)
+{
+    cudaFree(d_fMom.nodeType);
+    cudaFree(d_fMom.rho);
+    cudaFree(d_fMom.ux);
+    cudaFree(d_fMom.uy);
+    cudaFree(d_fMom.uz);
+    cudaFree(d_fMom.mxx);
+    cudaFree(d_fMom.myy);
+    cudaFree(d_fMom.mzz);
+    cudaFree(d_fMom.mxy);
+    cudaFree(d_fMom.mxz);
+    cudaFree(d_fMom.myz);
+}
+
+inline void freeHaloInterfaceMemory(haloData &fHalo_interface, haloData &gHalo_interface)
+{
+    cudaFree(fHalo_interface.X_WEST);
+    cudaFree(fHalo_interface.X_EAST);
+    cudaFree(fHalo_interface.Y_SOUTH);
+    cudaFree(fHalo_interface.Y_NORTH);
+    cudaFree(fHalo_interface.Z_BACK);
+    cudaFree(fHalo_interface.Z_FRONT);
+    cudaFree(gHalo_interface.X_WEST);
+    cudaFree(gHalo_interface.X_EAST);
+    cudaFree(gHalo_interface.Y_SOUTH);
+    cudaFree(gHalo_interface.Y_NORTH);
+    cudaFree(gHalo_interface.Z_BACK);
+    cudaFree(gHalo_interface.Z_FRONT);
+}
+
 #endif // MAIN_CUH

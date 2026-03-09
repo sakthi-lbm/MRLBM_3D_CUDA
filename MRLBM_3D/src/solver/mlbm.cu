@@ -15,7 +15,7 @@ __device__ void inline moment_collision(const real ux, const real uy, const real
     myz = omega_m1 * myz + omegaVar * uy * uz;
 }
 
-__global__ void streaming_and_evaluate_Mom(const cylinderVar &cylinder, nodeVar dMom,
+__global__ void streaming_and_evaluate_Mom(cylinderVar cylinder, nodeVar dMom,
                                            haloData fHalo, haloData gHalo, const int iter)
 {
 
@@ -65,11 +65,11 @@ __global__ void streaming_and_evaluate_Mom(const cylinderVar &cylinder, nodeVar 
     pop_load_from_halo(fHalo, tx, ty, tz, bx, by, bz, pop);
 
     // updating shared memory pop with streamed populations for neumann condition
-    if constexpr (NEUMANN_CURRENT_UPDATE)
-    {
-        save_pop(s_pop, pop);
-        __syncthreads();
-    }
+    // if constexpr (NEUMANN_CURRENT_UPDATE)
+    // {
+    //     save_pop(s_pop, pop);
+    //     __syncthreads();
+    // }
 
     //========================== Moments evaluation ========================================
     if (nodeType == BULK)

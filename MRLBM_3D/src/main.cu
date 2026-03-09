@@ -12,6 +12,8 @@ int main()
 
     checkCudaErrors(cudaSetDevice(GPU_INDEX));
     timestep sim_start_time = std::chrono::high_resolution_clock::now();
+    timestep step_start = std::chrono::high_resolution_clock::now();
+    timestep step_end;
     timestep end_time;
     real mlups = 0.0;
 
@@ -28,7 +30,6 @@ int main()
     allocateDeviceMemory(d_fMom);
     allocateHaloInterfaceMemory(fHalo_interface, gHalo_interface);
 
-    initialize_host_device_constants();
     initialize_domain(d_fMom, h_fMom, gHalo_interface, h_cylinder, d_cylinder);
 
     copyMomentsDeviceToHost(h_fMom, d_fMom);
@@ -37,7 +38,7 @@ int main()
 
     writeSimInfo();
 
-    for (int iter = 0; iter <= 1; iter++)
+    for (int iter = 0; iter <= MAX_ITER; iter++)
     {
         streaming_and_evaluate_Mom<<<grid, block>>>(d_cylinder, d_fMom, fHalo_interface, gHalo_interface, iter);
         checkKernelExecution();
@@ -54,23 +55,29 @@ int main()
                                                              D_WALL, iter);
         checkKernelExecution();
 #endif
-
-        collision_halo_update<<<grid, block>>>(d_cylinder, d_fMom, fHalo_interface, gHalo_interface, iter);
-        checkKernelExecution();
-
-        swapHaloInterfaces(fHalo_interface, gHalo_interface);
-
         if (iter % MACR_SAVE == 0)
         {
             copyMomentsDeviceToHost(h_fMom, d_fMom);
             write_vti_3d(h_fMom, iter);
 
             printf("\n---------------------- (%d/%d) %.2f%% ----------------------\n", iter, MAX_ITER, toFloat(iter) / toFloat(MAX_ITER) * 100.0f);
+            if (iter != 0)
+                time_elapsing_count(step_end, step_start, iter);
         }
+
+        collision_halo_update<<<grid, block>>>(d_cylinder, d_fMom, fHalo_interface, gHalo_interface, iter);
+        checkKernelExecution();
+
+        swapHaloInterfaces(fHalo_interface, gHalo_interface);
     }
 
     calculate_mlups(sim_start_time, end_time, MAX_ITER, mlups);
     std::cout << "GLOBAL MLUPS: " << mlups << std::endl;
+
+    freeCylinderMemory(h_cylinder, d_cylinder);
+    freeHostMemory(h_fMom);
+    freeDeviceMemory(d_fMom);
+    freeHaloInterfaceMemory(fHalo_interface, gHalo_interface);
 
     return 0;
 }
