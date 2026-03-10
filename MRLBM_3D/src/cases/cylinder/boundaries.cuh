@@ -4,7 +4,6 @@
 #include "../../nodeTypeMap.h"
 #include "constants.h"
 #include "../../globalStructs.h"
-#include "../../index.h"
 
 __host__ __device__ inline nodeType_t boundary_definitions(const unsigned int x, const unsigned int y, const unsigned int z)
 {

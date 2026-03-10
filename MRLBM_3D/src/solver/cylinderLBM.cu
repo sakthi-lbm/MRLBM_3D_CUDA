@@ -136,13 +136,13 @@ __device__ void cylinder_boundary_condition_rotated(const unsigned int x, const 
 
     // printf("ux: %.8f, uy: %.8f, uy: %.8f\n", ux, uy, uz);
 
-    ux_prime = vmw.ux;
-    uy_prime = vmw.uy;
-    uz_prime = vmw.uz;
-    mxx_prime = vmw.mxx;
-    myy_prime = vmw.myy;
-    mzz_prime = vmw.mzz;
-    myz_prime = vmw.myz;
+    // ux_prime = vmw.ux;
+    // uy_prime = vmw.uy;
+    // uz_prime = vmw.uz;
+    // mxx_prime = vmw.mxx;
+    // myy_prime = vmw.myy;
+    // mzz_prime = vmw.mzz;
+    // myz_prime = vmw.myz;
 
     if constexpr (MASS_CONSERV == MassBC ::Equilibrium)
     {

@@ -61,6 +61,7 @@ constexpr nodeType_t SOUTH_EAST_BACK = 64;
 // Curved boundary
 constexpr nodeType_t INNER_NODE = 10000;
 constexpr nodeType_t BCFLUID_NODE = 1000;
+constexpr nodeType_t BCSOLID_NODE = 300;
 
 #define MISSING_DEFINITION (0b11111111111111111111111111111111)
 

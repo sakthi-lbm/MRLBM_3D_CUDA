@@ -2,6 +2,9 @@
 #define FILE_UTILS_H
 
 #include "../all_headers.h"
+
+#include CASE_OUTPUTS
+
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -71,13 +74,12 @@ inline std::string getSimInfoString()
     out << std::left;
     out << std::setw(labelWidth) << "Simulation ID" << " : " << ID_SIM << "\n";
     out << std::setw(labelWidth) << "Velocity set" << " : D3Q" << Q << "\n";
-    out << std::setw(labelWidth) << "Re" << " : " << RE << "\n";
+    out << std::setw(labelWidth) << "Re" << " : " << toInt(RE) << "\n";
     out << std::setw(labelWidth) << "Precision" << " : " << precision << "\n";
     out << std::setw(labelWidth) << std::left << "Grid size" << " : " << NX << " x "
         << NY << " x " << NZ << "\n";
     out << std::setw(labelWidth) << "Total Grid points" << " : " << NX * NY << "\n";
     out << std::setw(labelWidth) << "Grid points (in million)" << " : " << toReal(NX * NY) / 1000000.0 << "\n";
-
     out << "\n";
 
     out << "----------------------------- CYLINDER properties -----------------------------\n";
@@ -89,7 +91,8 @@ inline std::string getSimInfoString()
     out << std::setw(labelWidth) << "Center xc" << " : " << XC << "\n";
     out << std::setw(labelWidth) << "Center yc" << " : " << YC << "\n";
     out << std::setw(labelWidth) << "Inner cylinder points" << " : " << NB << "\n";
-    out << std::setw(labelWidth) << "Inner Bc fluid points" << " : " << NBCF << "\n";
+    out << std::setw(labelWidth) << "Inner Bc fluid points" << " : " << NB_FLUID << "\n";
+    out << std::setw(labelWidth) << "Inner Bc solid points" << " : " << NB_SOLID << "\n";
     out << "\n";
 
     out << "----------------------------- Lattice Units -----------------------------\n";

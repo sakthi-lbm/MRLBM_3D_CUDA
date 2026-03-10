@@ -2,7 +2,6 @@
 #define STREAMING_CUH
 
 #include "config.h"
-#include "index.h"
 
 __device__ inline void save_pop(real *const s_pop, const real *pop)
 {

@@ -138,11 +138,15 @@ constexpr dim3 findOptimalBlockDim3D(size_t maxSharedMemBytes, size_t bytesPerTh
 #define CASE_CONSTANTS STR(CASE_PATH/constants.h)
 #define CASE_BOUNDARY STR(CASE_PATH/boundaries.cuh)
 #define CASE_OUTPUTS STR(CASE_PATH/outputs.h)
+#define CASE_NODETYPE STR(CASE_PATH/nodeType.h)
 #define RECONSTRUCT STR(STENCIL_PATH/REG_ORDER/reconstruction.cuh)
 #define STREAMING STR(STENCIL_PATH/streaming.cuh)
 #define EVAL_MOMENTS STR(STENCIL_PATH/eval_moments.cuh)
 
-
+#include CASE_CONSTANTS
+#include "definitions.h"
+#include "index.h"
+#include "nodeTypeMap.h"
 
 
 #endif

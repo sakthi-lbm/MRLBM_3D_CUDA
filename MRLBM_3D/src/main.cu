@@ -17,7 +17,6 @@ int main()
     timestep end_time;
     real mlups = 0.0;
 
-    // variable declaration
     nodeVar h_fMom;
     nodeVar d_fMom;
     haloData fHalo_interface;

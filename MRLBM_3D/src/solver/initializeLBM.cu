@@ -30,7 +30,7 @@ void initialize_domain(nodeVar &dMom, nodeVar &hMom, haloData &gHalo, cylinderVa
     initialize_nodeType(hMom);
 
 #ifdef CYLINDER
-    initialize_cylinder_nodeType(hMom);
+    triangular ? initialize_cylinder_nodeType_triangular(hMom) : initialize_cylinder_nodeType(hMom);
     write_geometry_files(hMom);
 
     initialize_host_device_constants();

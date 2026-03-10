@@ -36,6 +36,8 @@ __device__ void numerical_solution_rhoeq_rotated(real unit_nx, real unit_ny, con
 
     constexpr real common_base_factor = toReal(0.5) * as2 * as2;
 
+    uint32_t incomingMask = cylinder.incomingMask[nodeTag];
+
     for (size_t q = 0; q < Q; q++)
     {
         const real cx = toReal(d_cx[q]);
@@ -56,8 +58,6 @@ __device__ void numerical_solution_rhoeq_rotated(real unit_nx, real unit_ny, con
         const real wq = d_w[q];
         const real common_factor = common_base_factor * wq;
 
-        uint32_t incomingMask = cylinder.incomingMask[nodeTag];
-        // if (cylinder.incomings[idxBoundPop(nodeTag, q)])
         if (incomingMask & (1u << q))
         {
             const real A_i = wq * (toReal(1.0) + as2 * (ux_prime * cx_prime + uy_prime * cy_prime +
@@ -174,6 +174,9 @@ __device__ void numerical_solution_strong_rotated(const unsigned int x, const un
 
     constexpr real common_base_factor = toReal(0.5) * as2 * as2;
 
+    uint32_t incomingMask = cylinder.incomingMask[nodeTag];
+    uint32_t outgoingMask = cylinder.outgoingMask[nodeTag];
+
     for (size_t q = 0; q < Q; q++)
     {
         const real cx = toReal(d_cx[q]);
@@ -190,7 +193,8 @@ __device__ void numerical_solution_strong_rotated(const unsigned int x, const un
 
         const real A_i = wq * (toReal(1.0) + as2 * (ux_prime * cx_prime + uy_prime * cy_prime));
 
-        if (cylinder.outgoings[idxBoundPop(nodeTag, q)])
+        
+        if (incomingMask & (1u << q))
         {
             const real E_i = A_i + common_factor * (ux_prime * ux_prime * Hxx_prime +
                                                     uy_prime * uy_prime * Hyy_prime +
@@ -202,7 +206,7 @@ __device__ void numerical_solution_strong_rotated(const unsigned int x, const un
             B12_prime += common_factor * Hxy_prime;
         }
 
-        if (cylinder.incomings[idxBoundPop(nodeTag, q)])
+        if (outgoingMask & (1u << q))
         {
             D_xy_prime += A_i * Hxy_prime;
 
