@@ -18,7 +18,8 @@ __constant__ real d_Hxz[Q];
 __constant__ real d_Hyz[Q];
 
 __constant__ int d_NB;
-__constant__ int d_NBCF;
+__constant__ int d_NB_FLUID;
+__constant__ int d_NB_SOLID;
 
 #endif
 
@@ -30,7 +31,7 @@ void initialize_domain(nodeVar &dMom, nodeVar &hMom, haloData &gHalo, cylinderVa
     initialize_nodeType(hMom);
 
 #ifdef CYLINDER
-    triangular ? initialize_cylinder_nodeType_triangular(hMom) : initialize_cylinder_nodeType(hMom);
+    triangular ? initialize_cylinder_nodeType_triangular(hMom) : initialize_cylinder_nodeType_staircase(hMom);
     write_geometry_files(hMom);
 
     initialize_host_device_constants();

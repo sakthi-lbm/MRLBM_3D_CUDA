@@ -51,6 +51,8 @@ inline void initialize_host_device_constants()
     check_mach();
 
     checkCudaErrors(cudaMemcpyToSymbol(d_NB, &NB, sizeof(int)));
+    checkCudaErrors(cudaMemcpyToSymbol(d_NB_FLUID, &NB_FLUID, sizeof(int)));
+    checkCudaErrors(cudaMemcpyToSymbol(d_NB_SOLID, &d_NB_SOLID, sizeof(int)));
 }
 
 inline void initialize_nodeType(nodeVar &hMom)
@@ -124,7 +126,6 @@ inline void find_incomings_outgoings_cylinder(const nodeVar &hMom, cylinderVar &
 {
     if (nb <= 0)
         return;
-    const size_t nbytes = toSize_t(nb) * toSize_t(Q) * sizeof(binary_t);
 
     for (int i = 0; i < nb; i++)
     {
@@ -135,37 +136,13 @@ inline void find_incomings_outgoings_cylinder(const nodeVar &hMom, cylinderVar &
         unsigned int x, y, z;
         GlobalIndexToXYZ(global_index, x, y, z);
 
-        nodeType_t neighbour;
+        nodeType_t node[Q];
+        load_neighbors(node, hMom, x, y, z);
+
         for (int q = 0; q < Q; q++)
         {
-            int xn = x + h_cx[q];
-            int yn = y + h_cy[q];
-            int zn = z + h_cz[q];
-#if Z_PERIODIC
-            if (zn < 0)
-                zn += NZ;
-            else if (zn >= NZ)
-                zn -= NZ;
-            neighbour = hMom.nodeType[IDX_BLOCK(xn % BLOCK_THREAD_X,
-                                                yn % BLOCK_THREAD_Y,
-                                                zn % BLOCK_THREAD_Z,
-                                                xn / BLOCK_THREAD_X,
-                                                yn / BLOCK_THREAD_Y,
-                                                zn / BLOCK_THREAD_Z)];
-#else
-            if (zn < 0 || zn >= NZ)
-                neighbour = SOLID;
-            else
-                neighbour = hMom.nodeType[IDX_BLOCK(xn % BLOCK_THREAD_X,
-                                                    yn % BLOCK_THREAD_Y,
-                                                    zn % BLOCK_THREAD_Z,
-                                                    xn / BLOCK_THREAD_X,
-                                                    yn / BLOCK_THREAD_Y,
-                                                    zn / BLOCK_THREAD_Z)];
-
-#endif
             // if any neighbour is solid the incoming from that node is 0
-            if (neighbour == SOLID)
+            if (node[q] == SOLID)
             {
                 // clear incoming bit
                 incomingMask &= ~(1u << opp[q]);
@@ -183,21 +160,16 @@ inline void find_incomings_outgoings_cylinder(const nodeVar &hMom, cylinderVar &
         h_cylinder.incomingMask[i] = incomingMask;
         h_cylinder.outgoingMask[i] = outgoingMask;
 
-        // debuggig
+        // // debuggig
         // if (z == 0)
         // {
         //     std::cout << "Boundary node " << i << " at (x, y,z) = (" << x << ", " << y << ")\n";
         //     for (int q = 0; q < Q; q++)
         //     {
-        //         binary_t incomingArray = h_cylinder.incomings[idxBoundPop(i, q)];
-        //         binary_t outgoingArray = h_cylinder.outgoings[idxBoundPop(i, q)];
-
         //         binary_t incomingMaskBit = (incomingMask >> q) & 1u;
         //         binary_t outgoingMaskBit = (outgoingMask >> q) & 1u;
 
         //         std::cout << " q=" << q
-        //                   << " incomingArray=" << static_cast<int>(incomingArray)
-        //                   << " outgoingArray=" << static_cast<int>(outgoingArray)
         //                   << " incomingMask=" << static_cast<int>(incomingMaskBit)
         //                   << " outgoingMask=" << static_cast<int>(outgoingMaskBit)
         //                   << "\n";

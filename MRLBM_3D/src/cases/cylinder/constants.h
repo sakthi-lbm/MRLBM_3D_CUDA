@@ -22,7 +22,7 @@ constexpr MassBC BCF_MASS_CONSERV = MassBC::Equilibrium;
 
 constexpr int BLOCK_SIZE = 16; // Maxmum block based on the register load
 
-constexpr int D = 32;    // Diameter of the cylinder
+constexpr int D = 16;    // Diameter of the cylinder
 constexpr int R = D / 2; // radius of the cylinder
 constexpr real D_WALL = toReal(D);
 constexpr real R_WALL = 0.5 * D_WALL;
@@ -82,6 +82,7 @@ extern __constant__ real d_Hxz[Q];
 extern __constant__ real d_Hyz[Q];
 
 extern __constant__ int d_NB;
-extern __constant__ int d_NBCF;
+extern __constant__ int d_NB_FLUID;
+extern __constant__ int d_NB_SOLID;
 
 #endif // CONSTANTS_H

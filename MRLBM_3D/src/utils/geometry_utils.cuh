@@ -55,7 +55,7 @@ inline void write_geometry_files(nodeVar hMom)
     std::ofstream solid_file(construct_path(PATH_FILES, ID_SIM, "grid_layout", "solid.dat"), std::ios::trunc);
     std::ofstream others_file(construct_path(PATH_FILES, ID_SIM, "grid_layout", "others.dat"), std::ios::trunc);
 
-    const int Z_SLICE = 0;
+    const int Z_SLICE = NZ - 1;
     for (int z = 0; z < NZ; z++)
     {
         if (Z_SLICE >= 0 && z != Z_SLICE)

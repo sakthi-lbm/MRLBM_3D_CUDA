@@ -23,7 +23,7 @@ inline size_t idx3D(int x, int y, int z)
                      z / BLOCK_THREAD_Z);
 }
 
-inline void load_neighbors(nodeType_t node[Q], nodeVar &hMom, int x, int y, int z)
+inline void load_neighbors(nodeType_t node[Q], const nodeVar &hMom, int x, int y, int z)
 {
     for (int q = 0; q < Q; q++)
     {
@@ -253,7 +253,7 @@ inline int classify_bcsolid_nodes_triangular(nodeVar &hMom)
     return count;
 }
 
-inline void initialize_cylinder_nodeType(nodeVar &hMom)
+inline void initialize_cylinder_nodeType_staircase(nodeVar &hMom)
 {
     static_assert(LW >= 3 && LS >= 3);
     static_assert(LW + D + 3 < NX);
