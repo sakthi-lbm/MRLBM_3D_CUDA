@@ -21,6 +21,9 @@ __constant__ int d_NB;
 __constant__ int d_NB_FLUID;
 __constant__ int d_NB_SOLID;
 
+__device__ real d_sumUx;
+__device__ real d_UCONV;
+
 #endif
 
 void initialize_domain(nodeVar &dMom, nodeVar &hMom, haloData &gHalo, cylinderVar &h_cylinder, cylinderVar &d_cylinder)
@@ -34,15 +37,13 @@ void initialize_domain(nodeVar &dMom, nodeVar &hMom, haloData &gHalo, cylinderVa
     triangular ? initialize_cylinder_nodeType_triangular(hMom) : initialize_cylinder_nodeType_staircase(hMom);
     write_geometry_files(hMom);
 
-    initialize_host_device_constants();
-
     allocateCylinderMemory(h_cylinder, d_cylinder, NB);
     buildBoundaryList_updateBoundaryNodeType(hMom, h_cylinder);
 
     find_incomings_outgoings_cylinder(hMom, h_cylinder, NB);
     copyHostToDevice(d_cylinder, h_cylinder, NB);
-
 #endif
+    initialize_host_device_constants();
 }
 
 __global__ void gpu_initialize_Moments_nodeType_GhostInterface(nodeVar dMom, haloData gHalo)

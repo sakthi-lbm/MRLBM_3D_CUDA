@@ -12,34 +12,37 @@
 #define Y_PERIODIC 0 // or 0
 #define Z_PERIODIC 0 // or 0
 
-constexpr bool CONVECTIVE_OUTLET = false;
+#define CONVECTIVE_OUTLET 1
+
 constexpr bool NEUMANN_CURRENT_UPDATE = false;
 constexpr bool rotated_coordinates = true;
 constexpr bool triangular = true;
 
-constexpr MassBC MASS_CONSERV = MassBC::Equilibrium;
+constexpr MassBC MASS_CONSERV = MassBC::Strong;
 constexpr MassBC BCF_MASS_CONSERV = MassBC::Equilibrium;
 
 constexpr int BLOCK_SIZE = 16; // Maxmum block based on the register load
 
-constexpr int D = 16;    // Diameter of the cylinder
+constexpr int D = 32;    // Diameter of the cylinder
 constexpr int R = D / 2; // radius of the cylinder
 constexpr real D_WALL = toReal(D);
 constexpr real R_WALL = 0.5 * D_WALL;
 
-constexpr int LW = 4 * D; // inlet from cylinder
-constexpr int LE = 12 * D; // outlet from cylinder
-constexpr int LN = 4 * D; // top wall from cylinder (y-dir)
-constexpr int LS = LN;    // bottom wall from cylinder
+constexpr int LW = 4 * D;  // inlet from cylinder
+constexpr int LE = 8 * D; // outlet from cylinder
+constexpr int LN = 4 * D;  // top wall from cylinder (y-dir)
+constexpr int LS = LN;     // bottom wall from cylinder
 
 constexpr int NX = LW + D + LE; // size x of the grid
 constexpr int NY = LN + D + LS; // size y of the grid
 constexpr int NZ = 5 * D;       // size z of the grid in one GPU
 
+constexpr int N_OUTLET = NY * NZ;
+
 constexpr real XC = LW + 0.5 * (D - 1); // Center of the cylinder Xc
 constexpr real YC = LS + 0.5 * (D - 1); // Center of the cylinder yc
 
-constexpr real RE = 100;     // Reynolds number
+constexpr real RE = 400;      // Reynolds number
 constexpr real U_MAX = 0.1;   // lattice characteristic velocity
 constexpr real RHO_0 = 1.0;   // Free-stream density
 constexpr real delta_t = 1.0; // lattice time-step
@@ -54,7 +57,7 @@ constexpr real VISC = U_MAX * D_WALL / RE;
 constexpr real TAU = 0.5 + 3.0 * VISC;
 constexpr real OMEGA = 1.0 / TAU;
 
-inline int NB = 0;   // Number of cylinder boundary points on cylinder
+inline int NB = 0;       // Number of cylinder boundary points on cylinder
 inline int NB_FLUID = 0; // Number of bc fluid points due to triangular grid
 inline int NB_SOLID = 0; // Number of bc solid points due to triangular grid
 
@@ -67,6 +70,9 @@ inline real h_Hzz[Q] = {0};
 inline real h_Hxy[Q] = {0};
 inline real h_Hxz[Q] = {0};
 inline real h_Hyz[Q] = {0};
+
+inline real h_sumUx = 0.0f;
+inline real h_UCONV = 0.9 * U_MAX;
 
 // ---------- RUNTIME CONSTANTS (DEVICE) ----------
 extern __constant__ real d_w[Q];
@@ -84,5 +90,8 @@ extern __constant__ real d_Hyz[Q];
 extern __constant__ int d_NB;
 extern __constant__ int d_NB_FLUID;
 extern __constant__ int d_NB_SOLID;
+
+extern __device__ real d_sumUx;
+extern __device__ real d_UCONV;
 
 #endif // CONSTANTS_H

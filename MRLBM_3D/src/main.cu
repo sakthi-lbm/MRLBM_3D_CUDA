@@ -36,11 +36,14 @@ int main()
     copyHaloInterfaces(fHalo_interface, gHalo_interface);
 
     writeSimInfo();
+    checkCudaErrors(cudaMemcpyToSymbol(d_UCONV, &h_UCONV, sizeof(real)));
 
     for (int iter = 0; iter <= MAX_ITER; iter++)
     {
         streaming_and_evaluate_Mom<<<grid, block>>>(d_cylinder, d_fMom, fHalo_interface, gHalo_interface, iter);
         checkKernelExecution();
+
+        // compute_convective_outlet_velocity(d_fMom.ux);
 
 #ifdef CYLINDER
         constexpr size_t CYLINDER_NODES = 256;
@@ -54,6 +57,10 @@ int main()
                                                              D_WALL, iter);
         checkKernelExecution();
 #endif
+
+        collision_halo_update<<<grid, block>>>(d_cylinder, d_fMom, fHalo_interface, gHalo_interface, iter);
+        checkKernelExecution();
+
         if (iter % MACR_SAVE == 0)
         {
             copyMomentsDeviceToHost(h_fMom, d_fMom);
@@ -62,10 +69,8 @@ int main()
             printf("\n---------------------- (%d/%d) %.2f%% ----------------------\n", iter, MAX_ITER, toFloat(iter) / toFloat(MAX_ITER) * 100.0f);
             if (iter != 0)
                 time_elapsing_count(step_end, step_start, iter);
+            std::cout << "u_conv: " << h_UCONV << std::endl;
         }
-
-        collision_halo_update<<<grid, block>>>(d_cylinder, d_fMom, fHalo_interface, gHalo_interface, iter);
-        checkKernelExecution();
 
         swapHaloInterfaces(fHalo_interface, gHalo_interface);
     }

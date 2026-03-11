@@ -93,9 +93,8 @@ __host__ __device__ inline nodeType_t boundary_definitions(const unsigned int x,
     return BULK;
 }
 
-__device__ inline void current_update_neumaan_density_velocity(
-    const real *s_pop,
-    real &rho, real &ux, real &uy, real &uz)
+__device__ inline void current_update_neumaan_density_velocity(const real *s_pop,
+                                                               real &rho, real &ux, real &uy, real &uz)
 {
     const unsigned int tx = threadIdx.x;
     const unsigned int ty = threadIdx.y;
@@ -118,18 +117,18 @@ __device__ inline void current_update_neumaan_density_velocity(
         real fi = s_pop[idxPopBlock(xm1, ty, tz, q)];
 
         rho_i += fi;
-        jx_i += fi * d_cx[q];
-        jy_i += fi * d_cy[q];
-        jz_i += fi * d_cz[q];
+        jx_i += fi * toReal(d_cx[q]);
+        jy_i += fi * toReal(d_cy[q]);
+        jz_i += fi * toReal(d_cz[q]);
 
         if constexpr (CONVECTIVE_OUTLET)
         {
             real fb = s_pop[idxPopBlock(tx, ty, tz, q)];
 
             rho_b += fb;
-            jx_b += fb * d_cx[q];
-            jy_b += fb * d_cy[q];
-            jz_b += fb * d_cz[q];
+            jx_b += fb * toReal(d_cx[q]);
+            jy_b += fb * toReal(d_cy[q]);
+            jz_b += fb * toReal(d_cz[q]);
         }
     }
     const real inv_rhoi = toReal(1) / rho_i;
@@ -139,8 +138,7 @@ __device__ inline void current_update_neumaan_density_velocity(
 
     if constexpr (CONVECTIVE_OUTLET)
     {
-        const real UC = U_MAX;
-        // real UC = fmin(fabs(jx_i), 0.9);
+        const real UC = d_UCONV;
 
         const real inv_rhob = toReal(1) / rho_b;
         jx_b *= inv_rhob;
@@ -184,15 +182,15 @@ __device__ inline void update_neumaan_density_velocity(nodeVar dMom, real &rho, 
         const real uzb = dMom.uz[idx];
 
         // const real Uc = sqrt(uxi * uxi);
-        const real Uc = U_MAX;
+        const real Uc = d_UCONV;
         rho = (1.0 - Uc) * rhob + Uc * rhoi;
+        // rho = RHO_0;
         ux = (1.0 - Uc) * uxb + Uc * uxi;
         uy = (1.0 - Uc) * uyb + Uc * uyi;
         uz = (1.0 - Uc) * uzb + Uc * uzi;
     }
     else
     {
-        idx = IDX_BLOCK(threadIdx.x - 1, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z);
         rho = rhoi;
         // rho = RHO_0;
         ux = uxi;

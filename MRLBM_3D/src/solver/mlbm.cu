@@ -15,6 +15,71 @@ __device__ void inline moment_collision(const real ux, const real uy, const real
     myz = omega_m1 * myz + omegaVar * uy * uz;
 }
 
+__global__ void outlet_avg_ux(const real *__restrict__ ux)
+{
+    __shared__ real s_sum[256];
+
+    int tid = blockIdx.x * blockDim.x + threadIdx.x;
+    int lane = threadIdx.x;
+
+    real local_sum = 0.0;
+    const int x = NX - 2;
+
+    while (tid < N_OUTLET)
+    {
+        int y = tid % NY;
+        int z = tid / NY;
+
+        size_t idx = IDX_BLOCK(x % BLOCK_THREAD_X,
+                               y % BLOCK_THREAD_Y,
+                               z % BLOCK_THREAD_Z,
+                               x / BLOCK_THREAD_X,
+                               y / BLOCK_THREAD_Y,
+                               z / BLOCK_THREAD_Z);
+
+        local_sum += ux[idx];
+        tid += blockDim.x * gridDim.x;
+
+        if (tid == 0)
+            printf("ux = %f\n", ux[idx]);
+    }
+
+    s_sum[lane] = local_sum;
+    __syncthreads();
+
+    for (int s = blockDim.x / 2; s > 0; s >>= 1)
+    {
+        if (lane < s)
+            s_sum[lane] += s_sum[lane + s];
+
+        __syncthreads();
+    }
+
+    if (lane == 0)
+        atomicAdd(&d_sumUx, s_sum[0]);
+}
+
+void compute_convective_outlet_velocity(const real *d_ux)
+{
+#if CONVECTIVE_OUTLET
+
+    real zero = 0.0;
+    checkCudaErrors(cudaMemcpyToSymbol(d_sumUx, &zero, sizeof(real)));
+
+    int threads = 256;
+    int blocks = (N_OUTLET + threads - 1) / threads;
+
+    outlet_avg_ux<<<blocks, threads>>>(d_ux);
+    checkKernelExecution();
+
+    checkCudaErrors(cudaMemcpyFromSymbol(&h_sumUx, d_sumUx, sizeof(real)));
+
+    h_UCONV = h_sumUx / N_OUTLET;
+    checkCudaErrors(cudaMemcpyToSymbol(d_UCONV, &h_UCONV, sizeof(real)));
+
+#endif
+}
+
 __global__ void streaming_and_evaluate_Mom(cylinderVar cylinder, nodeVar dMom,
                                            haloData fHalo, haloData gHalo, const int iter)
 {
@@ -23,15 +88,15 @@ __global__ void streaming_and_evaluate_Mom(cylinderVar cylinder, nodeVar dMom,
     const unsigned int y = threadIdx.y + blockIdx.y * blockDim.y;
     const unsigned int z = threadIdx.z + blockIdx.z * blockDim.z;
 
+    if (x >= NX || y >= NY || z >= NZ)
+        return;
+
     const unsigned int tx = threadIdx.x;
     const unsigned int ty = threadIdx.y;
     const unsigned int tz = threadIdx.z;
     const unsigned int bx = blockIdx.x;
     const unsigned int by = blockIdx.y;
     const unsigned int bz = blockIdx.z;
-
-    if (x >= NX || y >= NY || z >= NZ)
-        return;
 
     __shared__ real s_pop[THREADS_PER_BLOCK * Q]; // allocate populations except stationay population in a block
 
@@ -129,8 +194,6 @@ __global__ void apply_bc_cylinder(const int NB, const nodeType_t NODE_TYPE, cons
     real mxy = dMom.mxy[idx]; // Incoming Moment mxyI
     real mxz = dMom.mxz[idx]; // Incoming Moment mxzI
     real myz = dMom.myz[idx]; // Incoming Moment myzI
-
-    // printf("i: %d, x: %d, y: %d, nodetype: %d \n", i, x, y, nodeType);
 
     if (nodeType >= NODE_TYPE && nodeType < (NODE_TYPE + NB))
     {

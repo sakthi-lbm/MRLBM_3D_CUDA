@@ -112,27 +112,31 @@ __device__ void cylinder_boundary_condition_rotated(const unsigned int x, const 
     const real x2 = xw + toReal(2.0) * delx * unit_nx;
     const real y2 = yw + toReal(2.0) * delx * unit_ny;
 
-    // Interpolation and rotation at fluid points
-    VelocityMoments vm1 = initerpolate_and_rotate(x1, y1, zb, dMom);
-    VelocityMoments vm2 = initerpolate_and_rotate(x2, y2, zb, dMom);
+    real ux_prime, uy_prime, uz_prime;
+    real mxx_prime, myy_prime, mzz_prime, myz_prime;
+    {
+        // Interpolation and rotation at fluid points
+        VelocityMoments vm1 = initerpolate_and_rotate(x1, y1, zb, dMom);
+        VelocityMoments vm2 = initerpolate_and_rotate(x2, y2, zb, dMom);
 
-    // physical wall conditions
-    VelocityMoments vmw;
-    vmw.ux = UX_PRIME;
-    vmw.uy = UY_PRIME;
-    vmw.uz = UZ_PRIME;
-    vmw.mxx = UX_PRIME * UX_PRIME;
-    vmw.myy = UY_PRIME * UY_PRIME;
-    vmw.mzz = UZ_PRIME * UZ_PRIME;
-    vmw.myz = UY_PRIME * UZ_PRIME;
+        // physical wall conditions
+        VelocityMoments vmw;
+        vmw.ux = UX_PRIME;
+        vmw.uy = UY_PRIME;
+        vmw.uz = UZ_PRIME;
+        vmw.mxx = UX_PRIME * UX_PRIME;
+        vmw.myy = UY_PRIME * UY_PRIME;
+        vmw.mzz = UZ_PRIME * UZ_PRIME;
+        vmw.myz = UY_PRIME * UZ_PRIME;
 
-    real ux_prime = extrapolation_quadratic(delta, vmw.ux, vm1.ux, vm2.ux);
-    real uy_prime = extrapolation_quadratic(delta, vmw.uy, vm1.uy, vm2.uy);
-    real uz_prime = extrapolation_quadratic(delta, vmw.uz, vm1.uz, vm2.uz);
-    real mxx_prime = extrapolation_quadratic(delta, vmw.mxx, vm1.mxx, vm2.mxx);
-    real myy_prime = extrapolation_quadratic(delta, vmw.myy, vm1.myy, vm2.myy);
-    real mzz_prime = extrapolation_quadratic(delta, vmw.mzz, vm1.mzz, vm2.mzz);
-    real myz_prime = extrapolation_quadratic(delta, vmw.myz, vm1.myz, vm2.myz);
+        ux_prime = extrapolation_quadratic(delta, vmw.ux, vm1.ux, vm2.ux);
+        uy_prime = extrapolation_quadratic(delta, vmw.uy, vm1.uy, vm2.uy);
+        uz_prime = extrapolation_quadratic(delta, vmw.uz, vm1.uz, vm2.uz);
+        mxx_prime = extrapolation_quadratic(delta, vmw.mxx, vm1.mxx, vm2.mxx);
+        myy_prime = extrapolation_quadratic(delta, vmw.myy, vm1.myy, vm2.myy);
+        mzz_prime = extrapolation_quadratic(delta, vmw.mzz, vm1.mzz, vm2.mzz);
+        myz_prime = extrapolation_quadratic(delta, vmw.myz, vm1.myz, vm2.myz);
+    }
 
     // printf("ux: %.8f, uy: %.8f, uy: %.8f\n", ux, uy, uz);
 
@@ -152,7 +156,9 @@ __device__ void cylinder_boundary_condition_rotated(const unsigned int x, const 
     }
     else if constexpr (MASS_CONSERV == MassBC ::Strong)
     {
-        // numerical_solution_strong_rotated(x, y, cylinder, nodeType, ux_prime, uy_prime, mxx_prime, myy_prime, rhoVar, ux, uy, mxx, myy, mxy, NODE_TYPE);
+        numerical_solution_strong_rotated(unit_nx, unit_ny, cylinder, nodeType, ux_prime, uy_prime, uz_prime,
+                                          mxx_prime, myy_prime, mzz_prime, myz_prime,
+                                          rho, ux, uy, uz, mxx, myy, mzz, mxy, mxz, myz, NODE_TYPE, iter);
     }
     else if constexpr (MASS_CONSERV == MassBC ::Weak)
     {

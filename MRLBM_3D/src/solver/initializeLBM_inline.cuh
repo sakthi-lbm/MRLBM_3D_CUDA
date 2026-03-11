@@ -5,7 +5,7 @@
 
 inline void check_tau()
 {
-    if (TAU <= 0.51 || TAU >= 2.5)
+    if (TAU <= 0.5 || TAU >= 2.5)
     {
         printf("ERROR: Tau out of stable LBM range: tau = %f\n", TAU);
         exit(EXIT_FAILURE);

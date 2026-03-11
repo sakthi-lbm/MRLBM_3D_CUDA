@@ -10,6 +10,19 @@ if [ $# -lt 1 ]; then
 fi
 ID_SIM="$1"
 
+MODE=${2:-release}
+
+if [ "$MODE" = "debug" ]; then
+    echo "🔧 Debug build"
+    FLAGS="-g -G -lineinfo -O0"
+elif [ "$MODE" = "sanitize" ]; then
+    echo "🧪 Sanitizer build"
+    FLAGS="-g -lineinfo -O1"
+else
+    echo "Release build"
+    FLAGS="-O3"
+fi
+
 # Detect GPU compute capability if not manually set
 if [ -z "$CompCap" ]; then
     CompCap=$(nvidia-smi --query-gpu=compute_cap --format=csv,noheader | head -n 1 | tr -d '.')
@@ -28,7 +41,7 @@ rm -f ../*sim_${LT}_sm${CompCap} 2>/dev/null
 # Compile all .cu files inside src/
 nvcc -std=c++17 \
     -gencode arch=compute_${CompCap},code=sm_${CompCap} \
-    -rdc=true -O3 --restrict \
+    -rdc=true $FLAGS --restrict \
     -Xptxas -v \
      -I. \
     -Iinclude \
@@ -41,4 +54,9 @@ nvcc -std=c++17 \
 
 # Run the simulation
 cd ../
-./${ID_SIM}sim_${LT}_sm${CompCap}
+if [ "$MODE" = "sanitize" ]; then
+    echo "Running with CUDA sanitizer"
+    compute-sanitizer --tool memcheck --show-backtrace ./${ID_SIM}sim_${LT}_sm${CompCap}
+else
+    ./${ID_SIM}sim_${LT}_sm${CompCap}
+fi
