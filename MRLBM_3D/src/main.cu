@@ -6,6 +6,7 @@
 
 int main()
 {
+    //==================================== INITIALIZATION =====================================
     gpu_properties();
     create_output_directory();
     write_master_pvd();
@@ -19,6 +20,7 @@ int main()
 
     nodeVar h_fMom;
     nodeVar d_fMom;
+    haloData h_fHalo;
     haloData fHalo_interface;
     haloData gHalo_interface;
 
@@ -27,7 +29,7 @@ int main()
 
     allocateHostMemory(h_fMom);
     allocateDeviceMemory(d_fMom);
-    allocateHaloInterfaceMemory(fHalo_interface, gHalo_interface);
+    allocateHaloInterfaceMemory(h_fHalo, fHalo_interface, gHalo_interface);
 
     initialize_domain(d_fMom, h_fMom, gHalo_interface, h_cylinder, d_cylinder);
 
@@ -38,28 +40,40 @@ int main()
     writeSimInfo();
     checkCudaErrors(cudaMemcpyToSymbol(d_UCONV, &h_UCONV, sizeof(real)));
 
-    for (int iter = 0; iter <= MAX_ITER; iter++)
+    //==================================== CHECKPOINT RESTART =====================================
+    int start_iter = 0;
+    if (RESTART)
     {
+        start_iter = read_checkpoint(h_fMom, h_fHalo);
+        std::cout << "Restarting from iteration " << start_iter << std::endl;
+        copyMomentsHostToDevice(d_fMom, h_fMom);
+        copyHaloHostToDevice(fHalo_interface, h_fHalo);
+    }
+
+    //==================================== MAIN LOOP =====================================
+    for (int iter = start_iter; iter <= MAX_ITER; iter++)
+    {
+        //------------------------------------------Streaming ---------------------------------------------------------
         streaming_and_evaluate_Mom<<<grid, block>>>(d_cylinder, d_fMom, fHalo_interface, gHalo_interface, iter);
         checkKernelExecution();
-
         // compute_convective_outlet_velocity(d_fMom.ux);
-
 #ifdef CYLINDER
-        constexpr size_t CYLINDER_NODES = 256;
-        constexpr dim3 boundary_block(CYLINDER_NODES);
+        launch_incoming_force_kernal(d_fMom, d_cylinder, iter);
 
-        const size_t CYLINDER_GRID_BLOCK = (NB + CYLINDER_NODES - 1) / CYLINDER_NODES;
+        constexpr dim3 boundary_block(BLOCK_NODES);
+        const size_t CYLINDER_GRID_BLOCK = (NB + BLOCK_NODES - 1) / BLOCK_NODES;
         const dim3 boundary_grid(CYLINDER_GRID_BLOCK);
-
         apply_bc_cylinder<<<boundary_grid, boundary_block>>>(NB, INNER_NODE, d_cylinder, d_fMom,
                                                              UXP_CYLINDER, UYP_CYLINDER, UZP_CYLINDER,
                                                              D_WALL, iter);
         checkKernelExecution();
 #endif
 
+        //------------------------------------------Collision ---------------------------------------------------------
         collision_halo_update<<<grid, block>>>(d_cylinder, d_fMom, fHalo_interface, gHalo_interface, iter);
         checkKernelExecution();
+
+        launch_outgoing_force_kernal(d_fMom, d_cylinder, iter);
 
         if (iter % MACR_SAVE == 0)
         {
@@ -73,15 +87,23 @@ int main()
         }
 
         swapHaloInterfaces(fHalo_interface, gHalo_interface);
-    }
 
+        //------------------------------------------Saving checkpoint ---------------------------------------------------------
+        if (iter > start_iter && (iter % CHECKPOINT_SAVE == 0))
+        {
+            copyMomentsDeviceToHost(h_fMom, d_fMom);
+            copyHaloDeviceToHost(h_fHalo, fHalo_interface);
+            write_checkpoint(h_fMom, h_fHalo, iter + 1);
+        }
+    }
+    //================================================ MAIN LOOP ENDS ================================================
     calculate_mlups(sim_start_time, end_time, MAX_ITER, mlups);
     std::cout << "GLOBAL MLUPS: " << mlups << std::endl;
 
     freeCylinderMemory(h_cylinder, d_cylinder);
     freeHostMemory(h_fMom);
     freeDeviceMemory(d_fMom);
-    freeHaloInterfaceMemory(fHalo_interface, gHalo_interface);
+    freeHaloInterfaceMemory(h_fHalo, fHalo_interface, gHalo_interface);
 
     return 0;
 }

@@ -10,6 +10,8 @@ if [ $# -lt 1 ]; then
 fi
 ID_SIM="$1"
 
+
+
 MODE=${2:-release}
 
 if [ "$MODE" = "debug" ]; then
@@ -53,10 +55,12 @@ nvcc -std=c++17 \
     -o ../${ID_SIM}sim_${LT}_sm${CompCap}
 
 # Run the simulation
+LOGFILE="run_${ID_SIM}_${MODE}.log"
+
 cd ../
 if [ "$MODE" = "sanitize" ]; then
     echo "Running with CUDA sanitizer"
-    compute-sanitizer --tool memcheck --show-backtrace ./${ID_SIM}sim_${LT}_sm${CompCap}
+    compute-sanitizer --tool memcheck --show-backtrace ./${ID_SIM}sim_${LT}_sm${CompCap} 2>&1 | tee ${LOGFILE}
 else
-    ./${ID_SIM}sim_${LT}_sm${CompCap}
+    ./${ID_SIM}sim_${LT}_sm${CompCap} 2>&1 | tee ${LOGFILE}
 fi

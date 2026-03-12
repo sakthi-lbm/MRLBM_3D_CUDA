@@ -24,6 +24,11 @@ __constant__ int d_NB_SOLID;
 __device__ real d_sumUx;
 __device__ real d_UCONV;
 
+__device__ real d_TotalFx;
+__device__ real d_TotalFy;
+__device__ real d_TotalFz;
+__device__ real d_Totalm;
+
 #endif
 
 void initialize_domain(nodeVar &dMom, nodeVar &hMom, haloData &gHalo, cylinderVar &h_cylinder, cylinderVar &d_cylinder)
@@ -37,11 +42,12 @@ void initialize_domain(nodeVar &dMom, nodeVar &hMom, haloData &gHalo, cylinderVa
     triangular ? initialize_cylinder_nodeType_triangular(hMom) : initialize_cylinder_nodeType_staircase(hMom);
     write_geometry_files(hMom);
 
-    allocateCylinderMemory(h_cylinder, d_cylinder, NB);
+    allocateCylinderMemory(h_cylinder, d_cylinder);
     buildBoundaryList_updateBoundaryNodeType(hMom, h_cylinder);
 
-    find_incomings_outgoings_cylinder(hMom, h_cylinder, NB);
-    copyHostToDevice(d_cylinder, h_cylinder, NB);
+    find_incomings_outgoings(hMom, h_cylinder.boundaryList, h_cylinder.incomingMask, h_cylinder.outgoingMask, NB);
+    find_incomings_outgoings(hMom, h_cylinder.bcfluidList, h_cylinder.incomingMask_bcfluid, h_cylinder.outgoingMask_bcfluid, NB_FLUID);
+    copyHostToDevice(d_cylinder, h_cylinder);
 #endif
     initialize_host_device_constants();
 }

@@ -35,7 +35,8 @@ inline void allocateDeviceMemory(nodeVar &d_fMom)
     checkCudaErrors(cudaMalloc(&(d_fMom.myz), NUM_LBM_NODES * sizeof(real)));
 }
 
-inline void allocateHaloInterfaceMemory(haloData &fHalo_interface, haloData &gHalo_interface)
+inline void allocateHaloInterfaceMemory(haloData &h_fHalo_interface, haloData &fHalo_interface,
+                                        haloData &gHalo_interface)
 {
     checkCudaErrors(cudaMalloc(&fHalo_interface.X_WEST, NUM_HALO_FACE_YZ * QF * sizeof(real)));  // x = 0
     checkCudaErrors(cudaMalloc(&fHalo_interface.X_EAST, NUM_HALO_FACE_YZ * QF * sizeof(real)));  // x = NX
@@ -50,6 +51,13 @@ inline void allocateHaloInterfaceMemory(haloData &fHalo_interface, haloData &gHa
     checkCudaErrors(cudaMalloc(&gHalo_interface.Y_NORTH, NUM_HALO_FACE_XZ * QF * sizeof(real))); // y = NY
     checkCudaErrors(cudaMalloc(&gHalo_interface.Z_BACK, NUM_HALO_FACE_XY * QF * sizeof(real)));  // z = 0
     checkCudaErrors(cudaMalloc(&gHalo_interface.Z_FRONT, NUM_HALO_FACE_XY * QF * sizeof(real))); // z = NZ
+
+    checkCudaErrors(cudaMallocHost(&h_fHalo_interface.X_WEST, NUM_HALO_FACE_YZ * QF * sizeof(real)));  // x = 0
+    checkCudaErrors(cudaMallocHost(&h_fHalo_interface.X_EAST, NUM_HALO_FACE_YZ * QF * sizeof(real)));  // x = NX
+    checkCudaErrors(cudaMallocHost(&h_fHalo_interface.Y_SOUTH, NUM_HALO_FACE_XZ * QF * sizeof(real))); // y = 0
+    checkCudaErrors(cudaMallocHost(&h_fHalo_interface.Y_NORTH, NUM_HALO_FACE_XZ * QF * sizeof(real))); // y = NY
+    checkCudaErrors(cudaMallocHost(&h_fHalo_interface.Z_BACK, NUM_HALO_FACE_XY * QF * sizeof(real)));  // z = 0
+    checkCudaErrors(cudaMallocHost(&h_fHalo_interface.Z_FRONT, NUM_HALO_FACE_XY * QF * sizeof(real))); // z = NZ
 }
 
 __host__ __device__ inline void swapPointers(real *&pt1, real *&pt2)
@@ -76,6 +84,26 @@ void copyHaloInterfaces(haloData &dst, const haloData &src)
     checkCudaErrors(cudaMemcpy(dst.Y_NORTH, src.Y_NORTH, sizeof(real) * NUM_HALO_FACE_XZ * QF, cudaMemcpyDeviceToDevice));
     checkCudaErrors(cudaMemcpy(dst.Z_BACK, src.Z_BACK, sizeof(real) * NUM_HALO_FACE_XY * QF, cudaMemcpyDeviceToDevice));
     checkCudaErrors(cudaMemcpy(dst.Z_FRONT, src.Z_FRONT, sizeof(real) * NUM_HALO_FACE_XY * QF, cudaMemcpyDeviceToDevice));
+}
+
+void copyHaloHostToDevice(haloData &dst, const haloData &src)
+{
+    checkCudaErrors(cudaMemcpy(dst.X_WEST, src.X_WEST, sizeof(real) * NUM_HALO_FACE_YZ * QF, cudaMemcpyHostToDevice));
+    checkCudaErrors(cudaMemcpy(dst.X_EAST, src.X_EAST, sizeof(real) * NUM_HALO_FACE_YZ * QF, cudaMemcpyHostToDevice));
+    checkCudaErrors(cudaMemcpy(dst.Y_SOUTH, src.Y_SOUTH, sizeof(real) * NUM_HALO_FACE_XZ * QF, cudaMemcpyHostToDevice));
+    checkCudaErrors(cudaMemcpy(dst.Y_NORTH, src.Y_NORTH, sizeof(real) * NUM_HALO_FACE_XZ * QF, cudaMemcpyHostToDevice));
+    checkCudaErrors(cudaMemcpy(dst.Z_BACK, src.Z_BACK, sizeof(real) * NUM_HALO_FACE_XY * QF, cudaMemcpyHostToDevice));
+    checkCudaErrors(cudaMemcpy(dst.Z_FRONT, src.Z_FRONT, sizeof(real) * NUM_HALO_FACE_XY * QF, cudaMemcpyHostToDevice));
+}
+
+void copyHaloDeviceToHost(haloData &dst, const haloData &src)
+{
+    checkCudaErrors(cudaMemcpy(dst.X_WEST, src.X_WEST, sizeof(real) * NUM_HALO_FACE_YZ * QF, cudaMemcpyDeviceToHost));
+    checkCudaErrors(cudaMemcpy(dst.X_EAST, src.X_EAST, sizeof(real) * NUM_HALO_FACE_YZ * QF, cudaMemcpyDeviceToHost));
+    checkCudaErrors(cudaMemcpy(dst.Y_SOUTH, src.Y_SOUTH, sizeof(real) * NUM_HALO_FACE_XZ * QF, cudaMemcpyDeviceToHost));
+    checkCudaErrors(cudaMemcpy(dst.Y_NORTH, src.Y_NORTH, sizeof(real) * NUM_HALO_FACE_XZ * QF, cudaMemcpyDeviceToHost));
+    checkCudaErrors(cudaMemcpy(dst.Z_BACK, src.Z_BACK, sizeof(real) * NUM_HALO_FACE_XY * QF, cudaMemcpyDeviceToHost));
+    checkCudaErrors(cudaMemcpy(dst.Z_FRONT, src.Z_FRONT, sizeof(real) * NUM_HALO_FACE_XY * QF, cudaMemcpyDeviceToHost));
 }
 
 // ------------------------Copy host --> Device--------------------------------
@@ -146,7 +174,7 @@ inline void freeDeviceMemory(nodeVar &d_fMom)
     cudaFree(d_fMom.myz);
 }
 
-inline void freeHaloInterfaceMemory(haloData &fHalo_interface, haloData &gHalo_interface)
+inline void freeHaloInterfaceMemory(haloData &h_fHalo_interface, haloData &fHalo_interface, haloData &gHalo_interface)
 {
     cudaFree(fHalo_interface.X_WEST);
     cudaFree(fHalo_interface.X_EAST);
@@ -154,12 +182,20 @@ inline void freeHaloInterfaceMemory(haloData &fHalo_interface, haloData &gHalo_i
     cudaFree(fHalo_interface.Y_NORTH);
     cudaFree(fHalo_interface.Z_BACK);
     cudaFree(fHalo_interface.Z_FRONT);
+
     cudaFree(gHalo_interface.X_WEST);
     cudaFree(gHalo_interface.X_EAST);
     cudaFree(gHalo_interface.Y_SOUTH);
     cudaFree(gHalo_interface.Y_NORTH);
     cudaFree(gHalo_interface.Z_BACK);
     cudaFree(gHalo_interface.Z_FRONT);
+
+    cudaFree(h_fHalo_interface.X_WEST);
+    cudaFree(h_fHalo_interface.X_EAST);
+    cudaFree(h_fHalo_interface.Y_SOUTH);
+    cudaFree(h_fHalo_interface.Y_NORTH);
+    cudaFree(h_fHalo_interface.Z_BACK);
+    cudaFree(h_fHalo_interface.Z_FRONT);
 }
 
 #endif // MAIN_CUH

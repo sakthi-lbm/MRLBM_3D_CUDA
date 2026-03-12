@@ -81,6 +81,7 @@ inline void initialize_nodeType(nodeVar &hMom)
 inline void buildBoundaryList_updateBoundaryNodeType(nodeVar &hMom, cylinderVar &h_cylinder)
 {
     int count = 0;
+    int count2 = 0;
     for (int z = 0; z < NZ; z++)
     {
         for (int y = (LS - 2); y < (LS + D + 2); y++)
@@ -104,6 +105,16 @@ inline void buildBoundaryList_updateBoundaryNodeType(nodeVar &hMom, cylinderVar 
                     h_cylinder.boundaryList[count] = idx;
                     count++;
                 }
+                else if (hMom.nodeType[idx] >= BCFLUID_NODE && hMom.nodeType[idx] < (BCFLUID_NODE + 256))
+                {
+                    if (count2 >= NB_FLUID)
+                    {
+                        printf("ERROR: BcfluidList overflow\n");
+                        exit(EXIT_FAILURE);
+                    }
+                    h_cylinder.bcfluidList[count2] = idx;
+                    count2++;
+                }
             }
         }
     }
@@ -122,7 +133,10 @@ inline void buildBoundaryList_updateBoundaryNodeType(nodeVar &hMom, cylinderVar 
     }
 }
 
-inline void find_incomings_outgoings_cylinder(const nodeVar &hMom, cylinderVar &h_cylinder, const int nb)
+inline void find_incomings_outgoings(const nodeVar &hMom,
+                                     const size_t *boundaryList,
+                                     uint32_t *incomingMaskArray,
+                                     uint32_t *outgoingMaskArray, const int nb)
 {
     if (nb <= 0)
         return;
@@ -132,7 +146,7 @@ inline void find_incomings_outgoings_cylinder(const nodeVar &hMom, cylinderVar &
         uint32_t incomingMask = (1u << Q) - 1;
         uint32_t outgoingMask = 0;
 
-        const size_t global_index = h_cylinder.boundaryList[i];
+        const size_t global_index = boundaryList[i];
         unsigned int x, y, z;
         GlobalIndexToXYZ(global_index, x, y, z);
 
@@ -157,19 +171,19 @@ inline void find_incomings_outgoings_cylinder(const nodeVar &hMom, cylinderVar &
                 outgoingMask |= (1u << q);
             }
         }
-        h_cylinder.incomingMask[i] = incomingMask;
-        h_cylinder.outgoingMask[i] = outgoingMask;
+        incomingMaskArray[i] = incomingMask;
+        outgoingMaskArray[i] = outgoingMask;
 
         // // debuggig
         // if (z == 0)
         // {
-        //     std::cout << "Boundary node " << i << " at (x, y,z) = (" << x << ", " << y << ")\n";
+        //     std::cout << "node " << i << " at (x, y,z) = (" << x << ", " << y << ")\n";
         //     for (int q = 0; q < Q; q++)
         //     {
         //         binary_t incomingMaskBit = (incomingMask >> q) & 1u;
         //         binary_t outgoingMaskBit = (outgoingMask >> q) & 1u;
 
-        //         std::cout << " q=" << q
+        //         std::cout << " q=" << q << " nodetag=" << node[0]
         //                   << " incomingMask=" << static_cast<int>(incomingMaskBit)
         //                   << " outgoingMask=" << static_cast<int>(outgoingMaskBit)
         //                   << "\n";

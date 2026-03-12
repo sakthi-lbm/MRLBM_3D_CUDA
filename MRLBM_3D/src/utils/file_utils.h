@@ -37,6 +37,13 @@ inline void create_output_directory()
     cmd += Path;
     const int j = system(cmd.c_str());
     static_cast<void>(j);
+
+    Path = construct_path(PATH_FILES, ID_SIM, "checkpoint");
+    cmd = "mkdir -p ";
+    cmd += Path;
+    const int k = system(cmd.c_str());
+    static_cast<void>(k);
+
     return;
 
 #endif

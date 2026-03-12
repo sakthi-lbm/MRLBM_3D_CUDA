@@ -1,7 +1,7 @@
 #ifndef CYLINDERLBM_H
 #define CYLINDERLBM_H
 
-#include "initializeLBM_inline.cuh"
+#include "../statistics/stat_header.cuh"
 #include "extrapolation_utils.cuh"
 #include "cylinder_helpers.cuh"
 
