@@ -845,4 +845,167 @@ __device__ inline void boundary_condition(nodeType_t nodeType, nodeVar dMom, rea
     }
 }
 
+__device__ inline void fluid_boundary_condition(const nodeType_t nodeTag, const cylinderVar &cylinder,
+                                                const real *pop, real &rho, real &ux, real &uy, real &uz,
+                                                real &mxx, real &myy, real &mzz,
+                                                real &mxy, real &mxz, real &myz)
+{
+    real rhoI = toReal(0.0);
+    real uxI = toReal(0.0);
+    real uyI = toReal(0.0);
+    real uzI = toReal(0.0);
+    real mxxI = toReal(0.0);
+    real myyI = toReal(0.0);
+    real mzzI = toReal(0.0);
+    real mxyI = toReal(0.0);
+    real mxzI = toReal(0.0);
+    real myzI = toReal(0.0);
+
+    uint32_t incoming_mask = cylinder.incomingMask_bcfluid[nodeTag];
+    while (incoming_mask)
+    {
+        const int q = __ffs(incoming_mask) - 1;
+        incoming_mask &= incoming_mask - 1;
+
+        const real cx = toReal(d_cx[q]);
+        const real cy = toReal(d_cy[q]);
+        const real cz = toReal(d_cz[q]);
+
+        const real Hxx = cx * cx - cs2;
+        const real Hyy = cy * cy - cs2;
+        const real Hzz = cz * cz - cs2;
+        const real Hxy = cx * cy;
+        const real Hxz = cx * cz;
+        const real Hyz = cy * cz;
+
+        const real fq = pop[q];
+        rhoI += fq;
+        uxI += fq * cx;
+        uyI += fq * cy;
+        uzI += fq * cz;
+        mxxI += fq * Hxx;
+        myyI += fq * Hyy;
+        mzzI += fq * Hzz;
+        mxyI += fq * Hxy;
+        mxzI += fq * Hxz;
+        myzI += fq * Hyz;
+    }
+
+    switch (nodeTag)
+    {
+    case 17:
+    {
+        if constexpr (BCF_MASS_CONSERV == MassBC::Strong)
+        {
+            const real a = -9996 - 206 * OMEGA;
+            const real b = -6 * rhoI * (12 * mxxI * (-17 + 20 * OMEGA) - 17 * (102 + 36 * mxyI + 12 * myyI - 5 * uxI - 5 * uyI) + OMEGA * (720 * mxyI + 240 * myyI + 53 * (uxI + uyI)));
+            const real c = 3 * OMEGA * rhoI * rhoI * (45 * mxxI * mxxI + 405 * mxyI * mxyI + 45 * myyI * myyI + 345 * myyI * uxI + 589 * uxI * uxI + 345 * myyI * uyI + 1467 * uxI * uyI + 589 * uyI * uyI + 45 * mxyI * (6 * myyI + 23 * (uxI + uyI)) + 15 * mxxI * (18 * mxyI + 6 * myyI + 23 * (uxI + uyI)));
+
+            const real disc = b * b - 4.0 * a * c;
+            const real rho1 = (-b + sqrt(disc)) / (2.0 * a);
+            const real rho2 = (-b - sqrt(disc)) / (2.0 * a);
+            rho = (rho1 > 0.0 && fabs(rho1 - rhoI) < fabs(rho2 - rhoI)) ? rho1 : rho2;
+        }
+        else if constexpr (BCF_MASS_CONSERV == MassBC::Equilibrium)
+        {
+        }
+        ux = (3 * mxxI * rhoI + 9 * mxyI * rhoI + 3 * myyI * rhoI + 20 * rhoI * uxI + 3 * rhoI * uyI + rho) / (17 * rho);
+        uy = (3 * mxxI * rhoI + 9 * mxyI * rhoI + 3 * myyI * rhoI + 3 * rhoI * uxI + 20 * rhoI * uyI + rho) / (17 * rho);
+        uz = (3 * rhoI * (mxzI + myzI + 10 * uzI)) / (29 * rho);
+        mxx = (57 * mxxI * rhoI + 18 * mxyI * rhoI + 6 * myyI * rhoI + 6 * rhoI * uxI + 6 * rhoI * uyI + 2 * rho) / (51 * rho);
+        myy = (6 * mxxI * rhoI + 18 * mxyI * rhoI + 57 * myyI * rhoI + 6 * rhoI * uxI + 6 * rhoI * uyI + 2 * rho) / (51 * rho);
+        mzz = (36 * mzzI * rhoI) / (35 * rho);
+        mxy = (3 * mxxI * rhoI + 26 * mxyI * rhoI + 3 * myyI * rhoI + 3 * rhoI * uxI + 3 * rhoI * uyI + rho) / (17 * rho);
+        mxz = (rhoI * (32 * mxzI + 3 * myzI + uzI)) / (29 * rho);
+        myz = (rhoI * (3 * mxzI + 32 * myzI + uzI)) / (29 * rho);
+
+        break;
+    }
+    case 34:
+    {
+        if constexpr (BCF_MASS_CONSERV == MassBC::Strong)
+        {
+            const real a = 9996 + 206 * OMEGA;
+            const real b = 6 * rhoI * (mxyI * (612 - 720 * OMEGA) + 240 * myyI * OMEGA + 12 * mxxI * (-17 + 20 * OMEGA) - 17 * (102 + 12 * myyI + 5 * uxI - 5 * uyI) + 53 * OMEGA * (-uxI + uyI));
+            const real c = -3 * OMEGA * rhoI * rhoI * (45 * mxxI * mxxI + 405 * mxyI * mxyI + 45 * myyI * myyI - 345 * myyI * uxI + 589 * uxI * uxI + 345 * myyI * uyI - 1467 * uxI * uyI + 589 * uyI * uyI - 45 * mxyI * (6 * myyI - 23 * uxI + 23 * uyI) + 15 * mxxI * (-18 * mxyI + 6 * myyI - 23 * uxI + 23 * uyI));
+
+            const real disc = b * b - 4.0 * a * c;
+            const real rho1 = (-b + sqrt(disc)) / (2.0 * a);
+            const real rho2 = (-b - sqrt(disc)) / (2.0 * a);
+            rho = (rho1 > 0.0 && fabs(rho1 - rhoI) < fabs(rho2 - rhoI)) ? rho1 : rho2;
+        }
+        else if constexpr (BCF_MASS_CONSERV == MassBC::Equilibrium)
+        {
+        }
+        ux = -(3 * mxxI * rhoI - 9 * mxyI * rhoI + 3 * myyI * rhoI - 20 * rhoI * uxI + 3 * rhoI * uyI + rho) / (17 * rho);
+        uy = (3 * mxxI * rhoI - 9 * mxyI * rhoI + 3 * myyI * rhoI - 3 * rhoI * uxI + 20 * rhoI * uyI + rho) / (17 * rho);
+        uz = (3 * rhoI * (-mxzI + myzI + 10 * uzI)) / (29 * rho);
+        mxx = (57 * mxxI * rhoI - 18 * mxyI * rhoI + 6 * myyI * rhoI - 6 * rhoI * uxI + 6 * rhoI * uyI + 2 * rho) / (51 * rho);
+        myy = (6 * mxxI * rhoI - 18 * mxyI * rhoI + 57 * myyI * rhoI - 6 * rhoI * uxI + 6 * rhoI * uyI + 2 * rho) / (51 * rho);
+        mzz = (36 * mzzI * rhoI) / (35 * rho);
+        mxy = -(3 * mxxI * rhoI - 26 * mxyI * rhoI + 3 * myyI * rhoI - 3 * rhoI * uxI + 3 * rhoI * uyI + rho) / (17 * rho);
+        mxz = (rhoI * (32 * mxzI - 3 * myzI - uzI)) / (29 * rho);
+        myz = (rhoI * (-3 * mxzI + 32 * myzI + uzI)) / (29 * rho);
+
+        break;
+    }
+    case 68:
+    {
+        if constexpr (BCF_MASS_CONSERV == MassBC::Strong)
+        {
+            const real a = 9996 + 206 * OMEGA;
+            const real b = 6 * rhoI * (mxyI * (612 - 720 * OMEGA) + 240 * myyI * OMEGA + 12 * mxxI * (-17 + 20 * OMEGA) + 53 * OMEGA * (uxI - uyI) - 17 * (102 + 12 * myyI - 5 * uxI + 5 * uyI));
+            const real c = -3 * OMEGA * rhoI * rhoI * (45 * mxxI * mxxI + 405 * mxyI * mxyI + 45 * myyI * myyI + 345 * myyI * uxI + 589 * uxI * uxI - 45 * mxyI * (6 * myyI + 23 * uxI - 23 * uyI) + 15 * mxxI * (-18 * mxyI + 6 * myyI + 23 * uxI - 23 * uyI) - 345 * myyI * uyI - 1467 * uxI * uyI + 589 * uyI * uyI);
+
+            const real disc = b * b - 4.0 * a * c;
+            const real rho1 = (-b + sqrt(disc)) / (2.0 * a);
+            const real rho2 = (-b - sqrt(disc)) / (2.0 * a);
+            rho = (rho1 > 0.0 && fabs(rho1 - rhoI) < fabs(rho2 - rhoI)) ? rho1 : rho2;
+        }
+        else if constexpr (BCF_MASS_CONSERV == MassBC::Equilibrium)
+        {
+        }
+        ux = (3 * mxxI * rhoI - 9 * mxyI * rhoI + 3 * myyI * rhoI + 20 * rhoI * uxI - 3 * rhoI * uyI + rho) / (17 * rho);
+        uy = -(3 * mxxI * rhoI - 9 * mxyI * rhoI + 3 * myyI * rhoI + 3 * rhoI * uxI - 20 * rhoI * uyI + rho) / (17 * rho);
+        uz = (3 * rhoI * (mxzI - myzI + 10 * uzI)) / (29 * rho);
+        mxx = (57 * mxxI * rhoI - 18 * mxyI * rhoI + 6 * myyI * rhoI + 6 * rhoI * uxI - 6 * rhoI * uyI + 2 * rho) / (51 * rho);
+        myy = (6 * mxxI * rhoI - 18 * mxyI * rhoI + 57 * myyI * rhoI + 6 * rhoI * uxI - 6 * rhoI * uyI + 2 * rho) / (51 * rho);
+        mzz = (36 * mzzI * rhoI) / (35 * rho);
+        mxy = -(3 * mxxI * rhoI - 26 * mxyI * rhoI + 3 * myyI * rhoI + 3 * rhoI * uxI - 3 * rhoI * uyI + rho) / (17 * rho);
+        mxz = (rhoI * (32 * mxzI - 3 * myzI + uzI)) / (29 * rho);
+        myz = -(rhoI * (3 * mxzI - 32 * myzI + uzI)) / (29 * rho);
+
+        break;
+    }
+    case 136:
+    {
+        if constexpr (BCF_MASS_CONSERV == MassBC::Strong)
+        {
+            const real a = -9996 - 206 * OMEGA;
+            const real b = -6 * rhoI * (12 * mxxI * (-17 + 20 * OMEGA) - 17 * (102 + 36 * mxyI + 12 * myyI + 5 * uxI + 5 * uyI) + OMEGA * (720 * mxyI + 240 * myyI - 53 * (uxI + uyI)));
+            const real c = 3 * OMEGA * rhoI * rhoI * (45 * mxxI * mxxI + 405 * mxyI * mxyI + 45 * myyI * myyI - 345 * myyI * uxI + 589 * uxI * uxI - 345 * myyI * uyI + 1467 * uxI * uyI + 589 * uyI * uyI + 45 * mxyI * (6 * myyI - 23 * (uxI + uyI)) + 15 * mxxI * (18 * mxyI + 6 * myyI - 23 * (uxI + uyI)));
+
+            const real disc = b * b - 4.0 * a * c;
+            const real rho1 = (-b + sqrt(disc)) / (2.0 * a);
+            const real rho2 = (-b - sqrt(disc)) / (2.0 * a);
+            rho = (rho1 > 0.0 && fabs(rho1 - rhoI) < fabs(rho2 - rhoI)) ? rho1 : rho2;
+        }
+        else if constexpr (BCF_MASS_CONSERV == MassBC::Equilibrium)
+        {
+        }
+        ux = -(3 * mxxI * rhoI + 9 * mxyI * rhoI + 3 * myyI * rhoI - 20 * rhoI * uxI - 3 * rhoI * uyI + rho) / (17 * rho);
+        uy = -(3 * mxxI * rhoI + 9 * mxyI * rhoI + 3 * myyI * rhoI - 3 * rhoI * uxI - 20 * rhoI * uyI + rho) / (17 * rho);
+        uz = (-3 * rhoI * (mxzI + myzI - 10 * uzI)) / (29 * rho);
+        mxx = (57 * mxxI * rhoI + 18 * mxyI * rhoI + 6 * myyI * rhoI - 6 * rhoI * uxI - 6 * rhoI * uyI + 2 * rho) / (51 * rho);
+        myy = (6 * mxxI * rhoI + 18 * mxyI * rhoI + 57 * myyI * rhoI - 6 * rhoI * uxI - 6 * rhoI * uyI + 2 * rho) / (51 * rho);
+        mzz = (36 * mzzI * rhoI) / (35 * rho);
+        mxy = (3 * mxxI * rhoI + 26 * mxyI * rhoI + 3 * myyI * rhoI - 3 * rhoI * uxI - 3 * rhoI * uyI + rho) / (17 * rho);
+        mxz = (rhoI * (32 * mxzI + 3 * myzI - uzI)) / (29 * rho);
+        myz = (rhoI * (3 * mxzI + 32 * myzI - uzI)) / (29 * rho);
+
+        break;
+    }
+    }
+}
+
 #endif // BOUDARIES_H
