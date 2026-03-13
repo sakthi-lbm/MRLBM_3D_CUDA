@@ -55,7 +55,8 @@ nvcc -std=c++17 \
     -o ../${ID_SIM}sim_${LT}_sm${CompCap}
 
 # Run the simulation
-LOGFILE="run_${ID_SIM}_${MODE}.log"
+TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+LOGFILE="log_run_${ID_SIM}_${MODE}_${TIMESTAMP}.log"
 
 cd ../
 if [ "$MODE" = "sanitize" ]; then

@@ -24,27 +24,8 @@ int read_checkpoint(nodeVar &hMom, haloData &fHalo)
 
     file.read((char *)&iter, sizeof(int));
 
-    file.read((char *)hMom.rho, sizeof(real) * NUM_LBM_NODES);
-    file.read((char *)hMom.ux, sizeof(real) * NUM_LBM_NODES);
-    file.read((char *)hMom.uy, sizeof(real) * NUM_LBM_NODES);
-    file.read((char *)hMom.uz, sizeof(real) * NUM_LBM_NODES);
-
-    file.read((char *)hMom.mxx, sizeof(real) * NUM_LBM_NODES);
-    file.read((char *)hMom.myy, sizeof(real) * NUM_LBM_NODES);
-    file.read((char *)hMom.mzz, sizeof(real) * NUM_LBM_NODES);
-
-    file.read((char *)hMom.mxy, sizeof(real) * NUM_LBM_NODES);
-    file.read((char *)hMom.mxz, sizeof(real) * NUM_LBM_NODES);
-    file.read((char *)hMom.myz, sizeof(real) * NUM_LBM_NODES);
-
-    file.read((char *)fHalo.X_WEST, sizeof(real) * NUM_HALO_FACE_YZ * QF);
-    file.read((char *)fHalo.X_EAST, sizeof(real) * NUM_HALO_FACE_YZ * QF);
-
-    file.read((char *)fHalo.Y_SOUTH, sizeof(real) * NUM_HALO_FACE_XZ * QF);
-    file.read((char *)fHalo.Y_NORTH, sizeof(real) * NUM_HALO_FACE_XZ * QF);
-
-    file.read((char *)fHalo.Z_BACK, sizeof(real) * NUM_HALO_FACE_XY * QF);
-    file.read((char *)fHalo.Z_FRONT, sizeof(real) * NUM_HALO_FACE_XY * QF);
+    read_moments(file, hMom);
+    read_halo(file, fHalo);
 
     file.close();
 
@@ -67,6 +48,22 @@ void write_moments(std::ofstream &file, nodeVar &hMom)
     file.write((char *)hMom.myz, sizeof(real) * NUM_LBM_NODES);
 }
 
+void read_moments(std::ifstream &file, nodeVar &hMom)
+{
+    file.read((char *)hMom.rho, sizeof(real) * NUM_LBM_NODES);
+    file.read((char *)hMom.ux, sizeof(real) * NUM_LBM_NODES);
+    file.read((char *)hMom.uy, sizeof(real) * NUM_LBM_NODES);
+    file.read((char *)hMom.uz, sizeof(real) * NUM_LBM_NODES);
+
+    file.read((char *)hMom.mxx, sizeof(real) * NUM_LBM_NODES);
+    file.read((char *)hMom.myy, sizeof(real) * NUM_LBM_NODES);
+    file.read((char *)hMom.mzz, sizeof(real) * NUM_LBM_NODES);
+
+    file.read((char *)hMom.mxy, sizeof(real) * NUM_LBM_NODES);
+    file.read((char *)hMom.mxz, sizeof(real) * NUM_LBM_NODES);
+    file.read((char *)hMom.myz, sizeof(real) * NUM_LBM_NODES);
+}
+
 void write_halo(std::ofstream &file, haloData &fHalo)
 {
     file.write((char *)fHalo.X_WEST, sizeof(real) * NUM_HALO_FACE_YZ * QF);
@@ -77,4 +74,16 @@ void write_halo(std::ofstream &file, haloData &fHalo)
 
     file.write((char *)fHalo.Z_BACK, sizeof(real) * NUM_HALO_FACE_XY * QF);
     file.write((char *)fHalo.Z_FRONT, sizeof(real) * NUM_HALO_FACE_XY * QF);
+}
+
+void read_halo(std::ifstream &file, haloData &fHalo)
+{
+    file.read((char *)fHalo.X_WEST, sizeof(real) * NUM_HALO_FACE_YZ * QF);
+    file.read((char *)fHalo.X_EAST, sizeof(real) * NUM_HALO_FACE_YZ * QF);
+
+    file.read((char *)fHalo.Y_SOUTH, sizeof(real) * NUM_HALO_FACE_XZ * QF);
+    file.read((char *)fHalo.Y_NORTH, sizeof(real) * NUM_HALO_FACE_XZ * QF);
+
+    file.read((char *)fHalo.Z_BACK, sizeof(real) * NUM_HALO_FACE_XY * QF);
+    file.read((char *)fHalo.Z_FRONT, sizeof(real) * NUM_HALO_FACE_XY * QF);
 }
