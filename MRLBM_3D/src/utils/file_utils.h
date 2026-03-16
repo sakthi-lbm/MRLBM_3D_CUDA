@@ -92,7 +92,6 @@ inline std::string getSimInfoString()
     out << "----------------------------- CYLINDER properties -----------------------------\n";
     out << std::setw(labelWidth) << "Stair-case" << " : " << !triangular << "\n";
     out << std::setw(labelWidth) << "Triangular" << " : " << triangular << "\n";
-    out << std::setw(labelWidth) << "Rotated" << " : " << rotated_coordinates << "\n";
     out << std::setw(labelWidth) << "Diameter" << " : " << D << "\n";
     out << std::setw(labelWidth) << "Radius" << " : " << R << "\n";
     out << std::setw(labelWidth) << "Center xc" << " : " << XC << "\n";

@@ -15,15 +15,14 @@
 #define CONVECTIVE_OUTLET 1
 
 constexpr bool NEUMANN_CURRENT_UPDATE = false;
-constexpr bool rotated_coordinates = true;
 constexpr bool triangular = true;
 
 constexpr MassBC MASS_CONSERV = MassBC::Strong;
-constexpr MassBC BCF_MASS_CONSERV = MassBC::Equilibrium;
+constexpr MassBC BCF_MASS_CONSERV = MassBC::Strong;
 
 constexpr int BLOCK_SIZE = 16; // Maxmum block based on the register load
 
-constexpr int D = 16;    // Diameter of the cylinder
+constexpr int D = 32;    // Diameter of the cylinder
 constexpr int R = D / 2; // radius of the cylinder
 constexpr real D_WALL = toReal(D);
 constexpr real R_WALL = 0.5 * D_WALL;

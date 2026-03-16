@@ -44,7 +44,6 @@ rm -f ../*sim_${LT}_sm${CompCap} 2>/dev/null
 nvcc -std=c++17 \
     -gencode arch=compute_${CompCap},code=sm_${CompCap} \
     -rdc=true $FLAGS --restrict \
-    -Xptxas -v \
      -I. \
     -Iinclude \
     -Isrc \
@@ -54,6 +53,8 @@ nvcc -std=c++17 \
     -lcudadevrt -lcurand \
     -o ../${ID_SIM}sim_${LT}_sm${CompCap}
 
+
+# -Xptxas -v \
 # Run the simulation
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 LOGFILE="log_run_${ID_SIM}_${MODE}_${TIMESTAMP}.log"

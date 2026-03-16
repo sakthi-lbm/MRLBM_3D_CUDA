@@ -148,6 +148,17 @@ __global__ void streaming_and_evaluate_Mom(cylinderVar cylinder, nodeVar dMom,
             const nodeType_t nodeTag = nodeType - INNER_NODE;
             evaluate_incoming_moments_rotated(x, y, z, nodeTag, cylinder, pop, rho, mxx, myy, mzz, mxy, mxz, myz);
         }
+        else if (triangular && nodeType >= (BCFLUID_NODE + 0) && nodeType < (BCFLUID_NODE + 256))
+        {
+            const nodeType_t nodeTag = nodeType - BCFLUID_NODE;
+            fluid_boundary_condition(nodeTag, cylinder, pop, rho, ux, uy, uz, mxx, myy, mzz, mxy, mxz, myz);
+        }
+        else if (!Z_PERIODIC && nodeType >= (BCSOLID_NODE + 0) && nodeType < (BCSOLID_NODE + 256))
+        {
+            const nodeType_t nodeTag = nodeType - BCSOLID_NODE;
+
+            // bcsolid_boundary_condition(nodeTag, cylinder, pop, rho, ux, uy, uz, mxx, myy, mzz, mxy, mxz, myz);
+        }
         else
         {
             boundary_condition(nodeType, dMom, pop, s_pop, rho, ux, uy, uz, mxx, myy, mzz, mxy, mxz, myz);

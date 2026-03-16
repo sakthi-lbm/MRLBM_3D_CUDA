@@ -51,7 +51,7 @@ int main()
     }
 
     //==================================== MAIN LOOP =====================================
-    for (int iter = start_iter; iter <= MAX_ITER; iter++)
+    for (int iter = start_iter; iter <= 1; iter++)
     {
         //------------------------------------------Streaming ---------------------------------------------------------
         streaming_and_evaluate_Mom<<<grid, block>>>(d_cylinder, d_fMom, fHalo_interface, gHalo_interface, iter);

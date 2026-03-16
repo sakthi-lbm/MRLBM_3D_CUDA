@@ -8,11 +8,11 @@
 #define ID_SIM "000"
 #endif
 
-#define RESTART 1
+#define RESTART 0
 
 constexpr int SCALE = D / U_MAX;
 // constexpr int MACR_SAVE = 100 * SCALE; // interval of output file saving
-constexpr int MACR_SAVE = 100; // interval of output file saving
+constexpr int MACR_SAVE = 1; // interval of output file saving
 constexpr int TSTAR = 1000;     // staionary state to start statistics
 constexpr int STAT_PERIOD = 10; // period over which statistics are sampled
 // constexpr int MAX_ITER = (TSTAR + STAT_PERIOD) * SCALE;
