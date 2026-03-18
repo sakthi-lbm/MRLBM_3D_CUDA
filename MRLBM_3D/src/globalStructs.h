@@ -24,9 +24,8 @@ struct cylinderVar
     uint32_t *incomingMask; // NB
     uint32_t *outgoingMask; // NB
 
-    size_t *bcfluidList;            // size NB_FLUID
-    uint32_t *incomingMask_bcfluid; // NB_FLUID
-    uint32_t *outgoingMask_bcfluid; // NB_FLUID
+    size_t *bcfluidList;   // size NB_FLUID
+    size_t *bcsolidList; // size NB_SOLID
 };
 
 struct VelocityMoments

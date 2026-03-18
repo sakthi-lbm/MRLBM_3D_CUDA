@@ -22,7 +22,7 @@ constexpr MassBC BCF_MASS_CONSERV = MassBC::Strong;
 
 constexpr int BLOCK_SIZE = 16; // Maxmum block based on the register load
 
-constexpr int D = 32;    // Diameter of the cylinder
+constexpr int D = 16;    // Diameter of the cylinder
 constexpr int R = D / 2; // radius of the cylinder
 constexpr real D_WALL = toReal(D);
 constexpr real R_WALL = 0.5 * D_WALL;
@@ -78,6 +78,12 @@ inline real h_TotalFy = 0.0f;
 inline real h_TotalFz = 0.0f;
 inline real h_Totalm = 0.0f;
 
+#define MAX_NODE_TAG 256
+inline uint32_t h_incomingMask_bcfluid[MAX_NODE_TAG];
+inline uint32_t h_outgoingMask_bcfluid[MAX_NODE_TAG];
+inline uint32_t h_incomingMask_bcsolid[MAX_NODE_TAG];
+inline uint32_t h_outgoingMask_bcsolid[MAX_NODE_TAG];
+
 // ---------- RUNTIME CONSTANTS (DEVICE) ----------
 extern __constant__ real d_w[Q];
 extern __constant__ int d_cx[Q];
@@ -94,6 +100,11 @@ extern __constant__ real d_Hyz[Q];
 extern __constant__ int d_NB;
 extern __constant__ int d_NB_FLUID;
 extern __constant__ int d_NB_SOLID;
+
+extern __constant__ uint32_t d_incomingMask_bcfluid[MAX_NODE_TAG];
+extern __constant__ uint32_t d_outgoingMask_bcfluid[MAX_NODE_TAG];
+extern __constant__ uint32_t d_incomingMask_bcsolid[MAX_NODE_TAG];
+extern __constant__ uint32_t d_outgoingMask_bcsolid[MAX_NODE_TAG];
 
 extern __device__ real d_sumUx;
 extern __device__ real d_UCONV;

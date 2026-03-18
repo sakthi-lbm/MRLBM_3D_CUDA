@@ -155,8 +155,7 @@ __global__ void streaming_and_evaluate_Mom(cylinderVar cylinder, nodeVar dMom,
         }
         else if (!Z_PERIODIC && nodeType >= (BCSOLID_NODE + 0) && nodeType < (BCSOLID_NODE + 256))
         {
-            const nodeType_t nodeTag = nodeType - BCSOLID_NODE;
-
+            // const nodeType_t nodeTag = nodeType - BCSOLID_NODE;
             // bcsolid_boundary_condition(nodeTag, cylinder, pop, rho, ux, uy, uz, mxx, myy, mzz, mxy, mxz, myz);
         }
         else

@@ -29,6 +29,11 @@ __device__ real d_TotalFy;
 __device__ real d_TotalFz;
 __device__ real d_Totalm;
 
+__constant__ uint32_t d_incomingMask_bcfluid[MAX_NODE_TAG];
+__constant__ uint32_t d_outgoingMask_bcfluid[MAX_NODE_TAG];
+__constant__ uint32_t d_incomingMask_bcsolid[MAX_NODE_TAG];
+__constant__ uint32_t d_outgoingMask_bcsolid[MAX_NODE_TAG];
+
 #endif
 
 void initialize_domain(nodeVar &dMom, nodeVar &hMom, haloData &gHalo, cylinderVar &h_cylinder, cylinderVar &d_cylinder)
@@ -46,7 +51,8 @@ void initialize_domain(nodeVar &dMom, nodeVar &hMom, haloData &gHalo, cylinderVa
     buildBoundaryList_updateBoundaryNodeType(hMom, h_cylinder);
 
     find_incomings_outgoings(hMom, h_cylinder.boundaryList, h_cylinder.incomingMask, h_cylinder.outgoingMask, NB);
-    find_incomings_outgoings(hMom, h_cylinder.bcfluidList, h_cylinder.incomingMask_bcfluid, h_cylinder.outgoingMask_bcfluid, NB_FLUID);
+    setup_bcfluid_masks(hMom, h_cylinder);
+
     copyHostToDevice(d_cylinder, h_cylinder);
 #endif
     initialize_host_device_constants();

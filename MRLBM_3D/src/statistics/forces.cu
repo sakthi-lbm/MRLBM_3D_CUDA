@@ -71,7 +71,8 @@ __global__ void compute_incoming_force_mass_kernal(const nodeVar dMom, cylinderV
         real pop[Q];
         pop_reconstruction(rho, ux, uy, uz, mxx, myy, mzz, mxy, mxz, myz, pop);
 
-        const uint32_t incoming_mask = cylinder.incomingMask_bcfluid[fid];
+        const size_t nodeTag = dMom.nodeType[idx] - BCFLUID_NODE;
+        const uint32_t incoming_mask = d_incomingMask_bcfluid[nodeTag];
         compute_forces_mass(incoming_mask, pop, Fx_local, Fy_local, Fz_local, m_local);
     }
 
@@ -160,7 +161,8 @@ __global__ void compute_outgoing_force_mass_kernal(const nodeVar dMom, cylinderV
         real pop[Q];
         pop_reconstruction(rho, ux, uy, uz, mxx, myy, mzz, mxy, mxz, myz, pop);
 
-        const uint32_t outgoing_mask = cylinder.outgoingMask_bcfluid[fid];
+        const size_t nodeTag = dMom.nodeType[idx] - BCFLUID_NODE;
+        const uint32_t outgoing_mask = d_outgoingMask_bcfluid[nodeTag];
         compute_forces_mass(outgoing_mask, pop, Fx_local, Fy_local, Fz_local, m_local);
     }
 

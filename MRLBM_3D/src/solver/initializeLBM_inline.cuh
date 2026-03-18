@@ -1,6 +1,9 @@
 #ifndef INITIALIZE_LBM_INLINE_H
 #define INITIALIZE_LBM_INLINE_H
 
+#include <unordered_map>
+#include <vector>
+
 #include "../utils/geometry_utils.cuh"
 
 inline void check_tau()
@@ -52,7 +55,10 @@ inline void initialize_host_device_constants()
 
     checkCudaErrors(cudaMemcpyToSymbol(d_NB, &NB, sizeof(int)));
     checkCudaErrors(cudaMemcpyToSymbol(d_NB_FLUID, &NB_FLUID, sizeof(int)));
-    checkCudaErrors(cudaMemcpyToSymbol(d_NB_SOLID, &d_NB_SOLID, sizeof(int)));
+    checkCudaErrors(cudaMemcpyToSymbol(d_NB_SOLID, &NB_SOLID, sizeof(int)));
+
+    cudaMemcpyToSymbol(d_incomingMask_bcfluid, h_incomingMask_bcfluid, MAX_NODE_TAG * sizeof(uint32_t));
+    cudaMemcpyToSymbol(d_outgoingMask_bcfluid, h_outgoingMask_bcfluid, MAX_NODE_TAG * sizeof(uint32_t));
 }
 
 inline void initialize_nodeType(nodeVar &hMom)
@@ -82,6 +88,7 @@ inline void buildBoundaryList_updateBoundaryNodeType(nodeVar &hMom, cylinderVar 
 {
     int count = 0;
     int count2 = 0;
+    int count3 = 0;
     for (int z = 0; z < NZ; z++)
     {
         for (int y = (LS - 2); y < (LS + D + 2); y++)
@@ -114,6 +121,16 @@ inline void buildBoundaryList_updateBoundaryNodeType(nodeVar &hMom, cylinderVar 
                     }
                     h_cylinder.bcfluidList[count2] = idx;
                     count2++;
+                }
+                else if (hMom.nodeType[idx] >= BCSOLID_NODE && hMom.nodeType[idx] < (BCSOLID_NODE + 256))
+                {
+                    if (count3 >= NB_SOLID)
+                    {
+                        printf("ERROR: BcsolidList overflow\n");
+                        exit(EXIT_FAILURE);
+                    }
+                    h_cylinder.bcsolidList[count3] = idx;
+                    count3++;
                 }
             }
         }
@@ -189,6 +206,47 @@ inline void find_incomings_outgoings(const nodeVar &hMom,
         //                   << "\n";
         //     }
         // }
+    }
+}
+
+inline void setup_bcfluid_masks(const nodeVar &hMom, cylinderVar &cylinder)
+{
+    std::vector<bool> computed(MAX_NODE_TAG, false);
+
+    for (int i = 0; i < NB_FLUID; i++)
+    {
+        size_t global_index = cylinder.bcfluidList[i];
+
+        int nodeTag = hMom.nodeType[global_index] - BCFLUID_NODE;
+
+        if (computed[nodeTag])
+            continue;
+
+        unsigned int x, y, z;
+        GlobalIndexToXYZ(global_index, x, y, z);
+
+        nodeType_t node[Q];
+        load_neighbors(node, hMom, x, y, z);
+
+        uint32_t incomingMask = (1u << Q) - 1;
+        uint32_t outgoingMask = 0;
+
+        for (int q = 0; q < Q; q++)
+        {
+            if (node[q] == SOLID)
+                incomingMask &= ~(1u << opp[q]);
+        }
+
+        for (int q = 0; q < Q; q++)
+        {
+            if (incomingMask & (1u << opp[q]))
+                outgoingMask |= (1u << q);
+        }
+
+        h_incomingMask_bcfluid[nodeTag] = incomingMask;
+        h_outgoingMask_bcfluid[nodeTag] = outgoingMask;
+
+        computed[nodeTag] = true;
     }
 }
 

@@ -14,8 +14,7 @@ inline void allocateCylinderMemory(cylinderVar &h_cylinder, cylinderVar &d_cylin
     checkCudaErrors(cudaMallocHost(&h_cylinder.outgoingMask, NB * sizeof(uint32_t)));
 
     checkCudaErrors(cudaMallocHost(&h_cylinder.bcfluidList, NB_FLUID * sizeof(size_t)));
-    checkCudaErrors(cudaMallocHost(&h_cylinder.incomingMask_bcfluid, NB_FLUID * sizeof(uint32_t)));
-    checkCudaErrors(cudaMallocHost(&h_cylinder.outgoingMask_bcfluid, NB_FLUID * sizeof(uint32_t)));
+    checkCudaErrors(cudaMallocHost(&h_cylinder.bcsolidList, NB_SOLID * sizeof(size_t)));
 
     // Device Memory
     checkCudaErrors(cudaMalloc(&d_cylinder.boundaryList, NB * sizeof(size_t)));
@@ -23,27 +22,26 @@ inline void allocateCylinderMemory(cylinderVar &h_cylinder, cylinderVar &d_cylin
     checkCudaErrors(cudaMalloc(&d_cylinder.outgoingMask, NB * sizeof(uint32_t)));
 
     checkCudaErrors(cudaMalloc(&d_cylinder.bcfluidList, NB_FLUID * sizeof(size_t)));
-    checkCudaErrors(cudaMalloc(&d_cylinder.incomingMask_bcfluid, NB_FLUID * sizeof(uint32_t)));
-    checkCudaErrors(cudaMalloc(&d_cylinder.outgoingMask_bcfluid, NB_FLUID * sizeof(uint32_t)));
+    checkCudaErrors(cudaMalloc(&d_cylinder.bcsolidList, NB_SOLID * sizeof(size_t)));
 }
 
 inline void freeCylinderMemory(cylinderVar &h_cylinder, cylinderVar &d_cylinder)
 {
     // Free-ing host memory
     checkCudaErrors(cudaFreeHost(h_cylinder.boundaryList));
-    checkCudaErrors(cudaFreeHost(h_cylinder.bcfluidList));
     checkCudaErrors(cudaFreeHost(h_cylinder.incomingMask));
     checkCudaErrors(cudaFreeHost(h_cylinder.outgoingMask));
-    checkCudaErrors(cudaFreeHost(h_cylinder.incomingMask_bcfluid));
-    checkCudaErrors(cudaFreeHost(h_cylinder.outgoingMask_bcfluid));
+
+    checkCudaErrors(cudaFreeHost(h_cylinder.bcfluidList));
+    checkCudaErrors(cudaFreeHost(h_cylinder.bcsolidList));
 
     // Free-ing device memory
     checkCudaErrors(cudaFree(d_cylinder.boundaryList));
-    checkCudaErrors(cudaFree(d_cylinder.bcfluidList));
     checkCudaErrors(cudaFree(d_cylinder.incomingMask));
     checkCudaErrors(cudaFree(d_cylinder.outgoingMask));
-    checkCudaErrors(cudaFree(d_cylinder.incomingMask_bcfluid));
-    checkCudaErrors(cudaFree(d_cylinder.outgoingMask_bcfluid));
+
+    checkCudaErrors(cudaFree(d_cylinder.bcfluidList));
+    checkCudaErrors(cudaFree(d_cylinder.bcsolidList));
 }
 
 inline void copyHostToDevice(cylinderVar &d_cylinder, cylinderVar &h_cylinder)
@@ -53,8 +51,7 @@ inline void copyHostToDevice(cylinderVar &d_cylinder, cylinderVar &h_cylinder)
     checkCudaErrors(cudaMemcpy(d_cylinder.outgoingMask, h_cylinder.outgoingMask, NB * sizeof(uint32_t), cudaMemcpyHostToDevice));
 
     checkCudaErrors(cudaMemcpy(d_cylinder.bcfluidList, h_cylinder.bcfluidList, NB_FLUID * sizeof(size_t), cudaMemcpyHostToDevice));
-    checkCudaErrors(cudaMemcpy(d_cylinder.incomingMask_bcfluid, h_cylinder.incomingMask_bcfluid, NB_FLUID * sizeof(uint32_t), cudaMemcpyHostToDevice));
-    checkCudaErrors(cudaMemcpy(d_cylinder.outgoingMask_bcfluid, h_cylinder.outgoingMask_bcfluid, NB_FLUID * sizeof(uint32_t), cudaMemcpyHostToDevice));
+    checkCudaErrors(cudaMemcpy(d_cylinder.bcsolidList, h_cylinder.bcsolidList, NB_SOLID * sizeof(size_t), cudaMemcpyHostToDevice));
 }
 
 #endif // INITIALIZELBM_H

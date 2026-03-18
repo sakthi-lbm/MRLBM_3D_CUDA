@@ -850,8 +850,6 @@ __device__ inline void fluid_boundary_condition(const nodeType_t nodeTag, const 
                                                 real &mxx, real &myy, real &mzz,
                                                 real &mxy, real &mxz, real &myz)
 {
-    // printf("nodeTag: %d ", toInt(nodeTag));
-
     real rhoI = toReal(0.0);
     real uxI = toReal(0.0);
     real uyI = toReal(0.0);
@@ -863,36 +861,24 @@ __device__ inline void fluid_boundary_condition(const nodeType_t nodeTag, const 
     real mxzI = toReal(0.0);
     real myzI = toReal(0.0);
 
-    uint32_t incoming_mask = cylinder.incomingMask_bcfluid[nodeTag];
+    uint32_t incoming_mask = d_incomingMask_bcfluid[nodeTag];
     while (incoming_mask)
     {
         const int q = __ffs(incoming_mask) - 1;
         incoming_mask &= incoming_mask - 1;
 
-        const real cx = toReal(d_cx[q]);
-        const real cy = toReal(d_cy[q]);
-        const real cz = toReal(d_cz[q]);
-
-        const real Hxx = cx * cx - cs2;
-        const real Hyy = cy * cy - cs2;
-        const real Hzz = cz * cz - cs2;
-        const real Hxy = cx * cy;
-        const real Hxz = cx * cz;
-        const real Hyz = cy * cz;
-
         const real fq = pop[q];
         rhoI += fq;
-        uxI += fq * cx;
-        uyI += fq * cy;
-        uzI += fq * cz;
-        mxxI += fq * Hxx;
-        myyI += fq * Hyy;
-        mzzI += fq * Hzz;
-        mxyI += fq * Hxy;
-        mxzI += fq * Hxz;
-        myzI += fq * Hyz;
+        uxI += fq * toReal(d_cx[q]);
+        uyI += fq * toReal(d_cy[q]);
+        uzI += fq * toReal(d_cz[q]);
+        mxxI += fq * d_Hxx[q];
+        myyI += fq * d_Hyy[q];
+        mzzI += fq * d_Hzz[q];
+        mxyI += fq * d_Hxy[q];
+        mxzI += fq * d_Hxz[q];
+        myzI += fq * d_Hyz[q];
     }
-
     const real inv_rho = toReal(1.0) / rhoI;
     uxI *= inv_rho;
     uyI *= inv_rho;
@@ -910,16 +896,14 @@ __device__ inline void fluid_boundary_condition(const nodeType_t nodeTag, const 
     {
         if constexpr (BCF_MASS_CONSERV == MassBC::Strong)
         {
-            const real a = -toReal(9996) - toReal(206) * OMEGA;
-            const real b = -toReal(6) * rhoI * (toReal(12) * mxxI * (-toReal(17) + toReal(20) * OMEGA) - toReal(17) * (toReal(102) + toReal(51) * mxyI + toReal(12) * myyI - toReal(5) * uxI - toReal(5) * uyI) + OMEGA * (toReal(720) * mxyI + toReal(240) * myyI + toReal(53) * (uxI + uyI)));
-            const real c = toReal(3) * OMEGA * rhoI * rhoI * (toReal(45) * mxxI * mxxI + toReal(405) * mxyI * mxyI + toReal(45) * myyI * myyI + toReal(345) * myyI * uxI + toReal(589) * uxI * uxI + toReal(345) * myyI * uyI + toReal(1467) * uxI * uyI + toReal(589) * uyI * uyI + toReal(45) * mxyI * (toReal(6) * myyI + toReal(23) * (uxI + uyI)) + toReal(15) * mxxI * (toReal(18) * mxyI + toReal(6) * myyI + toReal(23) * (uxI + uyI)));
+            const real a = toReal(-9996) - toReal(206) * OMEGA;
+            const real b = toReal(-6) * rhoI * (toReal(12) * mxxI * (toReal(-17) + toReal(20) * OMEGA) - toReal(17) * (toReal(102) + toReal(36) * mxyI + toReal(12) * myyI - toReal(5) * uxI - toReal(5) * uyI) + OMEGA * (toReal(720) * mxyI + toReal(240) * myyI + toReal(53) * (uxI + uyI)));
+            const real c = toReal(3) * OMEGA * (rhoI * rhoI) * (toReal(45) * (mxxI * mxxI) + toReal(405) * (mxyI * mxyI) + toReal(45) * (myyI * myyI) + toReal(345) * myyI * uxI + toReal(589) * (uxI * uxI) + toReal(345) * myyI * uyI + toReal(1467) * uxI * uyI + toReal(589) * (uyI * uyI) + toReal(45) * mxyI * (toReal(6) * myyI + toReal(23) * (uxI + uyI)) + toReal(15) * mxxI * (toReal(18) * mxyI + toReal(6) * myyI + toReal(23) * (uxI + uyI)));
 
             const real disc = max(b * b - toReal(4) * a * c, toReal(0.0));
             const real rho1 = (-b + sqrt(disc)) / (toReal(2) * a);
             const real rho2 = (-b - sqrt(disc)) / (toReal(2) * a);
-            rho = (rho1 > 0.0 && (fabs(rho1 - rhoI) < fabs(rho2 - rhoI))) ? rho1 : rho2;
-
-            printf("node: %d, rho1: %.6f, rho2: %.6f, rho: %.6f, \n ", toInt(nodeTag), rho1, rho2, rho);
+            rho = (rho1 > 0.0 && fabs(rho1 - rhoI) < fabs(rho2 - rhoI)) ? rho1 : rho2;
         }
         else if constexpr (BCF_MASS_CONSERV == MassBC::Equilibrium)
         {
@@ -932,15 +916,15 @@ __device__ inline void fluid_boundary_condition(const nodeType_t nodeTag, const 
             const real rho2 = (-b - sqrt(disc)) / (toReal(2) * a);
             rho = (rho1 > 0.0 && fabs(rho1 - rhoI) < fabs(rho2 - rhoI)) ? rho1 : rho2;
         }
-        ux = (toReal(3) * mxxI * rhoI + toReal(9) * mxyI * rhoI + toReal(3) * myyI * rhoI + toReal(20) * rhoI * uxI + toReal(3) * rhoI * uyI + rho) / (toReal(17) * rho);
-        uy = (toReal(3) * mxxI * rhoI + toReal(9) * mxyI * rhoI + toReal(3) * myyI * rhoI + toReal(3) * rhoI * uxI + toReal(20) * rhoI * uyI + rho) / (toReal(17) * rho);
-        uz = (toReal(3) * rhoI * (mxzI + myzI + toReal(10) * uzI)) / (toReal(29) * rho);
-        mxx = (toReal(57) * mxxI * rhoI + toReal(18) * mxyI * rhoI + toReal(6) * myyI * rhoI + toReal(6) * rhoI * uxI + toReal(6) * rhoI * uyI + toReal(2) * rho) / (toReal(51) * rho);
-        myy = (toReal(6) * mxxI * rhoI + toReal(18) * mxyI * rhoI + toReal(57) * myyI * rhoI + toReal(6) * rhoI * uxI + toReal(6) * rhoI * uyI + toReal(2) * rho) / (toReal(51) * rho);
-        mzz = (toReal(51) * mzzI * rhoI) / (toReal(35) * rho);
-        mxy = (toReal(3) * mxxI * rhoI + toReal(26) * mxyI * rhoI + toReal(3) * myyI * rhoI + toReal(3) * rhoI * uxI + toReal(3) * rhoI * uyI + rho) / (toReal(17) * rho);
-        mxz = (rhoI * (toReal(32) * mxzI + toReal(3) * myzI + uzI)) / (toReal(29) * rho);
-        myz = (rhoI * (toReal(3) * mxzI + toReal(32) * myzI + uzI)) / (toReal(29) * rho);
+        ux = (toReal(3) * mxxI * rhoI + toReal(9) * mxyI * rhoI + toReal(3) * myyI * rhoI + toReal(20) * rhoI * uxI + toReal(3) * rhoI * uyI + rho) / (toReal(17.) * rho);
+        uy = (toReal(3) * mxxI * rhoI + toReal(9) * mxyI * rhoI + toReal(3) * myyI * rhoI + toReal(3) * rhoI * uxI + toReal(20) * rhoI * uyI + rho) / (toReal(17.) * rho);
+        uz = (toReal(3) * rhoI * (mxzI + myzI + toReal(10) * uzI)) / (toReal(29.) * rho);
+        mxx = (toReal(57) * mxxI * rhoI + toReal(18) * mxyI * rhoI + toReal(6) * myyI * rhoI + toReal(6) * rhoI * uxI + toReal(6) * rhoI * uyI + toReal(2) * rho) / (toReal(51.) * rho);
+        myy = (toReal(6) * mxxI * rhoI + toReal(18) * mxyI * rhoI + toReal(57) * myyI * rhoI + toReal(6) * rhoI * uxI + toReal(6) * rhoI * uyI + toReal(2) * rho) / (toReal(51.) * rho);
+        mzz = (toReal(36) * mzzI * rhoI) / (toReal(35.) * rho);
+        mxy = (toReal(3) * mxxI * rhoI + toReal(26) * mxyI * rhoI + toReal(3) * myyI * rhoI + toReal(3) * rhoI * uxI + toReal(3) * rhoI * uyI + rho) / (toReal(17.) * rho);
+        mxz = (rhoI * (toReal(32) * mxzI + toReal(3) * myzI + uzI)) / (toReal(29.) * rho);
+        myz = (rhoI * (toReal(3) * mxzI + toReal(32) * myzI + uzI)) / (toReal(29.) * rho);
 
         break;
     }
@@ -949,15 +933,13 @@ __device__ inline void fluid_boundary_condition(const nodeType_t nodeTag, const 
         if constexpr (BCF_MASS_CONSERV == MassBC::Strong)
         {
             const real a = toReal(9996) + toReal(206) * OMEGA;
-            const real b = toReal(6) * rhoI * (mxyI * (toReal(612) - toReal(720) * OMEGA) + toReal(240) * myyI * OMEGA + toReal(12) * mxxI * (-toReal(17) + toReal(20) * OMEGA) - toReal(17) * (toReal(102) + toReal(12) * myyI + toReal(5) * uxI - toReal(5) * uyI) + toReal(53) * OMEGA * (-uxI + uyI));
-            const real c = -toReal(3) * OMEGA * rhoI * rhoI * (toReal(45) * mxxI * mxxI + toReal(405) * mxyI * mxyI + toReal(45) * myyI * myyI - toReal(345) * myyI * uxI + toReal(589) * uxI * uxI + toReal(345) * myyI * uyI - toReal(1467) * uxI * uyI + toReal(589) * uyI * uyI - toReal(45) * mxyI * (toReal(6) * myyI - toReal(23) * uxI + toReal(23) * uyI) + toReal(15) * mxxI * (-toReal(18) * mxyI + toReal(6) * myyI - toReal(23) * uxI + toReal(23) * uyI));
+            const real b = toReal(6) * rhoI * (mxyI * (toReal(612) - toReal(720) * OMEGA) + toReal(240) * myyI * OMEGA + toReal(12) * mxxI * (toReal(-17) + toReal(20) * OMEGA) - toReal(17) * (toReal(102) + toReal(12) * myyI + toReal(5) * uxI - toReal(5) * uyI) + toReal(53) * OMEGA * (-uxI + uyI));
+            const real c = toReal(-3) * OMEGA * (rhoI * rhoI) * (toReal(45) * (mxxI * mxxI) + toReal(405) * (mxyI * mxyI) + toReal(45) * (myyI * myyI) - toReal(345) * myyI * uxI + toReal(589) * (uxI * uxI) + toReal(345) * myyI * uyI - toReal(1467) * uxI * uyI + toReal(589) * (uyI * uyI) - toReal(45) * mxyI * (toReal(6) * myyI - toReal(23) * uxI + toReal(23) * uyI) + toReal(15) * mxxI * (toReal(-18) * mxyI + toReal(6) * myyI - toReal(23) * uxI + toReal(23) * uyI));
 
             const real disc = max(b * b - toReal(4) * a * c, toReal(0.0));
             const real rho1 = (-b + sqrt(disc)) / (toReal(2) * a);
             const real rho2 = (-b - sqrt(disc)) / (toReal(2) * a);
             rho = (rho1 > 0.0 && fabs(rho1 - rhoI) < fabs(rho2 - rhoI)) ? rho1 : rho2;
-
-            printf("node: %d, rho1: %.6f, rho2: %.6f, rho: %.6f, \n ", toInt(nodeTag), rho1, rho2, rho);
         }
         else if constexpr (BCF_MASS_CONSERV == MassBC::Equilibrium)
         {
@@ -970,15 +952,15 @@ __device__ inline void fluid_boundary_condition(const nodeType_t nodeTag, const 
             const real rho2 = (-b - sqrt(disc)) / (toReal(2) * a);
             rho = (rho1 > 0.0 && fabs(rho1 - rhoI) < fabs(rho2 - rhoI)) ? rho1 : rho2;
         }
-        ux = -(toReal(3) * mxxI * rhoI - toReal(9) * mxyI * rhoI + toReal(3) * myyI * rhoI - toReal(20) * rhoI * uxI + toReal(3) * rhoI * uyI + rho) / (toReal(17) * rho);
-        uy = (toReal(3) * mxxI * rhoI - toReal(9) * mxyI * rhoI + toReal(3) * myyI * rhoI - toReal(3) * rhoI * uxI + toReal(20) * rhoI * uyI + rho) / (toReal(17) * rho);
-        uz = (toReal(3) * rhoI * (-mxzI + myzI + toReal(10) * uzI)) / (toReal(29) * rho);
-        mxx = (toReal(57) * mxxI * rhoI - toReal(18) * mxyI * rhoI + toReal(6) * myyI * rhoI - toReal(6) * rhoI * uxI + toReal(6) * rhoI * uyI + toReal(2) * rho) / (toReal(51) * rho);
-        myy = (toReal(6) * mxxI * rhoI - toReal(18) * mxyI * rhoI + toReal(57) * myyI * rhoI - toReal(6) * rhoI * uxI + toReal(6) * rhoI * uyI + toReal(2) * rho) / (toReal(51) * rho);
-        mzz = (toReal(51) * mzzI * rhoI) / (toReal(35) * rho);
-        mxy = -(toReal(3) * mxxI * rhoI - toReal(26) * mxyI * rhoI + toReal(3) * myyI * rhoI - toReal(3) * rhoI * uxI + toReal(3) * rhoI * uyI + rho) / (toReal(17) * rho);
-        mxz = (rhoI * (toReal(32) * mxzI - toReal(3) * myzI - uzI)) / (toReal(29) * rho);
-        myz = (rhoI * (-toReal(3) * mxzI + toReal(32) * myzI + uzI)) / (toReal(29) * rho);
+        ux = -(toReal(3) * mxxI * rhoI - toReal(9) * mxyI * rhoI + toReal(3) * myyI * rhoI - toReal(20) * rhoI * uxI + toReal(3) * rhoI * uyI + rho) / (toReal(17.) * rho);
+        uy = (toReal(3) * mxxI * rhoI - toReal(9) * mxyI * rhoI + toReal(3) * myyI * rhoI - toReal(3) * rhoI * uxI + toReal(20) * rhoI * uyI + rho) / (toReal(17.) * rho);
+        uz = (toReal(3) * rhoI * (-mxzI + myzI + toReal(10) * uzI)) / (toReal(29.) * rho);
+        mxx = (toReal(57) * mxxI * rhoI - toReal(18) * mxyI * rhoI + toReal(6) * myyI * rhoI - toReal(6) * rhoI * uxI + toReal(6) * rhoI * uyI + toReal(2) * rho) / (toReal(51.) * rho);
+        myy = (toReal(6) * mxxI * rhoI - toReal(18) * mxyI * rhoI + toReal(57) * myyI * rhoI - toReal(6) * rhoI * uxI + toReal(6) * rhoI * uyI + toReal(2) * rho) / (toReal(51.) * rho);
+        mzz = (toReal(36) * mzzI * rhoI) / (toReal(35.) * rho);
+        mxy = -(toReal(3) * mxxI * rhoI - toReal(26) * mxyI * rhoI + toReal(3) * myyI * rhoI - toReal(3) * rhoI * uxI + toReal(3) * rhoI * uyI + rho) / (toReal(17.) * rho);
+        mxz = (rhoI * (toReal(32) * mxzI - toReal(3) * myzI - uzI)) / (toReal(29.) * rho);
+        myz = (rhoI * (toReal(-3) * mxzI + toReal(32) * myzI + uzI)) / (toReal(29.) * rho);
 
         break;
     }
@@ -987,8 +969,8 @@ __device__ inline void fluid_boundary_condition(const nodeType_t nodeTag, const 
         if constexpr (BCF_MASS_CONSERV == MassBC::Strong)
         {
             const real a = toReal(9996) + toReal(206) * OMEGA;
-            const real b = toReal(6) * rhoI * (mxyI * (toReal(612) - toReal(720) * OMEGA) + toReal(240) * myyI * OMEGA + toReal(12) * mxxI * (-toReal(17) + toReal(20) * OMEGA) + toReal(53) * OMEGA * (uxI - uyI) - toReal(17) * (toReal(102) + toReal(12) * myyI - toReal(5) * uxI + toReal(5) * uyI));
-            const real c = -toReal(3) * OMEGA * rhoI * rhoI * (toReal(45) * mxxI * mxxI + toReal(405) * mxyI * mxyI + toReal(45) * myyI * myyI + toReal(345) * myyI * uxI + toReal(589) * uxI * uxI - toReal(45) * mxyI * (toReal(6) * myyI + toReal(23) * uxI - toReal(23) * uyI) + toReal(15) * mxxI * (-toReal(18) * mxyI + toReal(6) * myyI + toReal(23) * uxI - toReal(23) * uyI) - toReal(345) * myyI * uyI - toReal(1467) * uxI * uyI + toReal(589) * uyI * uyI);
+            const real b = toReal(6) * rhoI * (mxyI * (toReal(612) - toReal(720) * OMEGA) + toReal(240) * myyI * OMEGA + toReal(12) * mxxI * (toReal(-17) + toReal(20) * OMEGA) + toReal(53) * OMEGA * (uxI - uyI) - toReal(17) * (toReal(102) + toReal(12) * myyI - toReal(5) * uxI + toReal(5) * uyI));
+            const real c = toReal(-3) * OMEGA * (rhoI * rhoI) * (toReal(45) * (mxxI * mxxI) + toReal(405) * (mxyI * mxyI) + toReal(45) * (myyI * myyI) + toReal(345) * myyI * uxI + toReal(589) * (uxI * uxI) - toReal(45) * mxyI * (toReal(6) * myyI + toReal(23) * uxI - toReal(23) * uyI) + toReal(15) * mxxI * (toReal(-18) * mxyI + toReal(6) * myyI + toReal(23) * uxI - toReal(23) * uyI) - toReal(345) * myyI * uyI - toReal(1467) * uxI * uyI + toReal(589) * (uyI * uyI));
 
             const real disc = max(b * b - toReal(4) * a * c, toReal(0.0));
             const real rho1 = (-b + sqrt(disc)) / (toReal(2) * a);
@@ -1006,15 +988,15 @@ __device__ inline void fluid_boundary_condition(const nodeType_t nodeTag, const 
             const real rho2 = (-b - sqrt(disc)) / (toReal(2) * a);
             rho = (rho1 > 0.0 && fabs(rho1 - rhoI) < fabs(rho2 - rhoI)) ? rho1 : rho2;
         }
-        ux = (toReal(3) * mxxI * rhoI - toReal(9) * mxyI * rhoI + toReal(3) * myyI * rhoI + toReal(20) * rhoI * uxI - toReal(3) * rhoI * uyI + rho) / (toReal(17) * rho);
-        uy = -(toReal(3) * mxxI * rhoI - toReal(9) * mxyI * rhoI + toReal(3) * myyI * rhoI + toReal(3) * rhoI * uxI - toReal(20) * rhoI * uyI + rho) / (toReal(17) * rho);
-        uz = (toReal(3) * rhoI * (mxzI - myzI + toReal(10) * uzI)) / (toReal(29) * rho);
-        mxx = (toReal(57) * mxxI * rhoI - toReal(18) * mxyI * rhoI + toReal(6) * myyI * rhoI + toReal(6) * rhoI * uxI - toReal(6) * rhoI * uyI + toReal(2) * rho) / (toReal(51) * rho);
-        myy = (toReal(6) * mxxI * rhoI - toReal(18) * mxyI * rhoI + toReal(57) * myyI * rhoI + toReal(6) * rhoI * uxI - toReal(6) * rhoI * uyI + toReal(2) * rho) / (toReal(51) * rho);
-        mzz = (toReal(51) * mzzI * rhoI) / (toReal(35) * rho);
-        mxy = -(toReal(3) * mxxI * rhoI - toReal(26) * mxyI * rhoI + toReal(3) * myyI * rhoI + toReal(3) * rhoI * uxI - toReal(3) * rhoI * uyI + rho) / (toReal(17) * rho);
-        mxz = (rhoI * (toReal(32) * mxzI - toReal(3) * myzI + uzI)) / (toReal(29) * rho);
-        myz = -(rhoI * (toReal(3) * mxzI - toReal(32) * myzI + uzI)) / (toReal(29) * rho);
+        ux = (toReal(3) * mxxI * rhoI - toReal(9) * mxyI * rhoI + toReal(3) * myyI * rhoI + toReal(20) * rhoI * uxI - toReal(3) * rhoI * uyI + rho) / (toReal(17.) * rho);
+        uy = -(toReal(3) * mxxI * rhoI - toReal(9) * mxyI * rhoI + toReal(3) * myyI * rhoI + toReal(3) * rhoI * uxI - toReal(20) * rhoI * uyI + rho) / (toReal(17.) * rho);
+        uz = (toReal(3) * rhoI * (mxzI - myzI + toReal(10) * uzI)) / (toReal(29.) * rho);
+        mxx = (toReal(57) * mxxI * rhoI - toReal(18) * mxyI * rhoI + toReal(6) * myyI * rhoI + toReal(6) * rhoI * uxI - toReal(6) * rhoI * uyI + toReal(2) * rho) / (toReal(51.) * rho);
+        myy = (toReal(6) * mxxI * rhoI - toReal(18) * mxyI * rhoI + toReal(57) * myyI * rhoI + toReal(6) * rhoI * uxI - toReal(6) * rhoI * uyI + toReal(2) * rho) / (toReal(51.) * rho);
+        mzz = (toReal(36) * mzzI * rhoI) / (toReal(35.) * rho);
+        mxy = -(toReal(3) * mxxI * rhoI - toReal(26) * mxyI * rhoI + toReal(3) * myyI * rhoI + toReal(3) * rhoI * uxI - toReal(3) * rhoI * uyI + rho) / (toReal(17.) * rho);
+        mxz = (rhoI * (toReal(32) * mxzI - toReal(3) * myzI + uzI)) / (toReal(29.) * rho);
+        myz = -(rhoI * (toReal(3) * mxzI - toReal(32) * myzI + uzI)) / (toReal(29.) * rho);
 
         break;
     }
@@ -1022,9 +1004,9 @@ __device__ inline void fluid_boundary_condition(const nodeType_t nodeTag, const 
     {
         if constexpr (BCF_MASS_CONSERV == MassBC::Strong)
         {
-            const real a = -toReal(9996) - toReal(206) * OMEGA;
-            const real b = -toReal(6) * rhoI * (toReal(12) * mxxI * (-toReal(17) + toReal(20) * OMEGA) - toReal(17) * (toReal(102) + toReal(51) * mxyI + toReal(12) * myyI + toReal(5) * uxI + toReal(5) * uyI) + OMEGA * (toReal(720) * mxyI + toReal(240) * myyI - toReal(53) * (uxI + uyI)));
-            const real c = toReal(3) * OMEGA * rhoI * rhoI * (toReal(45) * mxxI * mxxI + toReal(405) * mxyI * mxyI + toReal(45) * myyI * myyI - toReal(345) * myyI * uxI + toReal(589) * uxI * uxI - toReal(345) * myyI * uyI + toReal(1467) * uxI * uyI + toReal(589) * uyI * uyI + toReal(45) * mxyI * (toReal(6) * myyI - toReal(23) * (uxI + uyI)) + toReal(15) * mxxI * (toReal(18) * mxyI + toReal(6) * myyI - toReal(23) * (uxI + uyI)));
+            const real a = toReal(-9996) - toReal(206) * OMEGA;
+            const real b = toReal(-6) * rhoI * (toReal(12) * mxxI * (toReal(-17) + toReal(20) * OMEGA) - toReal(17) * (toReal(102) + toReal(36) * mxyI + toReal(12) * myyI + toReal(5) * uxI + toReal(5) * uyI) + OMEGA * (toReal(720) * mxyI + toReal(240) * myyI - toReal(53) * (uxI + uyI)));
+            const real c = toReal(3) * OMEGA * (rhoI * rhoI) * (toReal(45) * (mxxI * mxxI) + toReal(405) * (mxyI * mxyI) + toReal(45) * (myyI * myyI) - toReal(345) * myyI * uxI + toReal(589) * (uxI * uxI) - toReal(345) * myyI * uyI + toReal(1467) * uxI * uyI + toReal(589) * (uyI * uyI) + toReal(45) * mxyI * (toReal(6) * myyI - toReal(23) * (uxI + uyI)) + toReal(15) * mxxI * (toReal(18) * mxyI + toReal(6) * myyI - toReal(23) * (uxI + uyI)));
 
             const real disc = max(b * b - toReal(4) * a * c, toReal(0.0));
             const real rho1 = (-b + sqrt(disc)) / (toReal(2) * a);
@@ -1041,18 +1023,16 @@ __device__ inline void fluid_boundary_condition(const nodeType_t nodeTag, const 
             const real rho1 = (-b + sqrt(disc)) / (toReal(2) * a);
             const real rho2 = (-b - sqrt(disc)) / (toReal(2) * a);
             rho = (rho1 > 0.0 && fabs(rho1 - rhoI) < fabs(rho2 - rhoI)) ? rho1 : rho2;
-
-            // printf("rho1: %.6f, rho1: %.6f, rho: %.6f, \n ", rho1, rho2, rho);
         }
-        ux = -(toReal(3) * mxxI * rhoI + toReal(9) * mxyI * rhoI + toReal(3) * myyI * rhoI - toReal(20) * rhoI * uxI - toReal(3) * rhoI * uyI + rho) / (toReal(17) * rho);
-        uy = -(toReal(3) * mxxI * rhoI + toReal(9) * mxyI * rhoI + toReal(3) * myyI * rhoI - toReal(3) * rhoI * uxI - toReal(20) * rhoI * uyI + rho) / (toReal(17) * rho);
-        uz = (-toReal(3) * rhoI * (mxzI + myzI - toReal(10) * uzI)) / (toReal(29) * rho);
-        mxx = (toReal(57) * mxxI * rhoI + toReal(18) * mxyI * rhoI + toReal(6) * myyI * rhoI - toReal(6) * rhoI * uxI - toReal(6) * rhoI * uyI + toReal(2) * rho) / (toReal(51) * rho);
-        myy = (toReal(6) * mxxI * rhoI + toReal(18) * mxyI * rhoI + toReal(57) * myyI * rhoI - toReal(6) * rhoI * uxI - toReal(6) * rhoI * uyI + toReal(2) * rho) / (toReal(51) * rho);
-        mzz = (toReal(51) * mzzI * rhoI) / (toReal(35) * rho);
-        mxy = (toReal(3) * mxxI * rhoI + toReal(26) * mxyI * rhoI + toReal(3) * myyI * rhoI - toReal(3) * rhoI * uxI - toReal(3) * rhoI * uyI + rho) / (toReal(17) * rho);
-        mxz = (rhoI * (toReal(32) * mxzI + toReal(3) * myzI - uzI)) / (toReal(29) * rho);
-        myz = (rhoI * (toReal(3) * mxzI + toReal(32) * myzI - uzI)) / (toReal(29) * rho);
+        ux = -(toReal(3) * mxxI * rhoI + toReal(9) * mxyI * rhoI + toReal(3) * myyI * rhoI - toReal(20) * rhoI * uxI - toReal(3) * rhoI * uyI + rho) / (toReal(17.) * rho);
+        uy = -(toReal(3) * mxxI * rhoI + toReal(9) * mxyI * rhoI + toReal(3) * myyI * rhoI - toReal(3) * rhoI * uxI - toReal(20) * rhoI * uyI + rho) / (toReal(17.) * rho);
+        uz = (toReal(-3) * rhoI * (mxzI + myzI - toReal(10) * uzI)) / (toReal(29.) * rho);
+        mxx = (toReal(57) * mxxI * rhoI + toReal(18) * mxyI * rhoI + toReal(6) * myyI * rhoI - toReal(6) * rhoI * uxI - toReal(6) * rhoI * uyI + toReal(2) * rho) / (toReal(51.) * rho);
+        myy = (toReal(6) * mxxI * rhoI + toReal(18) * mxyI * rhoI + toReal(57) * myyI * rhoI - toReal(6) * rhoI * uxI - toReal(6) * rhoI * uyI + toReal(2) * rho) / (toReal(51.) * rho);
+        mzz = (toReal(36) * mzzI * rhoI) / (toReal(35.) * rho);
+        mxy = (toReal(3) * mxxI * rhoI + toReal(26) * mxyI * rhoI + toReal(3) * myyI * rhoI - toReal(3) * rhoI * uxI - toReal(3) * rhoI * uyI + rho) / (toReal(17.) * rho);
+        mxz = (rhoI * (toReal(32) * mxzI + toReal(3) * myzI - uzI)) / (toReal(29.) * rho);
+        myz = (rhoI * (toReal(3) * mxzI + toReal(32) * myzI - uzI)) / (toReal(29.) * rho);
 
         break;
     }
