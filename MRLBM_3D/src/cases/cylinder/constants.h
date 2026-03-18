@@ -17,8 +17,8 @@
 constexpr bool NEUMANN_CURRENT_UPDATE = false;
 constexpr bool triangular = true;
 
-constexpr MassBC MASS_CONSERV = MassBC::Strong;
-constexpr MassBC BCF_MASS_CONSERV = MassBC::Strong;
+constexpr MassBC MASS_CONSERV = MassBC::Equilibrium;
+constexpr MassBC BCF_MASS_CONSERV = MassBC::Equilibrium;
 
 constexpr int BLOCK_SIZE = 16; // Maxmum block based on the register load
 

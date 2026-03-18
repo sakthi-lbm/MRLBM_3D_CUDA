@@ -57,7 +57,7 @@ nvcc -std=c++17 \
 # -Xptxas -v \
 # Run the simulation
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
-LOGFILE="log_run_${ID_SIM}_${MODE}}.log"
+LOGFILE="log_run_${ID_SIM}_${MODE}.log"
 # LOGFILE="log_run_${ID_SIM}_${MODE}_${TIMESTAMP}.log"
 
 cd ../

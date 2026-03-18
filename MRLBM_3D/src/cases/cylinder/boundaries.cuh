@@ -907,9 +907,9 @@ __device__ inline void fluid_boundary_condition(const nodeType_t nodeTag, const 
         }
         else if constexpr (BCF_MASS_CONSERV == MassBC::Equilibrium)
         {
-            const real a = -toReal(9998);
+            const real a = toReal(-9998);
             const real b = toReal(6) * rhoI * (toReal(1734) + toReal(66) * mxxI + toReal(198) * mxyI + toReal(66) * myyI + toReal(253) * uxI + toReal(253) * uyI);
-            const real c = toReal(3) * rhoI * rhoI * (toReal(45) * mxxI * mxxI + toReal(405) * mxyI * mxyI + toReal(45) * myyI * myyI + toReal(345) * myyI * uxI + toReal(589) * uxI * uxI + toReal(345) * myyI * uyI + toReal(1467) * uxI * uyI + toReal(589) * uyI * uyI + toReal(45) * mxyI * (toReal(6) * myyI + toReal(23) * (uxI + uyI)) + toReal(15) * mxxI * (toReal(18) * mxyI + toReal(6) * myyI + toReal(23) * (uxI + uyI)));
+            const real c = toReal(3) * (rhoI * rhoI) * (toReal(45) * (mxxI * mxxI) + toReal(405) * (mxyI * mxyI) + toReal(45) * (myyI * myyI) + toReal(345) * myyI * uxI + toReal(589) * (uxI * uxI) + toReal(345) * myyI * uyI + toReal(1467) * uxI * uyI + toReal(589) * (uyI * uyI) + toReal(45) * mxyI * (toReal(6) * myyI + toReal(23) * (uxI + uyI)) + toReal(15) * mxxI * (toReal(18) * mxyI + toReal(6) * myyI + toReal(23) * (uxI + uyI)));
 
             const real disc = max(b * b - toReal(4) * a * c, toReal(0.0));
             const real rho1 = (-b + sqrt(disc)) / (toReal(2) * a);
@@ -943,9 +943,9 @@ __device__ inline void fluid_boundary_condition(const nodeType_t nodeTag, const 
         }
         else if constexpr (BCF_MASS_CONSERV == MassBC::Equilibrium)
         {
-            const real a = -toReal(9998);
+            const real a = toReal(-9998);
             const real b = toReal(6) * rhoI * (toReal(1734) + toReal(66) * mxxI - toReal(198) * mxyI + toReal(66) * myyI - toReal(253) * uxI + toReal(253) * uyI);
-            const real c = toReal(3) * rhoI * rhoI * (toReal(45) * mxxI * mxxI + toReal(405) * mxyI * mxyI + toReal(45) * myyI * myyI - toReal(345) * myyI * uxI + toReal(589) * uxI * uxI + toReal(345) * myyI * uyI - toReal(1467) * uxI * uyI + toReal(589) * uyI * uyI - toReal(45) * mxyI * (toReal(6) * myyI - toReal(23) * uxI + toReal(23) * uyI) + toReal(15) * mxxI * (-toReal(18) * mxyI + toReal(6) * myyI - toReal(23) * uxI + toReal(23) * uyI));
+            const real c = toReal(3) * (rhoI * rhoI) * (toReal(45) * (mxxI * mxxI) + toReal(405) * (mxyI * mxyI) + toReal(45) * (myyI * myyI) - toReal(345) * myyI * uxI + toReal(589) * (uxI * uxI) + toReal(345) * myyI * uyI - toReal(1467) * uxI * uyI + toReal(589) * (uyI * uyI) - toReal(45) * mxyI * (toReal(6) * myyI - toReal(23) * uxI + toReal(23) * uyI) + toReal(15) * mxxI * (toReal(-18) * mxyI + toReal(6) * myyI - toReal(23) * uxI + toReal(23) * uyI));
 
             const real disc = max(b * b - toReal(4) * a * c, toReal(0.0));
             const real rho1 = (-b + sqrt(disc)) / (toReal(2) * a);
@@ -979,9 +979,9 @@ __device__ inline void fluid_boundary_condition(const nodeType_t nodeTag, const 
         }
         else if constexpr (BCF_MASS_CONSERV == MassBC::Equilibrium)
         {
-            const real a = -toReal(9998);
+            const real a = toReal(-9998);
             const real b = toReal(6) * rhoI * (toReal(1734) + toReal(66) * mxxI - toReal(198) * mxyI + toReal(66) * myyI + toReal(253) * uxI - toReal(253) * uyI);
-            const real c = toReal(3) * rhoI * rhoI * (toReal(45) * mxxI * mxxI + toReal(405) * mxyI * mxyI + toReal(45) * myyI * myyI + toReal(345) * myyI * uxI + toReal(589) * uxI * uxI - toReal(45) * mxyI * (toReal(6) * myyI + toReal(23) * uxI - toReal(23) * uyI) + toReal(15) * mxxI * (-toReal(18) * mxyI + toReal(6) * myyI + toReal(23) * uxI - toReal(23) * uyI) - toReal(345) * myyI * uyI - toReal(1467) * uxI * uyI + toReal(589) * uyI * uyI);
+            const real c = toReal(3) * (rhoI * rhoI) * (toReal(45) * (mxxI * mxxI) + toReal(405) * (mxyI * mxyI) + toReal(45) * (myyI * myyI) + toReal(345) * myyI * uxI + toReal(589) * (uxI * uxI) - toReal(45) * mxyI * (toReal(6) * myyI + toReal(23) * uxI - toReal(23) * uyI) + toReal(15) * mxxI * (toReal(-18) * mxyI + toReal(6) * myyI + toReal(23) * uxI - toReal(23) * uyI) - toReal(345) * myyI * uyI - toReal(1467) * uxI * uyI + toReal(589) * (uyI * uyI));
 
             const real disc = max(b * b - toReal(4) * a * c, toReal(0.0));
             const real rho1 = (-b + sqrt(disc)) / (toReal(2) * a);
@@ -1015,9 +1015,9 @@ __device__ inline void fluid_boundary_condition(const nodeType_t nodeTag, const 
         }
         else if constexpr (BCF_MASS_CONSERV == MassBC::Equilibrium)
         {
-            const real a = -toReal(9998);
+            const real a = toReal(-9998);
             const real b = toReal(6) * rhoI * (toReal(1734) + toReal(66) * mxxI + toReal(198) * mxyI + toReal(66) * myyI - toReal(253) * uxI - toReal(253) * uyI);
-            const real c = toReal(3) * rhoI * rhoI * (toReal(45) * mxxI * mxxI + toReal(405) * mxyI * mxyI + toReal(45) * myyI * myyI - toReal(345) * myyI * uxI + toReal(589) * uxI * uxI - toReal(345) * myyI * uyI + toReal(1467) * uxI * uyI + toReal(589) * uyI * uyI + toReal(45) * mxyI * (toReal(6) * myyI - toReal(23) * (uxI + uyI)) + toReal(15) * mxxI * (toReal(18) * mxyI + toReal(6) * myyI - toReal(23) * (uxI + uyI)));
+            const real c = toReal(3) * (rhoI * rhoI) * (toReal(45) * (mxxI * mxxI) + toReal(405) * (mxyI * mxyI) + toReal(45) * (myyI * myyI) - toReal(345) * myyI * uxI + toReal(589) * (uxI * uxI) - toReal(345) * myyI * uyI + toReal(1467) * uxI * uyI + toReal(589) * (uyI * uyI) + toReal(45) * mxyI * (toReal(6) * myyI - toReal(23) * (uxI + uyI)) + toReal(15) * mxxI * (toReal(18) * mxyI + toReal(6) * myyI - toReal(23) * (uxI + uyI)));
 
             const real disc = max(b * b - toReal(4) * a * c, toReal(0.0));
             const real rho1 = (-b + sqrt(disc)) / (toReal(2) * a);
