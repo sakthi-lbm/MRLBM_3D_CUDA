@@ -52,6 +52,7 @@ void initialize_domain(nodeVar &dMom, nodeVar &hMom, haloData &gHalo, cylinderVa
 
     find_incomings_outgoings(hMom, h_cylinder.boundaryList, h_cylinder.incomingMask, h_cylinder.outgoingMask, NB);
     setup_bcfluid_masks(hMom, h_cylinder);
+    setup_bcsolid_masks(hMom, h_cylinder);
 
     copyHostToDevice(d_cylinder, h_cylinder);
 #endif

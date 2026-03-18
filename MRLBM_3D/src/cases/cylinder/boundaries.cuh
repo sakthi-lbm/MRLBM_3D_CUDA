@@ -892,7 +892,7 @@ __device__ inline void fluid_boundary_condition(const nodeType_t nodeTag, const 
 
     switch (nodeTag)
     {
-    case 17:
+    case BCF_1:
     {
         if constexpr (BCF_MASS_CONSERV == MassBC::Strong)
         {
@@ -928,7 +928,7 @@ __device__ inline void fluid_boundary_condition(const nodeType_t nodeTag, const 
 
         break;
     }
-    case 34:
+    case BCF_2:
     {
         if constexpr (BCF_MASS_CONSERV == MassBC::Strong)
         {
@@ -964,7 +964,7 @@ __device__ inline void fluid_boundary_condition(const nodeType_t nodeTag, const 
 
         break;
     }
-    case 68:
+    case BCF_3:
     {
         if constexpr (BCF_MASS_CONSERV == MassBC::Strong)
         {
@@ -1000,7 +1000,7 @@ __device__ inline void fluid_boundary_condition(const nodeType_t nodeTag, const 
 
         break;
     }
-    case 136:
+    case BCF_4:
     {
         if constexpr (BCF_MASS_CONSERV == MassBC::Strong)
         {
@@ -1033,6 +1033,183 @@ __device__ inline void fluid_boundary_condition(const nodeType_t nodeTag, const 
         mxy = (toReal(3) * mxxI * rhoI + toReal(26) * mxyI * rhoI + toReal(3) * myyI * rhoI - toReal(3) * rhoI * uxI - toReal(3) * rhoI * uyI + rho) / (toReal(17.) * rho);
         mxz = (rhoI * (toReal(32) * mxzI + toReal(3) * myzI - uzI)) / (toReal(29.) * rho);
         myz = (rhoI * (toReal(3) * mxzI + toReal(32) * myzI - uzI)) / (toReal(29.) * rho);
+
+        break;
+    }
+    }
+}
+
+__device__ inline void bcsolid_boundary_condition(const nodeType_t nodeTag, const cylinderVar &cylinder,
+                                                  const real *pop, real &rho, real &ux, real &uy, real &uz,
+                                                  real &mxx, real &myy, real &mzz,
+                                                  real &mxy, real &mxz, real &myz)
+{
+    switch (nodeTag)
+    {
+    case BCS_1:
+    {
+        const real rhoI = pop[0] + pop[1] + pop[2] + pop[3] + pop[4] + pop[5] + pop[7] + pop[9] + pop[11] + pop[13] + pop[14] + pop[16] + pop[18] + pop[19] + pop[23] + pop[25];
+        const real inv_rhoI = 1.0 / rhoI;
+        const real mxzI = (pop[9] - pop[16] + pop[19] + pop[23] - pop[25]) * inv_rhoI;
+        const real myzI = (pop[11] - pop[18] + pop[19] - pop[23] + pop[25]) * inv_rhoI;
+
+        rho = (toReal(108) * (toReal(10) + mxzI * (toReal(-1) + OMEGA) + myzI * (toReal(-1) + OMEGA)) * rhoI) / (toReal(874) + OMEGA);
+        ux = toReal(0);
+        uy = toReal(0);
+        uz = toReal(0);
+
+        mxx = toReal(0);
+        myy = toReal(0);
+        mzz = toReal(0);
+        mxy = toReal(0);
+        mxz = (toReal(198) * mxzI * rhoI + toReal(18) * myzI * rhoI - rho) / (toReal(90.) * rho);
+        myz = (toReal(18) * mxzI * rhoI + toReal(198) * myzI * rhoI - rho) / (toReal(90.) * rho);
+        break;
+    }
+    case BCS_2:
+    {
+        const real rhoI = pop[0] + pop[1] + pop[2] + pop[3] + pop[4] + pop[5] + pop[7] + pop[8] + pop[9] + pop[11] + pop[14] + pop[16] + pop[18] + pop[19] + pop[22] + pop[25];
+        const real inv_rhoI = 1.0 / rhoI;
+        const real mxzI = (pop[9] - pop[16] + pop[19] - pop[22] - pop[25]) * inv_rhoI;
+        const real myzI = (pop[11] - pop[18] + pop[19] - pop[22] + pop[25]) * inv_rhoI;
+
+        rho = (toReal(108) * (toReal(10) + mxzI + myzI * (toReal(-1) + OMEGA) - mxzI * OMEGA) * rhoI) / (toReal(874) + OMEGA);
+        ux = toReal(0);
+        uy = toReal(0);
+        uz = toReal(0);
+
+        mxx = toReal(0);
+        myy = toReal(0);
+        mzz = toReal(0);
+        mxy = toReal(0);
+        mxz = (toReal(198) * mxzI * rhoI - toReal(18) * myzI * rhoI + rho) / (toReal(90.) * rho);
+        myz = -(toReal(18) * mxzI * rhoI - toReal(198) * myzI * rhoI + rho) / (toReal(90.) * rho);
+
+        break;
+    }
+    case BCS_3:
+    {
+        const real rhoI = pop[0] + pop[1] + pop[2] + pop[3] + pop[4] + pop[5] + pop[7] + pop[8] + pop[9] + pop[11] + pop[13] + pop[16] + pop[18] + pop[19] + pop[22] + pop[23];
+        const real inv_rhoI = 1.0 / rhoI;
+        const real mxzI = (pop[9] - pop[16] + pop[19] - pop[22] + pop[23]) * inv_rhoI;
+        const real myzI = (pop[11] - pop[18] + pop[19] - pop[22] - pop[23]) * inv_rhoI;
+
+        rho = (toReal(108) * (toReal(10) + myzI + mxzI * (toReal(-1) + OMEGA) - myzI * OMEGA) * rhoI) / (toReal(874) + OMEGA);
+        ux = toReal(0);
+        uy = toReal(0);
+        uz = toReal(0);
+
+        mxx = toReal(0);
+        myy = toReal(0);
+        mzz = toReal(0);
+        mxy = toReal(0);
+        mxz = -(toReal(-198) * mxzI * rhoI + toReal(18) * myzI * rhoI + rho) / (toReal(90.) * rho);
+        myz = (toReal(-18) * mxzI * rhoI + toReal(198) * myzI * rhoI + rho) / (toReal(90.) * rho);
+
+        break;
+    }
+    case BCS_4:
+    {
+        const real rhoI = pop[0] + pop[1] + pop[2] + pop[3] + pop[4] + pop[5] + pop[8] + pop[9] + pop[11] + pop[13] + pop[14] + pop[16] + pop[18] + pop[22] + pop[23] + pop[25];
+        const real inv_rhoI = 1.0 / rhoI;
+        const real mxzI = (pop[9] - pop[16] - pop[22] + pop[23] - pop[25]) * inv_rhoI;
+        const real myzI = (pop[11] - pop[18] - pop[22] - pop[23] + pop[25]) * inv_rhoI;
+
+        rho = (toReal(-108) * (toReal(-10) + mxzI * (toReal(-1) + OMEGA) + myzI * (toReal(-1) + OMEGA)) * rhoI) / (toReal(874) + OMEGA);
+        ux = toReal(0);
+        uy = toReal(0);
+        uz = toReal(0);
+
+        mxx = toReal(0);
+        myy = toReal(0);
+        mzz = toReal(0);
+        mxy = toReal(0);
+        mxz = (toReal(198) * mxzI * rhoI + toReal(18) * myzI * rhoI + rho) / (toReal(90.) * rho);
+        myz = (toReal(18) * mxzI * rhoI + toReal(198) * myzI * rhoI + rho) / (toReal(90.) * rho);
+
+        break;
+    }
+    case BCS_5:
+    {
+        const real rhoI = pop[0] + pop[1] + pop[2] + pop[3] + pop[4] + pop[6] + pop[7] + pop[10] + pop[12] + pop[13] + pop[14] + pop[15] + pop[17] + pop[21] + pop[24] + pop[26];
+        const real inv_rhoI = 1.0 / rhoI;
+        const real mxzI = (pop[10] - pop[15] - pop[21] + pop[24] - pop[26]) * inv_rhoI;
+        const real myzI = (pop[12] - pop[17] - pop[21] - pop[24] + pop[26]) * inv_rhoI;
+
+        rho = (toReal(-108) * (toReal(-10) + mxzI * (toReal(-1) + OMEGA) + myzI * (toReal(-1) + OMEGA)) * rhoI) / (toReal(874) + OMEGA);
+        ux = toReal(0);
+        uy = toReal(0);
+        uz = toReal(0);
+
+        mxx = toReal(0);
+        myy = toReal(0);
+        mzz = toReal(0);
+        mxy = toReal(0);
+        mxz = (toReal(198) * mxzI * rhoI + toReal(18) * myzI * rhoI + rho) / (toReal(90.) * rho);
+        myz = (toReal(18) * mxzI * rhoI + toReal(198) * myzI * rhoI + rho) / (toReal(90.) * rho);
+
+        break;
+    }
+    case BCS_6:
+    {
+        const real rhoI = pop[0] + pop[1] + pop[2] + pop[3] + pop[4] + pop[6] + pop[7] + pop[8] + pop[10] + pop[12] + pop[14] + pop[15] + pop[17] + pop[20] + pop[21] + pop[24];
+        const real inv_rhoI = 1.0 / rhoI;
+        const real mxzI = (pop[10] - pop[15] + pop[20] - pop[21] + pop[24]) * inv_rhoI;
+        const real myzI = (pop[12] - pop[17] + pop[20] - pop[21] - pop[24]) * inv_rhoI;
+
+        rho = (toReal(108) * (toReal(10) + myzI + mxzI * (toReal(-1) + OMEGA) - myzI * OMEGA) * rhoI) / (toReal(874) + OMEGA);
+        ux = toReal(0);
+        uy = toReal(0);
+        uz = toReal(0);
+
+        mxx = toReal(0);
+        myy = toReal(0);
+        mzz = toReal(0);
+        mxy = toReal(0);
+        mxz = -(toReal(-198) * mxzI * rhoI + toReal(18) * myzI * rhoI + rho) / (toReal(90.) * rho);
+        myz = (toReal(-18) * mxzI * rhoI + toReal(198) * myzI * rhoI + rho) / (toReal(90.) * rho);
+
+        break;
+    }
+    case BCS_7:
+    {
+        const real rhoI = pop[0] + pop[1] + pop[2] + pop[3] + pop[4] + pop[6] + pop[7] + pop[8] + pop[10] + pop[12] + pop[13] + pop[15] + pop[17] + pop[20] + pop[21] + pop[26];
+        const real inv_rhoI = 1.0 / rhoI;
+        const real mxzI = (pop[10] - pop[15] + pop[20] - pop[21] - pop[26]) * inv_rhoI;
+        const real myzI = (pop[12] - pop[17] + pop[20] - pop[21] + pop[26]) * inv_rhoI;
+
+        rho = (toReal(108) * (toReal(10) + mxzI + myzI * (toReal(-1) + OMEGA) - mxzI * OMEGA) * rhoI) / (toReal(874) + OMEGA);
+        ux = toReal(0);
+        uy = toReal(0);
+        uz = toReal(0);
+
+        mxx = toReal(0);
+        myy = toReal(0);
+        mzz = toReal(0);
+        mxy = toReal(0);
+        mxz = (toReal(198) * mxzI * rhoI - toReal(18) * myzI * rhoI + rho) / (toReal(90.) * rho);
+        myz = -(toReal(18) * mxzI * rhoI - toReal(198) * myzI * rhoI + rho) / (toReal(90.) * rho);
+
+        break;
+    }
+    case BCS_8:
+    {
+        const real rhoI = pop[0] + pop[1] + pop[2] + pop[3] + pop[4] + pop[6] + pop[8] + pop[10] + pop[12] + pop[13] + pop[14] + pop[15] + pop[17] + pop[20] + pop[24] + pop[26];
+        const real inv_rhoI = 1.0 / rhoI;
+        const real mxzI = (pop[10] - pop[15] + pop[20] + pop[24] - pop[26]) * inv_rhoI;
+        const real myzI = (pop[12] - pop[17] + pop[20] - pop[24] + pop[26]) * inv_rhoI;
+
+        rho = (toReal(108) * (toReal(10) + mxzI * (toReal(-1) + OMEGA) + myzI * (toReal(-1) + OMEGA)) * rhoI) / (toReal(874) + OMEGA);
+        ux = toReal(0);
+        uy = toReal(0);
+        uz = toReal(0);
+
+        mxx = toReal(0);
+        myy = toReal(0);
+        mzz = toReal(0);
+        mxy = toReal(0);
+        mxz = (toReal(198) * mxzI * rhoI + toReal(18) * myzI * rhoI - rho) / (toReal(90.) * rho);
+        myz = (toReal(18) * mxzI * rhoI + toReal(198) * myzI * rhoI - rho) / (toReal(90.) * rho);
 
         break;
     }

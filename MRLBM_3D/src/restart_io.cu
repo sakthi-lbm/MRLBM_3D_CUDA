@@ -3,6 +3,9 @@
 void write_checkpoint(nodeVar &hMom, haloData &fHalo, int iter)
 {
     std::ofstream file(construct_path(PATH_FILES, ID_SIM, "checkpoint/restart.bin"), std::ios::binary);
+    std::ofstream file2(construct_path(PATH_FILES, ID_SIM, "checkpoint/restart_step.txt"), std::ios::binary);
+
+    file2 << iter << std::endl;
 
     file.write((char *)&iter, sizeof(int));
 

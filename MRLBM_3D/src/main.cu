@@ -95,6 +95,11 @@ int main()
             copyHaloDeviceToHost(h_fHalo, fHalo_interface);
             write_checkpoint(h_fMom, h_fHalo, iter + 1);
         }
+
+        if (iter >= STAT_START && iter <= STAT_END)
+        {
+            write_statistics(h_fMom, h_cylinder, iter);
+        }
     }
     //================================================ MAIN LOOP ENDS ================================================
     calculate_mlups(sim_start_time, end_time, MAX_ITER, mlups);

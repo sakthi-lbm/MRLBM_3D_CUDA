@@ -59,6 +59,9 @@ inline void initialize_host_device_constants()
 
     cudaMemcpyToSymbol(d_incomingMask_bcfluid, h_incomingMask_bcfluid, MAX_NODE_TAG * sizeof(uint32_t));
     cudaMemcpyToSymbol(d_outgoingMask_bcfluid, h_outgoingMask_bcfluid, MAX_NODE_TAG * sizeof(uint32_t));
+
+    cudaMemcpyToSymbol(d_incomingMask_bcsolid, h_incomingMask_bcsolid, MAX_NODE_TAG * sizeof(uint32_t));
+    cudaMemcpyToSymbol(d_outgoingMask_bcsolid, h_outgoingMask_bcsolid, MAX_NODE_TAG * sizeof(uint32_t));
 }
 
 inline void initialize_nodeType(nodeVar &hMom)
@@ -248,6 +251,49 @@ inline void setup_bcfluid_masks(const nodeVar &hMom, cylinderVar &cylinder)
 
         computed[nodeTag] = true;
     }
+}
+
+inline void setup_bcsolid_masks(const nodeVar &hMom, cylinderVar &cylinder)
+{
+#if !Z_PERIODIC
+    std::vector<bool> computed(MAX_NODE_TAG, false);
+
+    for (int i = 0; i < NB_SOLID; i++)
+    {
+        size_t global_index = cylinder.bcsolidList[i];
+
+        int nodeTag = hMom.nodeType[global_index] - BCSOLID_NODE;
+
+        if (computed[nodeTag])
+            continue;
+
+        unsigned int x, y, z;
+        GlobalIndexToXYZ(global_index, x, y, z);
+
+        nodeType_t node[Q];
+        load_neighbors(node, hMom, x, y, z);
+
+        uint32_t incomingMask = (1u << Q) - 1;
+        uint32_t outgoingMask = 0;
+
+        for (int q = 0; q < Q; q++)
+        {
+            if (node[q] == SOLID)
+                incomingMask &= ~(1u << opp[q]);
+        }
+
+        for (int q = 0; q < Q; q++)
+        {
+            if (incomingMask & (1u << opp[q]))
+                outgoingMask |= (1u << q);
+        }
+
+        h_incomingMask_bcsolid[nodeTag] = incomingMask;
+        h_outgoingMask_bcsolid[nodeTag] = outgoingMask;
+
+        computed[nodeTag] = true;
+    }
+#endif
 }
 
 #endif // INITIALIZE_LBM_INLINE_H

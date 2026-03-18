@@ -1,21 +1,21 @@
 #ifndef NODETYPEMAP_H
 #define NODETYPEMAP_H
 
-    /*   N            
-    +----+----+
-    | 64 |128 |      
- W  +----+----+  E      (BACK, z=0)
-    | 16 | 32 |
-    +----+----+
-         S                 
+/*   N
++----+----+
+| 64 |128 |
+W  +----+----+  E      (BACK, z=0)
+| 16 | 32 |
++----+----+
+     S
 /*
-/*       N       
-    +----+----+
-    |  4 |  8 |      
- W  +----+----+  E      (FRONT, z=NZ)
-    |  1 |  2 |
-    +----+----+
-         S
+/*       N
++----+----+
+|  4 |  8 |
+W  +----+----+  E      (FRONT, z=NZ)
+|  1 |  2 |
++----+----+
+     S
 */
 
 // --- SPECIAL ---
@@ -62,6 +62,22 @@ constexpr nodeType_t SOUTH_EAST_BACK = 64;
 constexpr nodeType_t INNER_NODE = 10000;
 constexpr nodeType_t BCFLUID_NODE = 1000;
 constexpr nodeType_t BCSOLID_NODE = 300;
+
+//SOLID combinations:
+constexpr nodeType_t BCF_1 = 17;
+constexpr nodeType_t BCF_2 = 34;
+constexpr nodeType_t BCF_3 = 68;
+constexpr nodeType_t BCF_4 = 136;
+
+//FLUID combinations:
+constexpr nodeType_t BCS_1 = 7;
+constexpr nodeType_t BCS_2 = 11;
+constexpr nodeType_t BCS_3 = 13;
+constexpr nodeType_t BCS_4 = 14;
+constexpr nodeType_t BCS_5 = 112;
+constexpr nodeType_t BCS_6 = 176;
+constexpr nodeType_t BCS_7 = 208;
+constexpr nodeType_t BCS_8 = 224;
 
 #define MISSING_DEFINITION (0b11111111111111111111111111111111)
 

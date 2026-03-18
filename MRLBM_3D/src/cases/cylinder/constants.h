@@ -28,7 +28,7 @@ constexpr real D_WALL = toReal(D);
 constexpr real R_WALL = 0.5 * D_WALL;
 
 constexpr int LW = 4 * D; // inlet from cylinder
-constexpr int LE = 8 * D; // outlet from cylinder
+constexpr int LE = 16 * D; // outlet from cylinder
 constexpr int LN = 4 * D; // top wall from cylinder (y-dir)
 constexpr int LS = LN;    // bottom wall from cylinder
 
