@@ -1,7 +1,6 @@
-#ifndef GLOBAL_STRUCTS_H
-#define GLOBAL_STRUCTS_H
+#pragma once
 
-#include "config.h"
+#include "nodeTypeMap.cuh"
 
 struct nodeVar
 {
@@ -50,5 +49,3 @@ struct haloData
     real *Z_FRONT;
     real *Z_BACK;
 };
-
-#endif // GLOBAL_STRUCTS_H

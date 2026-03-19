@@ -1,8 +1,8 @@
-#ifndef NODETYPE_H
-#define NODETYPE_H
+#pragma once
+#include<iostream>
 
-#include <iostream>
 #include "../../config.h"
+#include STREAMING
 
 inline bool check_for_neighbour_type(const nodeType_t node[Q], const nodeType_t TYPE)
 {
@@ -284,4 +284,3 @@ inline void initialize_cylinder_nodeType_triangular(nodeVar &hMom)
     std::cout << "BcSolid nodes: " << NB_SOLID << std::endl;
 #endif
 }
-#endif // NODETYPE_H

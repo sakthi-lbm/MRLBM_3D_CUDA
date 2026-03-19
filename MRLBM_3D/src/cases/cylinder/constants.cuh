@@ -1,12 +1,9 @@
-#ifndef CONSTANTS_H
-#define CONSTANTS_H
+#pragma once
 
 #include "../../config.h"
 #include LATTICE_PROPERTIES
 
 #define CYLINDER
-
-#define GPU_INDEX 0
 
 #define X_PERIODIC 0 // or 0
 #define Y_PERIODIC 0 // or 0
@@ -113,5 +110,3 @@ extern __device__ real d_TotalFx;
 extern __device__ real d_TotalFy;
 extern __device__ real d_TotalFz;
 extern __device__ real d_Totalm;
-
-#endif // CONSTANTS_H

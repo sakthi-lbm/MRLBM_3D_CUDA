@@ -1,7 +1,6 @@
-#ifndef INDEX_H
-#define INDEX_H
+#pragma once
 
-#include "config.h"
+#include "definitions.cuh"
 
 __host__ __device__ inline size_t IDX(unsigned int x, unsigned int y)
 {
@@ -108,7 +107,3 @@ __host__ __device__ __forceinline__ void GlobalIndexToXYZ(const size_t global_in
     y = by * BLOCK_THREAD_Y + ty;
     z = bz * BLOCK_THREAD_Z + tz;
 }
-
-// for 3D
-
-#endif // INDEX_H

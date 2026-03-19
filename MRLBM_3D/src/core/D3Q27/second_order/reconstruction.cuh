@@ -1,8 +1,6 @@
-#ifndef RECONSTRUCTION_CUH
-#define RECONSTRUCTION_CUH
+#pragma once
 
-#include "config.h"
-#include "all_headers.h"
+#include "../eval_moments.cuh"
 
 __device__ inline void pop_reconstruction(const real rhoVar,
 										  const real uxVar, const real uyVar, const real uzVar,
@@ -60,5 +58,3 @@ __device__ inline void pop_reconstruction(const real rhoVar,
 	pop[25] = multiplyTerm * (pics2 - ux + uy + uz + mtrace - (mxy + mxz - myz));
 	pop[26] = multiplyTerm * (pics2 + ux - uy - uz + mtrace - (mxy + mxz - myz));
 }
-
-#endif // !RECONSTRUCTION_CUH

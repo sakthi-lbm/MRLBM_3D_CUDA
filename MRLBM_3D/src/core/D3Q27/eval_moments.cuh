@@ -1,5 +1,6 @@
-#ifndef EVAL_MOMENTS_CUH
-#define EVAL_MOMENTS_CUH
+#pragma once
+
+#include "halo_interface.cuh"
 
 __device__ inline void evaluate_moments(real &rho, real &ux, real &uy, real &uz,
                                         real &mxx, real &myy, real &mzz,
@@ -19,5 +20,3 @@ __device__ inline void evaluate_moments(real &rho, real &ux, real &uy, real &uz,
     mxz = ((pop[9] + pop[10] + pop[19] + pop[20] + pop[23] + pop[24]) - (pop[15] + pop[16] + pop[21] + pop[22] + pop[25] + pop[26])) * invRho;
     myz = ((pop[11] + pop[12] + pop[19] + pop[20] + pop[25] + pop[26]) - (pop[17] + pop[18] + pop[21] + pop[22] + pop[23] + pop[24])) * invRho;
 }
-
-#endif

@@ -1,5 +1,6 @@
-#ifndef HALO_INTERFACE_H
-#define HALO_INTERFACE_H
+#pragma once
+
+#include "../index.cuh"
 
 __device__ __forceinline__ void pop_load_from_halo(haloData fHalo, unsigned int tx, unsigned int ty, unsigned int tz,
                                           unsigned int bx, unsigned int by, unsigned int bz, real *pop)
@@ -198,5 +199,3 @@ __device__ __forceinline__ void pop_save_to_halo(haloData gHalo, unsigned int tx
         // printf("BX=%u BY=%u | NORTH[%u,%u]: %.5f %.5f %.5f\n", bx, by, tx, ty, pop[2], pop[5], pop[6]);
     }
 }
-
-#endif

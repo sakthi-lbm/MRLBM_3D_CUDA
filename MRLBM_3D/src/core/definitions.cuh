@@ -1,9 +1,12 @@
-#ifndef DEFINITIONS_H
-#define DEFINITIIONS_H
+#pragma once
 
-#include "config.h"
-// #include LATTICE_PROPERTIES
-// #include CASE_CONSTANTS
+#include "../config.h"
+
+#include CASE_OUTPUTS
+
+constexpr real PI = real(3.14159265358979323846);
+constexpr real SQRT_2 = real(1.4142135623730950488);
+constexpr real SQRT_3 = real(1.7320508075688772935);
 
 constexpr size_t BYTES_PER_GB = (1 << 30);
 constexpr size_t BYTES_PER_MB = (1 << 20);
@@ -12,17 +15,11 @@ constexpr size_t BYTES_PER_KB = (1 << 10);
 constexpr size_t MAX_SHARED_MEM_BYTES = 48 * BYTES_PER_KB; // 48 kb shared memory
 constexpr size_t SHARED_MEM_PER_THREAD = (Q) * sizeof(real);
 
-constexpr dim3 OPTIMAL_BLOCK = findOptimalBlockDim3D(MAX_SHARED_MEM_BYTES, SHARED_MEM_PER_THREAD); // optimal block size that fits into 42kb of shared memory
-
-// constexpr size_t BLOCK_THREAD_X = OPTIMAL_BLOCK.x; // Number of threads in x direction
-// constexpr size_t BLOCK_THREAD_Y = OPTIMAL_BLOCK.y; //// Number of threads in y direction
-// constexpr size_t BLOCK_THREAD_Z = OPTIMAL_BLOCK.z; //// Number of threads in z direction
-
 constexpr size_t BLOCK_THREAD_X = 8; // Number of threads in x direction
 constexpr size_t BLOCK_THREAD_Y = 8; //// Number of threads in y direction
 constexpr size_t BLOCK_THREAD_Z = 4; //// Number of threads in z direction
 
-constexpr size_t BLOCK_NODES = 256; //size of the blocks for boundary nodes kernal
+constexpr size_t BLOCK_NODES = 256; // size of the blocks for boundary nodes kernal
 
 constexpr size_t GRID_BLOCK_X = (NX + BLOCK_THREAD_X - 1) / BLOCK_THREAD_X; // Number of blocks in x direction
 constexpr size_t GRID_BLOCK_Y = (NY + BLOCK_THREAD_Y - 1) / BLOCK_THREAD_Y; // Number of blocks in y direction
@@ -56,5 +53,3 @@ constexpr size_t HALO_GLOBAL_MEMORY_BYTES = TOTAL_HALO_NODES * QF * sizeof(real)
 
 constexpr size_t USED_GLOBAL_MEMORY = USED_GLOBAL_MEMORY_BYTES / BYTES_PER_MB;
 constexpr size_t HALO_GLOBAL_MEMORY = HALO_GLOBAL_MEMORY_BYTES / BYTES_PER_MB;
-
-#endif // DEFINITIONS_H

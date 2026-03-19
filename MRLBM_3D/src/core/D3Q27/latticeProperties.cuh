@@ -1,7 +1,6 @@
-#ifndef LATTICE_PROPERTIES_CUH
-#define LATTICE_PROPERTIES_CUH
+#pragma once
 
-#include "config.h"
+#include "../../common/globalStructs.cuh"
 
 constexpr size_t NUMBER_OF_MOMENTS = 10;
 
@@ -28,7 +27,5 @@ constexpr real cs2 = 1.0 / as2;
 
 constexpr real F_M_0_SCALE = 1.0;
 constexpr real F_M_I_SCALE = as2;
-constexpr real F_M_II_SCALE = as2 * as2 / 2;
+constexpr real F_M_II_SCALE = 0.5 * as2 * as2;
 constexpr real F_M_IJ_SCALE = as2 * as2;
-
-#endif // LATTICE_PROPERTIES_CUH

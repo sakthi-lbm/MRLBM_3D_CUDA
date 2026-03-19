@@ -1,5 +1,6 @@
-#ifndef NODETYPEMAP_H
-#define NODETYPEMAP_H
+#pragma once
+
+#include "utils.cuh"
 
 /*   N
 +----+----+
@@ -80,5 +81,3 @@ constexpr nodeType_t BCS_7 = 208;
 constexpr nodeType_t BCS_8 = 224;
 
 #define MISSING_DEFINITION (0b11111111111111111111111111111111)
-
-#endif

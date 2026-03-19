@@ -1,7 +1,7 @@
 #ifndef OUTPUTS_H
 #define OUTPUTS_H
 
-#include "constants.h"
+#include "constants.cuh"
 
 #define PATH_FILES "OUTPUT/CYLINDER_NEW"
 #ifndef ID_SIM

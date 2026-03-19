@@ -1,9 +1,6 @@
-#ifndef BOUNDARIES_H
-#define BOUNDARIES_H
+#pragma once
 
-#include "../../nodeTypeMap.h"
-#include "constants.h"
-#include "../../globalStructs.h"
+#include "nodeClass.cuh"
 
 __host__ __device__ inline nodeType_t boundary_definitions(const unsigned int x, const unsigned int y, const unsigned int z)
 {
@@ -1215,5 +1212,3 @@ __device__ inline void bcsolid_boundary_condition(const nodeType_t nodeTag, cons
     }
     }
 }
-
-#endif // BOUDARIES_H
