@@ -2,6 +2,8 @@
 
 #include "definitions.cuh"
 
+#include FILE_UTILS
+
 __host__ __device__ inline size_t IDX(unsigned int x, unsigned int y)
 {
     return x + (y * NX);

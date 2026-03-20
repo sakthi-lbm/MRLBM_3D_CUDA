@@ -1,5 +1,5 @@
 #pragma once
-#include<iostream>
+#include <iostream>
 
 #include "../../config.h"
 #include STREAMING
@@ -253,7 +253,7 @@ inline int classify_bcsolid_nodes_triangular(nodeVar &hMom)
     return count;
 }
 
-inline void initialize_cylinder_nodeType_staircase(nodeVar &hMom)
+inline void initialize_cylinder_nodeType_staircase(nodeVar &hMom, cylinderVar &cylinder)
 {
     static_assert(LW >= 3 && LS >= 3);
     static_assert(LW + D + 3 < NX);
@@ -261,11 +261,12 @@ inline void initialize_cylinder_nodeType_staircase(nodeVar &hMom)
 
     mark_cylinder_solid(hMom);
 
-    NB = classify_boundary_nodes_staircase(hMom);
-    std::cout << "inner: " << NB << std::endl;
+    const int nb = classify_boundary_nodes_staircase(hMom);
+    cylinder.NB = nb;
+    std::cout << "inner: " << nb << std::endl;
 }
 
-inline void initialize_cylinder_nodeType_triangular(nodeVar &hMom)
+inline void initialize_cylinder_nodeType_triangular(nodeVar &hMom, cylinderVar &cylinder)
 {
     static_assert(LW >= 3 && LS >= 3);
     static_assert(LW + D + 3 < NX);
@@ -273,14 +274,17 @@ inline void initialize_cylinder_nodeType_triangular(nodeVar &hMom)
 
     mark_cylinder_solid(hMom);
 
-    NB = classify_boundary_nodes_triangular(hMom);
-    std::cout << "Boundary nodes: " << NB << std::endl;
+    const int nb = classify_boundary_nodes_triangular(hMom);
+    cylinder.NB = nb;
+    std::cout << "Boundary nodes: " << nb << std::endl;
 
-    NB_FLUID = classify_bcfluid_nodes_triangular(hMom);
-    std::cout << "BcFluid nodes: " << NB_FLUID << std::endl;
+    const int nb_fluid = classify_bcfluid_nodes_triangular(hMom);
+    cylinder.NB_FLUID = nb_fluid;
+    std::cout << "BcFluid nodes: " << nb_fluid << std::endl;
 
 #if !Z_PERIODIC
-    NB_SOLID = classify_bcsolid_nodes_triangular(hMom);
-    std::cout << "BcSolid nodes: " << NB_SOLID << std::endl;
+    const int nb_solid = classify_bcsolid_nodes_triangular(hMom);
+    cylinder.NB_SOLID = nb_solid ;
+    std::cout << "BcSolid nodes: " << nb_solid << std::endl;
 #endif
 }

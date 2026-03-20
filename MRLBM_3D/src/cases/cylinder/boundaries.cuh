@@ -196,7 +196,7 @@ __device__ inline void update_neumaan_density_velocity(nodeVar dMom, real &rho, 
     }
 }
 
-__device__ inline void boundary_condition(nodeType_t nodeType, nodeVar dMom, real *pop, real *s_pop,
+__device__ inline void boundary_condition(nodeType_t nodeType, nodeVar dMom, real *pop,
                                           real &rho, real &ux, real &uy, real &uz,
                                           real &mxx, real &myy, real &mzz,
                                           real &mxy, real &mxz, real &myz)
@@ -239,7 +239,7 @@ __device__ inline void boundary_condition(nodeType_t nodeType, nodeVar dMom, rea
 
         if constexpr (NEUMANN_CURRENT_UPDATE)
         {
-            current_update_neumaan_density_velocity(s_pop, rho, ux, uy, uz);
+            // current_update_neumaan_density_velocity(s_pop, rho, ux, uy, uz);
         }
         else
         {
@@ -461,7 +461,7 @@ __device__ inline void boundary_condition(nodeType_t nodeType, nodeVar dMom, rea
 
         if constexpr (NEUMANN_CURRENT_UPDATE)
         {
-            current_update_neumaan_density_velocity(s_pop, rho, ux, uy, uz);
+            // current_update_neumaan_density_velocity(s_pop, rho, ux, uy, uz);
         }
         else
         {
@@ -493,7 +493,7 @@ __device__ inline void boundary_condition(nodeType_t nodeType, nodeVar dMom, rea
 
         if constexpr (NEUMANN_CURRENT_UPDATE)
         {
-            current_update_neumaan_density_velocity(s_pop, rho, ux, uy, uz);
+            // current_update_neumaan_density_velocity(s_pop, rho, ux, uy, uz);
         }
         else
         {
@@ -526,7 +526,7 @@ __device__ inline void boundary_condition(nodeType_t nodeType, nodeVar dMom, rea
 
         if constexpr (NEUMANN_CURRENT_UPDATE)
         {
-            current_update_neumaan_density_velocity(s_pop, rho, ux, uy, uz);
+            // current_update_neumaan_density_velocity(s_pop, rho, ux, uy, uz);
         }
         else
         {
@@ -559,7 +559,7 @@ __device__ inline void boundary_condition(nodeType_t nodeType, nodeVar dMom, rea
 
         if constexpr (NEUMANN_CURRENT_UPDATE)
         {
-            current_update_neumaan_density_velocity(s_pop, rho, ux, uy, uz);
+            // current_update_neumaan_density_velocity(s_pop, rho, ux, uy, uz);
         }
         else
         {
@@ -742,7 +742,7 @@ __device__ inline void boundary_condition(nodeType_t nodeType, nodeVar dMom, rea
 
         if constexpr (NEUMANN_CURRENT_UPDATE)
         {
-            current_update_neumaan_density_velocity(s_pop, rho, ux, uy, uz);
+            // current_update_neumaan_density_velocity(s_pop, rho, ux, uy, uz);
         }
         else
         {
@@ -769,7 +769,7 @@ __device__ inline void boundary_condition(nodeType_t nodeType, nodeVar dMom, rea
 
         if constexpr (NEUMANN_CURRENT_UPDATE)
         {
-            current_update_neumaan_density_velocity(s_pop, rho, ux, uy, uz);
+            // current_update_neumaan_density_velocity(s_pop, rho, ux, uy, uz);
         }
         else
         {
@@ -796,7 +796,7 @@ __device__ inline void boundary_condition(nodeType_t nodeType, nodeVar dMom, rea
 
         if constexpr (NEUMANN_CURRENT_UPDATE)
         {
-            current_update_neumaan_density_velocity(s_pop, rho, ux, uy, uz);
+            // current_update_neumaan_density_velocity(s_pop, rho, ux, uy, uz);
         }
         else
         {
@@ -823,7 +823,7 @@ __device__ inline void boundary_condition(nodeType_t nodeType, nodeVar dMom, rea
 
         if constexpr (NEUMANN_CURRENT_UPDATE)
         {
-            current_update_neumaan_density_velocity(s_pop, rho, ux, uy, uz);
+            // current_update_neumaan_density_velocity(s_pop, rho, ux, uy, uz);
         }
         else
         {
@@ -842,7 +842,7 @@ __device__ inline void boundary_condition(nodeType_t nodeType, nodeVar dMom, rea
     }
 }
 
-__device__ inline void fluid_boundary_condition(const nodeType_t nodeTag, const cylinderVar &cylinder,
+__device__ inline void fluid_boundary_condition(const nodeType_t nodeTag, const uint32_t incomingMask,
                                                 const real *pop, real &rho, real &ux, real &uy, real &uz,
                                                 real &mxx, real &myy, real &mzz,
                                                 real &mxy, real &mxz, real &myz)
@@ -858,7 +858,7 @@ __device__ inline void fluid_boundary_condition(const nodeType_t nodeTag, const 
     real mxzI = toReal(0.0);
     real myzI = toReal(0.0);
 
-    uint32_t incoming_mask = d_incomingMask_bcfluid[nodeTag];
+    uint32_t incoming_mask = incomingMask;
     while (incoming_mask)
     {
         const int q = __ffs(incoming_mask) - 1;
@@ -1036,7 +1036,7 @@ __device__ inline void fluid_boundary_condition(const nodeType_t nodeTag, const 
     }
 }
 
-__device__ inline void bcsolid_boundary_condition(const nodeType_t nodeTag, const cylinderVar &cylinder,
+__device__ inline void bcsolid_boundary_condition(const nodeType_t nodeTag,
                                                   const real *pop, real &rho, real &ux, real &uy, real &uz,
                                                   real &mxx, real &myy, real &mzz,
                                                   real &mxy, real &mxz, real &myz)
