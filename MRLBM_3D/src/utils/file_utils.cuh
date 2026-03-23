@@ -1,6 +1,6 @@
 #pragma once
 
-#include<fstream>
+#include <fstream>
 
 #include "cudaHelpers.cuh"
 
@@ -222,16 +222,13 @@ inline void gpu_properties()
     }
 }
 
-__host__ inline void time_elapsing_count(timestep &step_end, timestep &step_start, size_t step)
+__host__ inline void time_elapsing_count(timestep &step_end, timestep &step_start, size_t step, int start_step)
 {
     step_end = std::chrono::high_resolution_clock::now();
     double step_time = std::chrono::duration<double>(step_end - step_start).count();
 
     // Calculate MLUPS for the current step
     real MLUPS = (NUM_LBM_NODES * MACR_SAVE / 1e6) / step_time;
-
-    std::cout << "Elapsed time: " << step_time << " seconds" << std::endl;
-    std::cout << "MLUPS: " << MLUPS << std::endl;
 
     // Calculate remaining time
     size_t steps_remaining = MAX_ITER - step;
@@ -242,10 +239,22 @@ __host__ inline void time_elapsing_count(timestep &step_end, timestep &step_star
     size_t minutes = static_cast<size_t>((total_seconds_remaining - hours * 3600) / 60);
     size_t seconds = static_cast<size_t>(total_seconds_remaining) % 60;
 
-    std::cout << "Estimated time left: "
-              << hours << "h "
-              << minutes << "min "
-              << seconds << "s" << std::endl;
+    if (step > start_step)
+    {
+        std::cout << "Elapsed time: " << step_time << " seconds" << std::endl;
+        std::cout << "MLUPS: " << MLUPS << std::endl;
+
+        std::cout << "Estimated time left: "
+                  << hours << "h "
+                  << minutes << "min "
+                  << seconds << "s" << std::endl;
+    }
+    else
+    {
+        std::cout << "Elapsed time: -- " << std::endl;
+        std::cout << "MLUPS: -- " << std::endl;
+        std::cout << "Estimated time left: -- " << std::endl;
+    }
 
     step_start = std::chrono::high_resolution_clock::now();
 }

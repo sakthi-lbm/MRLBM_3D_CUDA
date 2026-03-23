@@ -51,6 +51,8 @@ inline void initialize_host_device_constants()
 
     check_tau();
     check_mach();
+
+    checkCudaErrors(cudaMemcpyToSymbol(d_UCONV, &h_UCONV, sizeof(real)));
 }
 
 inline void initialize_nodeType(nodeVar &hMom)

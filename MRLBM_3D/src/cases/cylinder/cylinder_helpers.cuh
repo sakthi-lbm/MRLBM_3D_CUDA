@@ -6,6 +6,45 @@
 
 #include "../../boundary/curvedLBM.cuh"
 
+inline void compute_unit_vectors_boundary_nodes(nodeVar &hMom, cylinderVar &h_cylinder, const real D_wall)
+{
+    const int nb = h_cylinder.NB;
+    if (nb <= 0)
+        return;
+
+    for (int i = 0; i < nb; i++)
+    {
+        const size_t global_index = h_cylinder.boundaryList[i];
+        unsigned int x, y, z;
+        GlobalIndexToXYZ(global_index, x, y, z);
+
+        // Boundary node location
+        const real xb = toReal(x);
+        const real yb = toReal(y);
+        const real zb = toReal(z);
+
+        // unit normal calculation
+        const real dx = xb - XC;
+        const real dy = yb - YC;
+        const real radius2 = dx * dx + dy * dy;
+        const real inv_radius = rsqrt(radius2);
+
+        const real unit_nx = dx * inv_radius;
+        const real unit_ny = dy * inv_radius;
+
+        // wall point location (cylinder)
+        const real r_wall = toReal(0.5) * D_wall;
+        const real xw = XC + r_wall * unit_nx;
+        const real yw = YC + r_wall * unit_ny;
+
+        const real delta = rabs((xw - xb) * unit_nx + (yw - yb) * unit_ny);
+
+        h_cylinder.unit_nx[i] = unit_nx;
+        h_cylinder.unit_ny[i] = unit_ny;
+        h_cylinder.delta_w[i] = delta;
+    }
+}
+
 inline void buildBoundaryList_updateBoundaryNodeType(nodeVar &hMom, cylinderVar &h_cylinder)
 {
     const int NB = h_cylinder.NB;

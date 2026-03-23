@@ -67,7 +67,7 @@ __device__ void curved_boundary_condition_rotated(const real unit_nx, const real
                                                     real &mxx, real &myy, real &mzz,
                                                     real &mxy, real &mxz, real &myz,
                                                     const real UX_PRIME, const real UY_PRIME, const real UZ_PRIME,
-                                                    const int NODE_TYPE, const real D_WALL, const int iter)
+                                                    const int NODE_TYPE,  const int iter)
 {
     // First reference fluid point
     const real x1 = xw + delx * unit_nx;

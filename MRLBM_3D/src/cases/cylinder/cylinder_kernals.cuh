@@ -93,3 +93,12 @@ inline void copyHostToDevice(cylinderVar &d_cylinder, cylinderVar &h_cylinder)
     checkCudaErrors(cudaMemcpy(d_cylinder.unit_ny, h_cylinder.unit_ny, NB * sizeof(real), cudaMemcpyHostToDevice));
     checkCudaErrors(cudaMemcpy(d_cylinder.delta_w, h_cylinder.delta_w, NB * sizeof(real), cudaMemcpyHostToDevice));
 }
+
+inline void cylinder_host_device_constants()
+{
+    cudaMemcpyToSymbol(d_incomingMask_bcfluid, h_incomingMask_bcfluid, MAX_NODE_TAG * sizeof(uint32_t));
+    cudaMemcpyToSymbol(d_outgoingMask_bcfluid, h_outgoingMask_bcfluid, MAX_NODE_TAG * sizeof(uint32_t));
+
+    cudaMemcpyToSymbol(d_incomingMask_bcsolid, h_incomingMask_bcsolid, MAX_NODE_TAG * sizeof(uint32_t));
+    cudaMemcpyToSymbol(d_outgoingMask_bcsolid, h_outgoingMask_bcsolid, MAX_NODE_TAG * sizeof(uint32_t));
+}
