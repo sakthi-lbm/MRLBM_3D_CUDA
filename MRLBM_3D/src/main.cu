@@ -17,10 +17,15 @@ int main()
     for (int iter = sim.start_iter; iter <= MAX_ITER; iter++)
     {
         streaming(sim, iter);
+
         boundary_treatment(sim, iter);
-        // post_streaming_pipeline();
+
+        post_streaming_pipeline(sim, iter);
+
         collision(sim, iter);
-        // post_collision_pipeline();
+
+        post_collision_pipeline(sim, iter);
+
         post_step_pipeline(sim, iter);
     }
 

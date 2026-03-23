@@ -66,6 +66,11 @@ inline real h_Hyz[Q] = {0};
 inline real h_sumUx = 0.0f;
 inline real h_UCONV = 0.9 * U_MAX;
 
+inline real h_TotalFx = 0.0f;
+inline real h_TotalFy = 0.0f;
+inline real h_TotalFz = 0.0f;
+inline real h_Totalm = 0.0f;
+
 #define MAX_NODE_TAG 256
 inline uint32_t h_incomingMask_bcfluid[MAX_NODE_TAG];
 inline uint32_t h_outgoingMask_bcfluid[MAX_NODE_TAG];
@@ -92,3 +97,8 @@ extern __constant__ uint32_t d_incomingMask_bcfluid[MAX_NODE_TAG];
 extern __constant__ uint32_t d_outgoingMask_bcfluid[MAX_NODE_TAG];
 extern __constant__ uint32_t d_incomingMask_bcsolid[MAX_NODE_TAG];
 extern __constant__ uint32_t d_outgoingMask_bcsolid[MAX_NODE_TAG];
+
+extern __device__ real d_TotalFx;
+extern __device__ real d_TotalFy;
+extern __device__ real d_TotalFz;
+extern __device__ real d_Totalm;

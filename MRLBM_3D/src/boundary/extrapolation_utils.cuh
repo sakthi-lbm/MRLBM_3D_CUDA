@@ -1,8 +1,6 @@
 #pragma once
 
-#include "../config.h"
-
-#include CASE_BOUNDARY
+#include "../statistics/stat_header.cuh"
 
 __device__ __forceinline__ real bilinear_interpolation(const real x, const real y, const real z,
                                                        const real *__restrict__ variable_array)

@@ -69,12 +69,16 @@ struct Simulation; // forward declaration
 struct Case
 {
     void (*initialize)(Simulation &);
+
     void (*apply_boundary)(Simulation &, int iter);
 
-    void (*compute_forces)(Simulation &, int iter) = nullptr;
-    void (*post_process_step)(Simulation &, int iter) = nullptr;
-    void (*finalize)(Simulation &) = nullptr;
+    void (*post_streaming)(Simulation &, int iter) = nullptr;
 
+    void (*post_collision)(Simulation &, int iter) = nullptr;
+
+    void (*post_process_step)(Simulation &, int iter) = nullptr;
+
+    void (*finalize)(Simulation &) = nullptr;
     void (*free_case)(Simulation &) = nullptr;
 };
 

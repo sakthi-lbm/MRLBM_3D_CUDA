@@ -76,14 +76,14 @@ void boundary_treatment(Simulation &sim, int iter)
 
 void post_streaming_pipeline(Simulation &sim, int iter)
 {
-    // if (sim.case_module.compute_forces)
-    //     sim.case_module.compute_forces(sim, iter);
+    if (sim.case_module.post_streaming)
+        sim.case_module.post_streaming(sim, iter);
 }
 
 void post_collision_pipeline(Simulation &sim, int iter)
 {
-    // if (sim.case_module.compute_forces)
-    //     sim.case_module.compute_forces(sim, iter);
+    if (sim.case_module.post_collision)
+        sim.case_module.post_collision(sim, iter);
 }
 
 void post_step_pipeline(Simulation &sim, int iter)

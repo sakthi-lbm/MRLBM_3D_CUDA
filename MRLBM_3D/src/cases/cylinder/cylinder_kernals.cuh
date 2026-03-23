@@ -4,8 +4,15 @@
 
 void cylinder_initialize(Simulation &sim);
 void cylinder_apply_boundary(Simulation &sim, int iter);
+void cylinder_post_streaming(Simulation &sim, int iter);
+void cylinder_post_collision(Simulation &sim, int iter);
 void cylinder_free(Simulation &sim);
 void setup_cylinder_case(Case &case_module);
+
+void cylinder_incoming_force_kernal(Simulation &sim, const int iter);
+void cylinder_outgoing_force_kernal(Simulation &sim, const int iter);
+
+void cylinder_post_process(Simulation &sim, int iter);
 
 __device__ void cylinder_boundary_moments(nodeType_t nodeType, cylinderVar &cylinder, nodeVar &dMom, real *pop,
                                           real &rho, real &ux, real &uy, real &uz,
@@ -101,4 +108,15 @@ inline void cylinder_host_device_constants()
 
     cudaMemcpyToSymbol(d_incomingMask_bcsolid, h_incomingMask_bcsolid, MAX_NODE_TAG * sizeof(uint32_t));
     cudaMemcpyToSymbol(d_outgoingMask_bcsolid, h_outgoingMask_bcsolid, MAX_NODE_TAG * sizeof(uint32_t));
+}
+
+inline void write_statistics(const nodeVar &fMom, const int iter)
+{
+    cudaMemcpyFromSymbol(&h_TotalFx, d_TotalFx, sizeof(real));
+    cudaMemcpyFromSymbol(&h_TotalFy, d_TotalFy, sizeof(real));
+    cudaMemcpyFromSymbol(&h_TotalFz, d_TotalFz, sizeof(real));
+    cudaMemcpyFromSymbol(&h_Totalm, d_Totalm, sizeof(real));
+
+    write_forces(iter);
+    write_mass_flux(iter);
 }
