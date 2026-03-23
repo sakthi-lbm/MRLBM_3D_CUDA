@@ -40,30 +40,6 @@ struct haloData
     real *Z_BACK;
 };
 
-struct cylinderVar
-{
-    int NB;
-    int NB_FLUID;
-    int NB_SOLID;
-
-    real *unit_nx; // unit normal to the cylinder
-    real *unit_ny; // unit tangential to the cylinder
-    real *delta_w; // distance between wall and boundary node
-
-    size_t *boundaryList;   // size NB
-    uint32_t *incomingMask; // NB
-    uint32_t *outgoingMask; // NB
-
-    size_t *bcfluidList; // size NB_FLUID
-    size_t *bcsolidList; // size NB_SOLID
-
-    // cylinder forces
-    real d_TotalFx;
-    real d_TotalFy;
-    real d_TotalFz;
-    real d_Totalm;
-};
-
 struct Simulation; // forward declaration
 
 struct Case
@@ -100,6 +76,9 @@ struct Simulation
     // case specific
     void *h_caseData = nullptr;
     void *d_caseData = nullptr;
+    
+    void *h_casePost = nullptr;
+    void *d_casePost = nullptr;
 
     Case case_module = {};
 

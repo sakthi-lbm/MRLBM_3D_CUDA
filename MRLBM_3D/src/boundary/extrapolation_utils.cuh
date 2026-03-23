@@ -108,3 +108,50 @@ __device__ __forceinline__ VelocityMoments initerpolate_and_rotate(const real un
 
     return vm;
 }
+
+__device__ __forceinline__ real surface_pressure_extrapolation(const real xw, const real yw,
+                                                               const real x1, const real y1,
+                                                               const real x2, const real y2,
+                                                               const real x3, const real y3,
+                                                               const real rho1, const real rho2, const real rho3)
+{
+    // pressure interpolation
+    const real xc = toReal(XC);
+    const real yc = toReal(YC);
+
+    const real xw_diff = xw - xc;
+    const real yw_diff = yw - yc;
+
+    const real x1_diff = x1 - xc;
+    const real y1_diff = y1 - yc;
+
+    const real x2_diff = x2 - xc;
+    const real y2_diff = y2 - yc;
+
+    const real x3_diff = x3 - xc;
+    const real y3_diff = y3 - yc;
+
+    const real rw2 = xw_diff * xw_diff + yw_diff * yw_diff;
+    const real r12 = x1_diff * x1_diff + y1_diff * y1_diff;
+    const real r22 = x2_diff * x2_diff + y2_diff * y2_diff;
+    const real r32 = x3_diff * x3_diff + y3_diff * y3_diff;
+
+    const real rw = sqrt(rw2);
+    const real r1 = sqrt(r12);
+    const real r2 = sqrt(r22);
+    const real r3 = sqrt(r32);
+
+    const real denom = (r1 - r2) * (r1 - r3) * (r2 - r3);
+
+    const real p1 = rho1 * cs2;
+    const real p2 = rho2 * cs2;
+    const real p3 = rho3 * cs2;
+
+    const real a0 = (r1 * r3 * p2 * (r3 - r1) + (r2 * r2) * (r3 * p1 - r1 * p3) + r2 * ((r1 * r1) * p3 - (r3 * r3) * p1)) / denom;
+    const real a1 = ((r3 * r3) * (p1 - p2) + (r1 * r1) * (p2 - p3) + (r2 * r2) * (p3 - p1)) / denom;
+    const real a2 = (r3 * (p2 - p1) + r2 * (p1 - p3) + r1 * (p3 - p2)) / denom;
+
+    const real pressure = a0 + a1 * rw + a2 * (rw * rw);
+
+    return pressure;
+}

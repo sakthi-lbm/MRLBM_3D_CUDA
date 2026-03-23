@@ -7,8 +7,6 @@ void setup_environment()
     write_master_pvd();
 
     checkCudaErrors(cudaSetDevice(GPU_INDEX));
-
-    
 }
 
 void initialize_simulation(Simulation &sim)

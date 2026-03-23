@@ -6,6 +6,9 @@ void cylinder_initialize(Simulation &sim)
     cylinderVar *h_cylinder = new cylinderVar;
     cylinderVar *d_cylinder = new cylinderVar;
 
+    cylinderPostProcess *h_cylinderPost = new cylinderPostProcess;
+    cylinderPostProcess *d_cylinderPost = new cylinderPostProcess;
+
     // compute geometry + counts (NB, etc.)
     triangular ? initialize_cylinder_nodeType_triangular(sim.h_fMom, *h_cylinder)
                : initialize_cylinder_nodeType_staircase(sim.h_fMom, *h_cylinder);
@@ -13,7 +16,7 @@ void cylinder_initialize(Simulation &sim)
     write_geometry_files(sim.h_fMom);
 
     // allocate memory using computed sizes
-    allocateCylinderMemory(*h_cylinder, *d_cylinder);
+    allocateCylinderMemory(*h_cylinder, *d_cylinder, *h_cylinderPost, *d_cylinderPost);
 
     buildBoundaryList_updateBoundaryNodeType(sim.h_fMom, *h_cylinder);
     compute_unit_vectors_boundary_nodes(sim.h_fMom, *h_cylinder, D_WALL);
@@ -28,6 +31,9 @@ void cylinder_initialize(Simulation &sim)
     // store in simulation
     sim.h_caseData = h_cylinder;
     sim.d_caseData = d_cylinder;
+
+    sim.h_casePost = h_cylinderPost;
+    sim.d_casePost = d_cylinderPost;
 }
 
 void cylinder_apply_boundary(Simulation &sim, int iter)
@@ -46,24 +52,6 @@ void cylinder_apply_boundary(Simulation &sim, int iter)
                                                          UZP_CYLINDER, D_WALL, iter);
 
     checkKernelExecution();
-}
-
-void cylinder_post_streaming(Simulation &sim, int iter)
-{
-    cylinder_incoming_force_kernal(sim, iter);
-}
-
-void cylinder_post_collision(Simulation &sim, int iter)
-{
-    cylinder_outgoing_force_kernal(sim, iter);
-}
-
-void cylinder_post_process(Simulation &sim, int iter)
-{
-    if (iter >= STAT_START && iter <= STAT_END)
-    {
-        write_statistics(sim.h_fMom, iter);
-    }
 }
 
 __global__ void apply_bc_cylinder(const int NB, const nodeType_t NODE_TYPE, const cylinderVar &cylinder,
@@ -156,6 +144,49 @@ __device__ void cylinder_boundary_moments(nodeType_t nodeType, cylinderVar &cyli
     }
 }
 
+//================================================ POST-PROCESS====================================================
+
+void cylinder_post_streaming(Simulation &sim, int iter)
+{
+    cylinder_incoming_force_kernal(sim, iter);
+}
+
+void cylinder_post_collision(Simulation &sim, int iter)
+{
+    cylinder_outgoing_force_kernal(sim, iter);
+}
+
+void cylinder_post_process(Simulation &sim, int iter)
+{
+    if (iter >= STAT_START && iter <= STAT_END)
+    {
+        write_forces_mass(sim.h_fMom, iter);
+
+        auto *h_cylinder = static_cast<cylinderVar *>(sim.h_caseData);
+        auto *d_cylinder = static_cast<cylinderVar *>(sim.d_caseData);
+
+        auto *h_cylinderPost = static_cast<cylinderPostProcess *>(sim.h_casePost);
+        auto *d_cylinderPost = static_cast<cylinderPostProcess *>(sim.d_casePost);
+
+        const int NB = h_cylinder->NB;
+
+        constexpr dim3 boundary_block(BLOCK_NODES);
+        const size_t grid_block = (NB + BLOCK_NODES - 1) / BLOCK_NODES;
+
+        dim3 boundary_grid(grid_block);
+
+        h_cylinderPost->n_avg++;
+        compute_surface_pressure<<<grid_block, boundary_block>>>(sim.d_fMom, *d_cylinder, *d_cylinderPost,
+                                                                 h_cylinderPost->n_avg);
+
+        if (iter == STAT_END)
+        {
+            cudaMemcpy(h_cylinderPost->Cp_avg, d_cylinderPost->Cp_avg, NB * sizeof(real), cudaMemcpyDeviceToHost);
+            write_pressure(*h_cylinder, *h_cylinderPost);
+        }
+    }
+}
+
 void cylinder_incoming_force_kernal(Simulation &sim, const int iter)
 {
     if (iter >= STAT_START && iter <= STAT_END)
@@ -212,42 +243,49 @@ void cylinder_outgoing_force_kernal(Simulation &sim, const int iter)
     }
 }
 
-void cylinder_free(Simulation &sim)
+__global__ void compute_surface_pressure(const nodeVar &dMom, const cylinderVar &d_cylinder,
+                                         const cylinderPostProcess &d_cylinderPost,
+                                         const int n_avg)
 {
-    auto *h_cyl = static_cast<cylinderVar *>(sim.h_caseData);
-    auto *d_cyl = static_cast<cylinderVar *>(sim.d_caseData);
+    const int nb = d_cylinder.NB;
+    const unsigned int i = threadIdx.x + blockIdx.x * blockDim.x;
 
-    if (!h_cyl || !d_cyl)
+    if (i >= nb)
         return;
 
-    // Free host memory
-    cudaFreeHost(h_cyl->boundaryList);
-    cudaFreeHost(h_cyl->incomingMask);
-    cudaFreeHost(h_cyl->outgoingMask);
+    const size_t idx = d_cylinder.boundaryList[i];
+    unsigned int x, y, z;
+    GlobalIndexToXYZ(idx, x, y, z);
 
-    cudaFreeHost(h_cyl->bcfluidList);
-    cudaFreeHost(h_cyl->bcsolidList);
+    const real unit_nx = d_cylinder.unit_nx[i];
+    const real unit_ny = d_cylinder.unit_ny[i];
 
-    cudaFreeHost(h_cyl->unit_nx);
-    cudaFreeHost(h_cyl->unit_ny);
-    cudaFreeHost(h_cyl->delta_w);
+    // wall point location (cylinder)
+    const real rmax = toReal(0.5) * D_WALL;
+    const real xw = XC + rmax * unit_nx;
+    const real yw = YC + rmax * unit_ny;
 
-    // Free device memory
-    cudaFree(d_cyl->boundaryList);
-    cudaFree(d_cyl->incomingMask);
-    cudaFree(d_cyl->outgoingMask);
+    // First reference fluid point and pressure calculation
+    const real x1 = xw + delx * unit_nx;
+    const real y1 = yw + delx * unit_ny;
+    const real rho1 = RHO_0 + bilinear_interpolation(x1, y1, z, dMom.rho);
 
-    cudaFree(d_cyl->bcfluidList);
-    cudaFree(d_cyl->bcsolidList);
+    // Second reference fluid point and pressure calculation
+    const real x2 = xw + toReal(2.0) * delx * unit_nx;
+    const real y2 = yw + toReal(2.0) * delx * unit_ny;
+    const real rho2 = RHO_0 + bilinear_interpolation(x2, y2, z, dMom.rho);
 
-    cudaFree(d_cyl->unit_nx);
-    cudaFree(d_cyl->unit_ny);
-    cudaFree(d_cyl->delta_w);
+    // Third reference fluid point and pressure calculation
+    const real x3 = xw + toReal(3.0) * delx * unit_nx;
+    const real y3 = yw + toReal(3.0) * delx * unit_ny;
+    const real rho3 = RHO_0 + bilinear_interpolation(x3, y3, z, dMom.rho);
 
-    // Delete structs
-    delete h_cyl;
-    delete d_cyl;
+    // surface pressure extrapolation
+    const real rho_s = surface_pressure_extrapolation(xw, yw, x1, y1, x2, y2, x3, y3, rho1, rho2, rho3);
 
-    sim.h_caseData = nullptr;
-    sim.d_caseData = nullptr;
+    real rho_avg = d_cylinderPost.Cp_avg[i];
+
+    rho_avg += (rho_s - rho_avg) / toReal(n_avg);
+
+    d_cylinderPost.Cp_avg[i] = rho_avg * cs2;
 }
