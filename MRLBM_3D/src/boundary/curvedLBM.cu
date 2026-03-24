@@ -59,15 +59,15 @@ __device__ void evaluate_incoming_moments_rotated(const real unit_nx, const real
 }
 
 __device__ void curved_boundary_condition_rotated(const real unit_nx, const real unit_ny, const real delta,
-                                                    unsigned int xb, unsigned int yb, unsigned int zb,
-                                                    const real xw, const real yw, const real zw,
-                                                    const cylinderVar &cylinder,
-                                                    const nodeType_t nodeType, const nodeVar &dMom,
-                                                    real &rho, real &ux, real &uy, real &uz,
-                                                    real &mxx, real &myy, real &mzz,
-                                                    real &mxy, real &mxz, real &myz,
-                                                    const real UX_PRIME, const real UY_PRIME, const real UZ_PRIME,
-                                                    const int NODE_TYPE,  const int iter)
+                                                  const uint32_t incomingMask, const uint32_t outgoingMask,
+                                                  unsigned int xb, unsigned int yb, unsigned int zb,
+                                                  const real xw, const real yw, const real zw,
+                                                  const nodeVar &dMom,
+                                                  real &rho, real &ux, real &uy, real &uz,
+                                                  real &mxx, real &myy, real &mzz,
+                                                  real &mxy, real &mxz, real &myz,
+                                                  const real UX_PRIME, const real UY_PRIME, const real UZ_PRIME,
+                                                  const int iter)
 {
     // First reference fluid point
     const real x1 = xw + delx * unit_nx;
@@ -113,14 +113,14 @@ __device__ void curved_boundary_condition_rotated(const real unit_nx, const real
 
     if constexpr (MASS_CONSERV == MassBC ::Equilibrium)
     {
-        numerical_solution_rhoeq_rotated(unit_nx, unit_ny, cylinder, nodeType, ux_prime, uy_prime, uz_prime,
+        numerical_solution_rhoeq_rotated(unit_nx, unit_ny, incomingMask, outgoingMask, ux_prime, uy_prime, uz_prime,
                                          mxx_prime, myy_prime, mzz_prime, myz_prime,
-                                         rho, ux, uy, uz, mxx, myy, mzz, mxy, mxz, myz, NODE_TYPE, iter);
+                                         rho, ux, uy, uz, mxx, myy, mzz, mxy, mxz, myz, iter);
     }
     else if constexpr (MASS_CONSERV == MassBC ::Strong)
     {
-        numerical_solution_strong_rotated(unit_nx, unit_ny, cylinder, nodeType, ux_prime, uy_prime, uz_prime,
+        numerical_solution_strong_rotated(unit_nx, unit_ny, incomingMask, outgoingMask, ux_prime, uy_prime, uz_prime,
                                           mxx_prime, myy_prime, mzz_prime, myz_prime,
-                                          rho, ux, uy, uz, mxx, myy, mzz, mxy, mxz, myz, NODE_TYPE, iter);
+                                          rho, ux, uy, uz, mxx, myy, mzz, mxy, mxz, myz, iter);
     }
 }

@@ -88,13 +88,15 @@ __global__ void apply_bc_cylinder(const int NB, const nodeType_t NODE_TYPE, cons
         const real delta = cylinder.delta_w[i];
         const real unit_nx = cylinder.unit_nx[i];
         const real unit_ny = cylinder.unit_ny[i];
+        const uint32_t incomingMask = cylinder.incomingMask[i];
+        const uint32_t outgoingMask = cylinder.outgoingMask[i];
         const real xw = XC + toReal(0.5) * D_WALL * unit_nx;
         const real yw = YC + toReal(0.5) * D_WALL * unit_ny;
         const real zw = toReal(z);
 
-        curved_boundary_condition_rotated(unit_nx, unit_ny, delta, x, y, z, xw, yw, zw, cylinder, nodeType, dMom,
+        curved_boundary_condition_rotated(unit_nx, unit_ny, delta, incomingMask, outgoingMask, x, y, z, xw, yw, zw, dMom,
                                           rho, ux, uy, uz, mxx, myy, mzz, mxy, mxz, myz,
-                                          UX_PRIME, UY_PRIME, UZ_PRIME, NODE_TYPE, iter);
+                                          UX_PRIME, UY_PRIME, UZ_PRIME, iter);
     }
 
     // writing  moments into global memory (being done only for cylinder block)

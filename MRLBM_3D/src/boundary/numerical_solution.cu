@@ -1,16 +1,14 @@
 #include <iostream>
 #include "numerical_solution.cuh"
 
-__device__ void numerical_solution_rhoeq_rotated(real unit_nx, real unit_ny, const cylinderVar &cylinder,
-                                                 const nodeType_t nodeType,
+__device__ void numerical_solution_rhoeq_rotated(real unit_nx, real unit_ny,
+                                                 const uint32_t incomingMask, const uint32_t outgoingMask,
                                                  const real ux_prime, const real uy_prime, const real uz_prime,
                                                  const real mxx_prime, const real myy_prime, const real mzz_prime,
                                                  const real myz_prime, real &rhoVar, real &ux, real &uy, real &uz,
                                                  real &mxx, real &myy, real &mzz, real &mxy, real &mxz, real &myz,
-                                                 const nodeType_t NODE_TYPE, const int iter)
+                                                 const int iter)
 {
-    const nodeType_t nodeTag = nodeType - toNodeTypeT(NODE_TYPE);
-
     const real cos_theta = unit_nx;
     const real sin_theta = unit_ny;
     const real sin_two_theta = toReal(2.0) * sin_theta * cos_theta;
@@ -35,8 +33,6 @@ __device__ void numerical_solution_rhoeq_rotated(real unit_nx, real unit_ny, con
     real F23_xz_prime = toReal(0.0);
 
     constexpr real common_base_factor = toReal(0.5) * as2 * as2;
-
-    uint32_t incomingMask = cylinder.incomingMask[nodeTag];
 
     for (size_t q = 0; q < Q; q++)
     {
@@ -124,16 +120,14 @@ __device__ void numerical_solution_rhoeq_rotated(real unit_nx, real unit_ny, con
     rhoVar = rhoI_prime / E_prime;
 }
 
-__device__ void numerical_solution_strong_rotated(real unit_nx, real unit_ny, const cylinderVar &cylinder,
-                                                  const nodeType_t nodeType,
+__device__ void numerical_solution_strong_rotated(real unit_nx, real unit_ny,
+                                                  const uint32_t incomingMask, const uint32_t outgoingMask,
                                                   const real ux_prime, const real uy_prime, const real uz_prime,
                                                   const real mxx_prime, const real myy_prime, const real mzz_prime,
                                                   const real myz_prime, real &rhoVar, real &ux, real &uy, real &uz,
                                                   real &mxx, real &myy, real &mzz, real &mxy, real &mxz, real &myz,
-                                                  const nodeType_t NODE_TYPE, const int iter)
+                                                  const int iter)
 {
-    const nodeType_t nodeTag = nodeType - toNodeTypeT(NODE_TYPE);
-
     const real cos_theta = unit_nx;
     const real sin_theta = unit_ny;
     const real sin_two_theta = toReal(2.0) * sin_theta * cos_theta;
@@ -166,9 +160,6 @@ __device__ void numerical_solution_strong_rotated(real unit_nx, real unit_ny, co
     real F23_xz_prime = toReal(0.0);
 
     constexpr real common_base_factor = toReal(0.5) * as2 * as2;
-
-    uint32_t incomingMask = cylinder.incomingMask[nodeTag];
-    uint32_t outgoingMask = cylinder.outgoingMask[nodeTag];
 
     for (size_t q = 0; q < Q; q++)
     {
