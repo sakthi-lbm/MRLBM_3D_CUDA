@@ -5,7 +5,7 @@
 #define CASE_AIRFOIL 2
 #define CASE_ANNULUS 3
 
-#define CASE_ID CASE_AIRFOIL
+#define CASE_ID CASE_CYLINDER
 
 #define REG_ORDER second_order
 #define STENCIL D3Q27
@@ -53,15 +53,15 @@ typedef std::chrono::high_resolution_clock::time_point timestep;
 #define FILE_UTILS STR(UTILS_DIRECTORY/file_utils.cuh)
 
 
-//Case kernal selection
+//Case  selection
 #if CASE_ID == CASE_CYLINDER
-    #define CASE_KERNALS STR(CASE_DIRECTORY/cylinder/cylinder_kernals.cuh)
+    #define CASE_KERNELS STR(CASE_DIRECTORY/cylinder/cylinder_kernels.cuh)
 
 #elif CASE_ID == CASE_AIRFOIL
-    #define CASE_KERNALS STR(CASE_DIRECTORY/airfoil/airfoil_kernals.cuh)
+    #define CASE_KERNELS STR(CASE_DIRECTORY/airfoil/airfoil_kernels.cuh)
 
 #elif CASE_ID == CASE_ANNULUS
-    #define CASE_KERNALS STR(CASE_DIRECTORY/annulus/annulus_kernals.cuh)
+    #define CASE_KERNELS STR(CASE_DIRECTORY/annulus/annulus_kernels.cuh)
 
 #else
     #error "Unknown CASE_ID"

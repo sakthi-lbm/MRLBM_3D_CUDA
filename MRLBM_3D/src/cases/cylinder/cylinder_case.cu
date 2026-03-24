@@ -1,4 +1,4 @@
-#include "cylinder_kernals.cuh"
+#include "cylinder_kernels.cuh"
 
 #ifdef CYLINDER
 __constant__ uint32_t d_incomingMask_bcfluid[MAX_NODE_TAG];

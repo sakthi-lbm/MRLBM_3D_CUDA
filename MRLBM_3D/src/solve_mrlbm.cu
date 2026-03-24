@@ -3,7 +3,7 @@
 void setup_case(Simulation &sim)
 {
 
-// Case kernal selection
+// Case  selection
 #if CASE_ID == CASE_CYLINDER
 
     setup_cylinder_case(sim.case_module);

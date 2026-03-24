@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../config.h"
-#include CASE_KERNALS
+#include CASE_KERNELS
 
 __global__ void gpu_initialize_Moments_GhostInterface(nodeVar dMom, haloData gHalo);
 

@@ -1,4 +1,4 @@
-#include "airfoil_kernals.cuh"
+#include "airfoil_kernels.cuh"
 
 #ifdef AIRFOIL
 __constant__ uint32_t d_incomingMask_bcfluid[MAX_NODE_TAG];
