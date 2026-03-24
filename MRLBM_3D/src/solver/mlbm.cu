@@ -169,8 +169,8 @@ __device__ void evaluate_bounday_moments(void *caseData, int x, int y, int z, no
 #elif defined(AIRFOIL)
     auto *airfoil = static_cast<airfoilVar *>(caseData);
 
-    airfoil_boundary_moments(x, y, z, nodeType, *airfoil, dMom, pop, rho, ux, uy, uz,
-                             mxx, myy, mzz, mxy, mxz, myz);
+    airfoil_boundary_moments(nodeType, *airfoil, dMom, pop, rho, ux, uy, uz, mxx, myy, mzz, mxy, mxz, myz);
+
 #elif defined(ANNULUS)
     auto *annulus = static_cast<annulusVar *>(caseData);
 

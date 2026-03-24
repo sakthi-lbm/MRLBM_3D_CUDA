@@ -1,10 +1,9 @@
 #ifndef OUTPUTS_H
 #define OUTPUTS_H
 
-// #include "cylinder_structs.h"
 #include "constants.cuh"
 
-#define PATH_FILES "OUTPUT/CYLINDER"
+#define PATH_FILES "OUTPUT/AIRFOIL"
 #ifndef ID_SIM
 #define ID_SIM "000"
 #endif

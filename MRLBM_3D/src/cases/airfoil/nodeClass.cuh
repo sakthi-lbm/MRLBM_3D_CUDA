@@ -1,7 +1,7 @@
 #pragma once
 #include <iostream>
 
-#include "cylinder_structs.h"
+#include "airfoil_structs.h"
 
 inline bool check_for_neighbour_type(const nodeType_t node[Q], const nodeType_t TYPE)
 {
@@ -94,7 +94,7 @@ inline int compute_node_tag(const binary_t bits[8])
            bits[7] * 128;
 }
 
-inline void mark_cylinder_solid(nodeVar &hMom)
+inline void mark_airfoil_solid(nodeVar &hMom)
 {
     for (int z = 0; z < NZ; z++)
         for (int y = 0; y < NY; y++)
@@ -252,38 +252,38 @@ inline int classify_bcsolid_nodes_triangular(nodeVar &hMom)
     return count;
 }
 
-inline void initialize_cylinder_nodeType_staircase(nodeVar &hMom, cylinderVar &cylinder)
+inline void initialize_airfoil_nodeType_staircase(nodeVar &hMom, airfoilVar &airfoil)
 {
     static_assert(LW >= 3 && LS >= 3);
     static_assert(LW + D + 3 < NX);
     static_assert(LS + D + 3 < NY);
 
-    mark_cylinder_solid(hMom);
+    mark_airfoil_solid(hMom);
 
     const int nb = classify_boundary_nodes_staircase(hMom);
-    cylinder.NB = nb;
+    airfoil.NB = nb;
     std::cout << "inner: " << nb << std::endl;
 }
 
-inline void initialize_cylinder_nodeType_triangular(nodeVar &hMom, cylinderVar &cylinder)
+inline void initialize_airfoil_nodeType_triangular(nodeVar &hMom, airfoilVar &airfoil)
 {
     static_assert(LW >= 3 && LS >= 3);
     static_assert(LW + D + 3 < NX);
     static_assert(LS + D + 3 < NY);
 
-    mark_cylinder_solid(hMom);
+    mark_airfoil_solid(hMom);
 
     const int nb = classify_boundary_nodes_triangular(hMom);
-    cylinder.NB = nb;
+    airfoil.NB = nb;
     std::cout << "Boundary nodes: " << nb << std::endl;
 
     const int nb_fluid = classify_bcfluid_nodes_triangular(hMom);
-    cylinder.NB_FLUID = nb_fluid;
+    airfoil.NB_FLUID = nb_fluid;
     std::cout << "BcFluid nodes: " << nb_fluid << std::endl;
 
 #if !Z_PERIODIC
     const int nb_solid = classify_bcsolid_nodes_triangular(hMom);
-    cylinder.NB_SOLID = nb_solid;
+    airfoil.NB_SOLID = nb_solid;
     std::cout << "BcSolid nodes: " << nb_solid << std::endl;
 #endif
 }

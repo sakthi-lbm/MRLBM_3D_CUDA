@@ -3,7 +3,7 @@
 #include "../../config.h"
 #include LATTICE_PROPERTIES
 
-#define CYLINDER
+#define AIRFOIL
 
 #define X_PERIODIC 0 // or 0
 #define Y_PERIODIC 0 // or 0

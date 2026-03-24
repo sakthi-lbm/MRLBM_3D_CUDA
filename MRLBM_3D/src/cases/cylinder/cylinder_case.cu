@@ -1,5 +1,6 @@
 #include "cylinder_kernals.cuh"
 
+#ifdef CYLINDER
 __constant__ uint32_t d_incomingMask_bcfluid[MAX_NODE_TAG];
 __constant__ uint32_t d_outgoingMask_bcfluid[MAX_NODE_TAG];
 __constant__ uint32_t d_incomingMask_bcsolid[MAX_NODE_TAG];
@@ -9,6 +10,8 @@ __device__ real d_TotalFx;
 __device__ real d_TotalFy;
 __device__ real d_TotalFz;
 __device__ real d_Totalm;
+
+#endif
 
 void setup_cylinder_case(Case &case_module)
 {

@@ -6,15 +6,15 @@
 
 #include "nodeClass.cuh"
 
-inline void compute_unit_vectors_boundary_nodes(nodeVar &hMom, cylinderVar &h_cylinder, const real D_wall)
+inline void compute_unit_vectors_boundary_nodes(nodeVar &hMom, airfoilVar &h_airfoil, const real D_wall)
 {
-    const int nb = h_cylinder.NB;
+    const int nb = h_airfoil.NB;
     if (nb <= 0)
         return;
 
     for (int i = 0; i < nb; i++)
     {
-        const size_t global_index = h_cylinder.boundaryList[i];
+        const size_t global_index = h_airfoil.boundaryList[i];
         unsigned int x, y, z;
         GlobalIndexToXYZ(global_index, x, y, z);
 
@@ -32,24 +32,24 @@ inline void compute_unit_vectors_boundary_nodes(nodeVar &hMom, cylinderVar &h_cy
         const real unit_nx = dx * inv_radius;
         const real unit_ny = dy * inv_radius;
 
-        // wall point location (cylinder)
+        // wall point location (airfoil)
         const real r_wall = toReal(0.5) * D_wall;
         const real xw = XC + r_wall * unit_nx;
         const real yw = YC + r_wall * unit_ny;
 
         const real delta = rabs((xw - xb) * unit_nx + (yw - yb) * unit_ny);
 
-        h_cylinder.unit_nx[i] = unit_nx;
-        h_cylinder.unit_ny[i] = unit_ny;
-        h_cylinder.delta_w[i] = delta;
+        h_airfoil.unit_nx[i] = unit_nx;
+        h_airfoil.unit_ny[i] = unit_ny;
+        h_airfoil.delta_w[i] = delta;
     }
 }
 
-inline void buildBoundaryList_updateBoundaryNodeType(nodeVar &hMom, cylinderVar &h_cylinder)
+inline void buildBoundaryList_updateBoundaryNodeType(nodeVar &hMom, airfoilVar &h_airfoil)
 {
-    const int NB = h_cylinder.NB;
-    const int NB_FLUID = h_cylinder.NB_FLUID;
-    const int NB_SOLID = h_cylinder.NB_SOLID;
+    const int NB = h_airfoil.NB;
+    const int NB_FLUID = h_airfoil.NB_FLUID;
+    const int NB_SOLID = h_airfoil.NB_SOLID;
 
     int count = 0;
     int count2 = 0;
@@ -74,7 +74,7 @@ inline void buildBoundaryList_updateBoundaryNodeType(nodeVar &hMom, cylinderVar 
                         printf("ERROR: boundaryList overflow\n");
                         exit(EXIT_FAILURE);
                     }
-                    h_cylinder.boundaryList[count] = idx;
+                    h_airfoil.boundaryList[count] = idx;
                     count++;
                 }
                 else if (hMom.nodeType[idx] >= BCFLUID_NODE && hMom.nodeType[idx] < (BCFLUID_NODE + 256))
@@ -84,7 +84,7 @@ inline void buildBoundaryList_updateBoundaryNodeType(nodeVar &hMom, cylinderVar 
                         printf("ERROR: BcfluidList overflow\n");
                         exit(EXIT_FAILURE);
                     }
-                    h_cylinder.bcfluidList[count2] = idx;
+                    h_airfoil.bcfluidList[count2] = idx;
                     count2++;
                 }
                 else if (hMom.nodeType[idx] >= BCSOLID_NODE && hMom.nodeType[idx] < (BCSOLID_NODE + 256))
@@ -94,7 +94,7 @@ inline void buildBoundaryList_updateBoundaryNodeType(nodeVar &hMom, cylinderVar 
                         printf("ERROR: BcsolidList overflow\n");
                         exit(EXIT_FAILURE);
                     }
-                    h_cylinder.bcsolidList[count3] = idx;
+                    h_airfoil.bcsolidList[count3] = idx;
                     count3++;
                 }
             }
@@ -110,15 +110,15 @@ inline void buildBoundaryList_updateBoundaryNodeType(nodeVar &hMom, cylinderVar 
     // updating boundary nodetype with idx
     for (int i = 0; i < NB; i++)
     {
-        const size_t idx = h_cylinder.boundaryList[i];
+        const size_t idx = h_airfoil.boundaryList[i];
         hMom.nodeType[idx] = toNodeTypeT(INNER_NODE) + i;
     }
 }
 
 inline void find_incomings_outgoings(const nodeVar &hMom,
-                                     cylinderVar &cylinder)
+                                     airfoilVar &airfoil)
 {
-    const int nb = cylinder.NB;
+    const int nb = airfoil.NB;
     if (nb <= 0)
         return;
 
@@ -127,7 +127,7 @@ inline void find_incomings_outgoings(const nodeVar &hMom,
         uint32_t incomingMask = (1u << Q) - 1;
         uint32_t outgoingMask = 0;
 
-        const size_t global_index = cylinder.boundaryList[i];
+        const size_t global_index = airfoil.boundaryList[i];
         unsigned int x, y, z;
         GlobalIndexToXYZ(global_index, x, y, z);
 
@@ -152,8 +152,8 @@ inline void find_incomings_outgoings(const nodeVar &hMom,
                 outgoingMask |= (1u << q);
             }
         }
-        cylinder.incomingMask[i] = incomingMask;
-        cylinder.outgoingMask[i] = outgoingMask;
+        airfoil.incomingMask[i] = incomingMask;
+        airfoil.outgoingMask[i] = outgoingMask;
 
         // // debuggig
         // if (z == 0)
@@ -173,15 +173,15 @@ inline void find_incomings_outgoings(const nodeVar &hMom,
     }
 }
 
-inline void setup_bcfluid_masks(const nodeVar &hMom, cylinderVar &h_cylinder)
+inline void setup_bcfluid_masks(const nodeVar &hMom, airfoilVar &h_airfoil)
 {
     std::vector<bool> computed(MAX_NODE_TAG, false);
 
-    const int NB_FLUID = h_cylinder.NB_FLUID;
+    const int NB_FLUID = h_airfoil.NB_FLUID;
 
     for (int i = 0; i < NB_FLUID; i++)
     {
-        size_t global_index = h_cylinder.bcfluidList[i];
+        size_t global_index = h_airfoil.bcfluidList[i];
 
         int nodeTag = hMom.nodeType[global_index] - BCFLUID_NODE;
 
@@ -216,16 +216,16 @@ inline void setup_bcfluid_masks(const nodeVar &hMom, cylinderVar &h_cylinder)
     }
 }
 
-inline void setup_bcsolid_masks(const nodeVar &hMom, cylinderVar &h_cylinder)
+inline void setup_bcsolid_masks(const nodeVar &hMom, airfoilVar &h_airfoil)
 {
 #if !Z_PERIODIC
     std::vector<bool> computed(MAX_NODE_TAG, false);
 
-    const int NB_SOLID = h_cylinder.NB_SOLID;
+    const int NB_SOLID = h_airfoil.NB_SOLID;
 
     for (int i = 0; i < NB_SOLID; i++)
     {
-        size_t global_index = h_cylinder.bcsolidList[i];
+        size_t global_index = h_airfoil.bcsolidList[i];
 
         int nodeTag = hMom.nodeType[global_index] - BCSOLID_NODE;
 
@@ -286,7 +286,7 @@ inline bool isCorner(nodeType_t t)
             t == SOUTH_EAST_FRONT || t == SOUTH_EAST_BACK);
 }
 
-inline bool isCylinder(nodeType_t t)
+inline bool isairfoil(nodeType_t t)
 {
     return (t >= INNER_NODE && t <= INNER_NODE + 256);
 }
@@ -348,7 +348,7 @@ inline void write_geometry_files(nodeVar hMom)
                     corners_file << x << " " << y << " " << z << " "
                                  << static_cast<int>(hMom.nodeType[idx]) << "\n";
                 }
-                else if (isCylinder(hMom.nodeType[idx]))
+                else if (isairfoil(hMom.nodeType[idx]))
                 {
                     bound_file << x << " " << y << " " << z << " "
                                << static_cast<int>(hMom.nodeType[idx]) << "\n";

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <fstream>
-
+#include <iostream>
 #include "cudaHelpers.cuh"
 
 inline void create_output_directory()

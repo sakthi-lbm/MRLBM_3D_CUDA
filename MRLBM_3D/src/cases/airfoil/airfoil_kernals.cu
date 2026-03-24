@@ -1,60 +1,60 @@
-#include "cylinder_kernals.cuh"
+#include "airfoil_kernals.cuh"
 
-void cylinder_initialize(Simulation &sim)
+void airfoil_initialize(Simulation &sim)
 {
     // allocate struct
-    cylinderVar *h_cylinder = new cylinderVar;
-    cylinderVar *d_cylinder = new cylinderVar;
+    airfoilVar *h_airfoil = new airfoilVar;
+    airfoilVar *d_airfoil = new airfoilVar;
 
-    cylinderPostProcess *h_cylinderPost = new cylinderPostProcess;
-    cylinderPostProcess *d_cylinderPost = new cylinderPostProcess;
+    airfoilPostProcess *h_airfoilPost = new airfoilPostProcess;
+    airfoilPostProcess *d_airfoilPost = new airfoilPostProcess;
 
     // compute geometry + counts (NB, etc.)
-    triangular ? initialize_cylinder_nodeType_triangular(sim.h_fMom, *h_cylinder)
-               : initialize_cylinder_nodeType_staircase(sim.h_fMom, *h_cylinder);
+    triangular ? initialize_airfoil_nodeType_triangular(sim.h_fMom, *h_airfoil)
+               : initialize_airfoil_nodeType_staircase(sim.h_fMom, *h_airfoil);
 
     write_geometry_files(sim.h_fMom);
 
     // allocate memory using computed sizes
-    allocateCylinderMemory(*h_cylinder, *d_cylinder, *h_cylinderPost, *d_cylinderPost);
+    allocateairfoilMemory(*h_airfoil, *d_airfoil, *h_airfoilPost, *d_airfoilPost);
 
-    buildBoundaryList_updateBoundaryNodeType(sim.h_fMom, *h_cylinder);
-    compute_unit_vectors_boundary_nodes(sim.h_fMom, *h_cylinder, D_WALL);
-    find_incomings_outgoings(sim.h_fMom, *h_cylinder);
-    setup_bcfluid_masks(sim.h_fMom, *h_cylinder);
-    setup_bcsolid_masks(sim.h_fMom, *h_cylinder);
+    buildBoundaryList_updateBoundaryNodeType(sim.h_fMom, *h_airfoil);
+    compute_unit_vectors_boundary_nodes(sim.h_fMom, *h_airfoil, D_WALL);
+    find_incomings_outgoings(sim.h_fMom, *h_airfoil);
+    setup_bcfluid_masks(sim.h_fMom, *h_airfoil);
+    setup_bcsolid_masks(sim.h_fMom, *h_airfoil);
 
     // copy data to device arrays
-    copyHostToDevice(*d_cylinder, *h_cylinder);
-    cylinder_host_device_constants();
+    copyHostToDevice(*d_airfoil, *h_airfoil);
+    airfoil_host_device_constants();
 
     // store in simulation
-    sim.h_caseData = h_cylinder;
-    sim.d_caseData = d_cylinder;
+    sim.h_caseData = h_airfoil;
+    sim.d_caseData = d_airfoil;
 
-    sim.h_casePost = h_cylinderPost;
-    sim.d_casePost = d_cylinderPost;
+    sim.h_casePost = h_airfoilPost;
+    sim.d_casePost = d_airfoilPost;
 }
 
-void cylinder_apply_boundary(Simulation &sim, int iter)
+void airfoil_apply_boundary(Simulation &sim, int iter)
 {
-    auto *h_cylinder = static_cast<cylinderVar *>(sim.h_caseData);
-    auto *d_cylinder = static_cast<cylinderVar *>(sim.d_caseData);
+    auto *h_airfoil = static_cast<airfoilVar *>(sim.h_caseData);
+    auto *d_airfoil = static_cast<airfoilVar *>(sim.d_caseData);
 
-    const int NB = h_cylinder->NB;
+    const int NB = h_airfoil->NB;
 
     constexpr dim3 boundary_block(BLOCK_NODES);
     const size_t grid_block = (NB + BLOCK_NODES - 1) / BLOCK_NODES;
 
     dim3 boundary_grid(grid_block);
 
-    apply_bc_cylinder<<<boundary_grid, boundary_block>>>(NB, INNER_NODE, *d_cylinder, sim.d_fMom, UXP_WALL, UYP_WALL,
+    apply_bc_airfoil<<<boundary_grid, boundary_block>>>(NB, INNER_NODE, *d_airfoil, sim.d_fMom, UXP_WALL, UYP_WALL,
                                                          UZP_WALL, D_WALL, iter);
 
     checkKernelExecution();
 }
 
-__global__ void apply_bc_cylinder(const int NB, const nodeType_t NODE_TYPE, const cylinderVar &cylinder,
+__global__ void apply_bc_airfoil(const int NB, const nodeType_t NODE_TYPE, const airfoilVar &airfoil,
                                   nodeVar dMom, const real UX_PRIME, const real UY_PRIME, const real UZ_PRIME,
                                   const real D_WALL, const int iter)
 {
@@ -65,7 +65,7 @@ __global__ void apply_bc_cylinder(const int NB, const nodeType_t NODE_TYPE, cons
         return;
 
     // global index loaded from the boundary list
-    const size_t idx = cylinder.boundaryList[i];
+    const size_t idx = airfoil.boundaryList[i];
 
     // converting global index to the gloabl coordinates
     unsigned int x, y, z;
@@ -85,11 +85,11 @@ __global__ void apply_bc_cylinder(const int NB, const nodeType_t NODE_TYPE, cons
 
     if (nodeType >= NODE_TYPE && nodeType < (NODE_TYPE + NB))
     {
-        const real delta = cylinder.delta_w[i];
-        const real unit_nx = cylinder.unit_nx[i];
-        const real unit_ny = cylinder.unit_ny[i];
-        const uint32_t incomingMask = cylinder.incomingMask[i];
-        const uint32_t outgoingMask = cylinder.outgoingMask[i];
+        const real delta = airfoil.delta_w[i];
+        const real unit_nx = airfoil.unit_nx[i];
+        const real unit_ny = airfoil.unit_ny[i];
+        const uint32_t incomingMask = airfoil.incomingMask[i];
+        const uint32_t outgoingMask = airfoil.outgoingMask[i];
         const real xw = XC + toReal(0.5) * D_WALL * unit_nx;
         const real yw = YC + toReal(0.5) * D_WALL * unit_ny;
         const real zw = toReal(z);
@@ -99,7 +99,7 @@ __global__ void apply_bc_cylinder(const int NB, const nodeType_t NODE_TYPE, cons
                                           UX_PRIME, UY_PRIME, UZ_PRIME, iter);
     }
 
-    // writing  moments into global memory (being done only for cylinder block)
+    // writing  moments into global memory (being done only for airfoil block)
     dMom.rho[idx] = rho - RHO_0;
     dMom.ux[idx] = ux;
     dMom.uy[idx] = uy;
@@ -112,18 +112,18 @@ __global__ void apply_bc_cylinder(const int NB, const nodeType_t NODE_TYPE, cons
     dMom.myz[idx] = myz;
 }
 
-__device__ void cylinder_boundary_moments(nodeType_t nodeType, cylinderVar &cylinder, nodeVar &dMom, real *pop,
+__device__ void airfoil_boundary_moments(nodeType_t nodeType, airfoilVar &airfoil, nodeVar &dMom, real *pop,
                                           real &rho, real &ux, real &uy, real &uz,
                                           real &mxx, real &myy, real &mzz,
                                           real &mxy, real &mxz, real &myz)
 {
-    const int NB = cylinder.NB;
+    const int NB = airfoil.NB;
     if (nodeType >= INNER_NODE && nodeType < (INNER_NODE + NB))
     {
         const nodeType_t id = nodeType - INNER_NODE;
-        const real unit_nx = cylinder.unit_nx[id];
-        const real unit_ny = cylinder.unit_ny[id];
-        const uint32_t incomingMask = cylinder.incomingMask[id];
+        const real unit_nx = airfoil.unit_nx[id];
+        const real unit_ny = airfoil.unit_ny[id];
+        const uint32_t incomingMask = airfoil.incomingMask[id];
 
         evaluate_incoming_moments_rotated(unit_nx, unit_ny, incomingMask, pop, rho, mxx, myy, mzz, mxy, mxz, myz);
     }
@@ -148,56 +148,56 @@ __device__ void cylinder_boundary_moments(nodeType_t nodeType, cylinderVar &cyli
 
 //================================================ POST-PROCESS====================================================
 
-void cylinder_post_streaming(Simulation &sim, int iter)
+void airfoil_post_streaming(Simulation &sim, int iter)
 {
-    cylinder_incoming_force_kernal(sim, iter);
+    airfoil_incoming_force_kernal(sim, iter);
 }
 
-void cylinder_post_collision(Simulation &sim, int iter)
+void airfoil_post_collision(Simulation &sim, int iter)
 {
-    cylinder_outgoing_force_kernal(sim, iter);
+    airfoil_outgoing_force_kernal(sim, iter);
 }
 
-void cylinder_post_process(Simulation &sim, int iter)
+void airfoil_post_process(Simulation &sim, int iter)
 {
     if (iter >= STAT_START && iter <= STAT_END)
     {
         write_forces_mass(sim.h_fMom, iter);
 
-        auto *h_cylinder = static_cast<cylinderVar *>(sim.h_caseData);
-        auto *d_cylinder = static_cast<cylinderVar *>(sim.d_caseData);
+        auto *h_airfoil = static_cast<airfoilVar *>(sim.h_caseData);
+        auto *d_airfoil = static_cast<airfoilVar *>(sim.d_caseData);
 
-        auto *h_cylinderPost = static_cast<cylinderPostProcess *>(sim.h_casePost);
-        auto *d_cylinderPost = static_cast<cylinderPostProcess *>(sim.d_casePost);
+        auto *h_airfoilPost = static_cast<airfoilPostProcess *>(sim.h_casePost);
+        auto *d_airfoilPost = static_cast<airfoilPostProcess *>(sim.d_casePost);
 
-        const int NB = h_cylinder->NB;
+        const int NB = h_airfoil->NB;
 
         constexpr dim3 boundary_block(BLOCK_NODES);
         const size_t grid_block = (NB + BLOCK_NODES - 1) / BLOCK_NODES;
 
         dim3 boundary_grid(grid_block);
 
-        h_cylinderPost->n_avg++;
-        compute_surface_pressure<<<grid_block, boundary_block>>>(sim.d_fMom, *d_cylinder, *d_cylinderPost,
-                                                                 h_cylinderPost->n_avg);
+        h_airfoilPost->n_avg++;
+        compute_surface_pressure<<<grid_block, boundary_block>>>(sim.d_fMom, *d_airfoil, *d_airfoilPost,
+                                                                 h_airfoilPost->n_avg);
 
         if (iter == STAT_END)
         {
-            cudaMemcpy(h_cylinderPost->Cp_avg, d_cylinderPost->Cp_avg, NB * sizeof(real), cudaMemcpyDeviceToHost);
-            write_pressure(*h_cylinder, *h_cylinderPost);
+            cudaMemcpy(h_airfoilPost->Cp_avg, d_airfoilPost->Cp_avg, NB * sizeof(real), cudaMemcpyDeviceToHost);
+            write_pressure(*h_airfoil, *h_airfoilPost);
         }
     }
 }
 
-void cylinder_incoming_force_kernal(Simulation &sim, const int iter)
+void airfoil_incoming_force_kernal(Simulation &sim, const int iter)
 {
     if (iter >= STAT_START && iter <= STAT_END)
     {
-        auto *h_cylinder = static_cast<cylinderVar *>(sim.h_caseData);
-        auto *d_cylinder = static_cast<cylinderVar *>(sim.d_caseData);
+        auto *h_airfoil = static_cast<airfoilVar *>(sim.h_caseData);
+        auto *d_airfoil = static_cast<airfoilVar *>(sim.d_caseData);
 
-        const int NB = h_cylinder->NB;
-        const int NB_FLUID = h_cylinder->NB_FLUID;
+        const int NB = h_airfoil->NB;
+        const int NB_FLUID = h_airfoil->NB_FLUID;
 
         real zero = 0.0;
         checkCudaErrors(cudaMemcpyToSymbol(d_TotalFx, &zero, sizeof(real)));
@@ -209,60 +209,60 @@ void cylinder_incoming_force_kernal(Simulation &sim, const int iter)
         const dim3 force_grid(FORCE_GRID);
 
         compute_force_mass_kernel<<<force_grid, BLOCK_NODES>>>(sim.d_fMom,
-                                                               d_cylinder->boundaryList,
-                                                               d_cylinder->bcfluidList,
-                                                               d_cylinder->incomingMask,
+                                                               d_airfoil->boundaryList,
+                                                               d_airfoil->bcfluidList,
+                                                               d_airfoil->incomingMask,
                                                                d_incomingMask_bcfluid,
-                                                               d_cylinder->NB,
-                                                               d_cylinder->NB_FLUID,
+                                                               d_airfoil->NB,
+                                                               d_airfoil->NB_FLUID,
                                                                +1.0);
         checkKernelExecution();
     }
 }
 
-void cylinder_outgoing_force_kernal(Simulation &sim, const int iter)
+void airfoil_outgoing_force_kernal(Simulation &sim, const int iter)
 {
     if (iter >= STAT_START && iter <= STAT_END)
     {
-        auto *h_cylinder = static_cast<cylinderVar *>(sim.h_caseData);
-        auto *d_cylinder = static_cast<cylinderVar *>(sim.d_caseData);
+        auto *h_airfoil = static_cast<airfoilVar *>(sim.h_caseData);
+        auto *d_airfoil = static_cast<airfoilVar *>(sim.d_caseData);
 
-        const int NB = h_cylinder->NB;
-        const int NB_FLUID = h_cylinder->NB_FLUID;
+        const int NB = h_airfoil->NB;
+        const int NB_FLUID = h_airfoil->NB_FLUID;
 
         const size_t FORCE_GRID = (NB + NB_FLUID + BLOCK_NODES - 1) / BLOCK_NODES;
         const dim3 force_grid(FORCE_GRID);
 
         compute_force_mass_kernel<<<force_grid, BLOCK_NODES>>>(sim.d_fMom,
-                                                               d_cylinder->boundaryList,
-                                                               d_cylinder->bcfluidList,
-                                                               d_cylinder->outgoingMask,
+                                                               d_airfoil->boundaryList,
+                                                               d_airfoil->bcfluidList,
+                                                               d_airfoil->outgoingMask,
                                                                d_outgoingMask_bcfluid,
-                                                               d_cylinder->NB,
-                                                               d_cylinder->NB_FLUID,
+                                                               d_airfoil->NB,
+                                                               d_airfoil->NB_FLUID,
                                                                -1.0);
         checkKernelExecution();
     }
 }
 
-__global__ void compute_surface_pressure(const nodeVar &dMom, const cylinderVar &d_cylinder,
-                                         const cylinderPostProcess &d_cylinderPost,
+__global__ void compute_surface_pressure(const nodeVar &dMom, const airfoilVar &d_airfoil,
+                                         const airfoilPostProcess &d_airfoilPost,
                                          const int n_avg)
 {
-    const int nb = d_cylinder.NB;
+    const int nb = d_airfoil.NB;
     const unsigned int i = threadIdx.x + blockIdx.x * blockDim.x;
 
     if (i >= nb)
         return;
 
-    const size_t idx = d_cylinder.boundaryList[i];
+    const size_t idx = d_airfoil.boundaryList[i];
     unsigned int x, y, z;
     GlobalIndexToXYZ(idx, x, y, z);
 
-    const real unit_nx = d_cylinder.unit_nx[i];
-    const real unit_ny = d_cylinder.unit_ny[i];
+    const real unit_nx = d_airfoil.unit_nx[i];
+    const real unit_ny = d_airfoil.unit_ny[i];
 
-    // wall point location (cylinder)
+    // wall point location (airfoil)
     const real rmax = toReal(0.5) * D_WALL;
     const real xw = XC + rmax * unit_nx;
     const real yw = YC + rmax * unit_ny;
@@ -285,9 +285,9 @@ __global__ void compute_surface_pressure(const nodeVar &dMom, const cylinderVar 
     // surface pressure extrapolation
     const real rho_s = surface_pressure_extrapolation(xw, yw, x1, y1, x2, y2, x3, y3, rho1, rho2, rho3);
 
-    real rho_avg = d_cylinderPost.Cp_avg[i];
+    real rho_avg = d_airfoilPost.Cp_avg[i];
 
     rho_avg += (rho_s - rho_avg) / toReal(n_avg);
 
-    d_cylinderPost.Cp_avg[i] = rho_avg * cs2;
+    d_airfoilPost.Cp_avg[i] = rho_avg * cs2;
 }
