@@ -61,8 +61,13 @@ constexpr nodeType_t SOUTH_EAST_BACK = 64;
 
 // Curved boundary
 constexpr nodeType_t INNER_NODE = 10000;
-constexpr nodeType_t BCFLUID_NODE = 1000;
-constexpr nodeType_t BCSOLID_NODE = 300;
+constexpr nodeType_t OUTER_NODE = 20000;
+
+constexpr nodeType_t BCFLUID_NODE_INNER = 1000;
+constexpr nodeType_t BCFLUID_NODE_OUTER = 2000;
+
+constexpr nodeType_t BCSOLID_NODE_INNER = 300;
+constexpr nodeType_t BCSOLID_NODE_OUTER = 500;
 
 //SOLID combinations:
 constexpr nodeType_t BCF_1 = 17;

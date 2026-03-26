@@ -1,10 +1,11 @@
-#ifndef INITIALIZE_LBM_INLINE_H
-#define INITIALIZE_LBM_INLINE_H
+#pragma once
 
 #include <unordered_map>
 #include <vector>
 
 #include "nodeClass.cuh"
+
+#ifdef CYLINDER
 
 inline void compute_unit_vectors_boundary_nodes(nodeVar &hMom, cylinderVar &h_cylinder, const real D_wall)
 {

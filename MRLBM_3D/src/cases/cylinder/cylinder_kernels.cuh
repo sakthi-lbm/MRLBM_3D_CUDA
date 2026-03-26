@@ -2,6 +2,8 @@
 
 #include "cylinder_helpers.cuh"
 
+#ifdef CYLINDER
+
 void cylinder_initialize(Simulation &sim);
 void cylinder_apply_boundary(Simulation &sim, int iter);
 void cylinder_post_streaming(Simulation &sim, int iter);
@@ -230,3 +232,5 @@ inline void write_pressure(const cylinderVar &h_cylinder,
 
     file.close();
 }
+
+#endif

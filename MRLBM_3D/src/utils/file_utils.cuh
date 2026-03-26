@@ -67,7 +67,7 @@ inline std::string getSimInfoString()
     const real nu_phy = 0.01;
     const real u_phy = RE * nu_phy / L_phy;
 
-    const real delx_phy = L_phy / D;
+    const real delx_phy = L_phy / D_OUT;
     const real delt_phy = (delx_phy * delx_phy) * VISC / nu_phy;
 
     out << "========================= SIMULATION INFORMATION =========================\n";
@@ -85,13 +85,11 @@ inline std::string getSimInfoString()
     out << "----------------------------- CYLINDER properties -----------------------------\n";
     out << std::setw(labelWidth) << "Stair-case" << " : " << !triangular << "\n";
     out << std::setw(labelWidth) << "Triangular" << " : " << triangular << "\n";
-    out << std::setw(labelWidth) << "Diameter" << " : " << D << "\n";
-    out << std::setw(labelWidth) << "Radius" << " : " << R << "\n";
+    out << std::setw(labelWidth) << "Diameter" << " : " << D_IN << "\n";
+    out << std::setw(labelWidth) << "Radius" << " : " << R_IN << "\n";
     out << std::setw(labelWidth) << "Center xc" << " : " << XC << "\n";
     out << std::setw(labelWidth) << "Center yc" << " : " << YC << "\n";
-    // out << std::setw(labelWidth) << "Inner cylinder points" << " : " << NB << "\n";
-    // out << std::setw(labelWidth) << "Inner Bc fluid points" << " : " << NB_FLUID << "\n";
-    // out << std::setw(labelWidth) << "Inner Bc solid points" << " : " << NB_SOLID << "\n";
+
     out << "\n";
 
     out << "----------------------------- Lattice Units -----------------------------\n";

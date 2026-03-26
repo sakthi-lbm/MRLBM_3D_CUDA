@@ -3,6 +3,8 @@
 
 #include "cylinder_structs.h"
 
+#ifdef CYLINDER
+
 inline bool check_for_neighbour_type(const nodeType_t node[Q], const nodeType_t TYPE)
 {
     for (int q = 1; q < Q; q++)
@@ -287,3 +289,5 @@ inline void initialize_cylinder_nodeType_triangular(nodeVar &hMom, cylinderVar &
     std::cout << "BcSolid nodes: " << nb_solid << std::endl;
 #endif
 }
+
+#endif

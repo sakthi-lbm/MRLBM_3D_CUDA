@@ -1,20 +1,19 @@
-#ifndef INITIALIZE_LBM_INLINE_H
-#define INITIALIZE_LBM_INLINE_H
+#pragma once
 
 #include <unordered_map>
 #include <vector>
 
 #include "nodeClass.cuh"
 
-inline void compute_unit_vectors_boundary_nodes(nodeVar &hMom, airfoilVar &h_airfoil, const real D_wall)
+inline void compute_unit_vectors_boundary_nodes(nodeVar &hMom, boundaryVar &h_annulus, const real D_wall)
 {
-    const int nb = h_airfoil.NB;
+    const int nb = h_annulus.NB;
     if (nb <= 0)
         return;
 
     for (int i = 0; i < nb; i++)
     {
-        const size_t global_index = h_airfoil.boundaryList[i];
+        const size_t global_index = h_annulus.boundaryList[i];
         unsigned int x, y, z;
         GlobalIndexToXYZ(global_index, x, y, z);
 
@@ -32,33 +31,36 @@ inline void compute_unit_vectors_boundary_nodes(nodeVar &hMom, airfoilVar &h_air
         const real unit_nx = dx * inv_radius;
         const real unit_ny = dy * inv_radius;
 
-        // wall point location (airfoil)
+        // wall point location (annulus)
         const real r_wall = toReal(0.5) * D_wall;
         const real xw = XC + r_wall * unit_nx;
         const real yw = YC + r_wall * unit_ny;
 
         const real delta = rabs((xw - xb) * unit_nx + (yw - yb) * unit_ny);
 
-        h_airfoil.unit_nx[i] = unit_nx;
-        h_airfoil.unit_ny[i] = unit_ny;
-        h_airfoil.delta_w[i] = delta;
+        h_annulus.unit_nx[i] = unit_nx;
+        h_annulus.unit_ny[i] = unit_ny;
+        h_annulus.delta_w[i] = delta;
     }
 }
 
-inline void buildBoundaryList_updateBoundaryNodeType(nodeVar &hMom, airfoilVar &h_airfoil)
+inline void buildBoundaryList_updateBoundaryNodeType(nodeVar &hMom, boundaryVar &h_annulus,
+                                                     const nodeType_t BOUNDARY,
+                                                     const nodeType_t BCFLUID_NODE,
+                                                     const nodeType_t BCSOLID_NODE)
 {
-    const int NB = h_airfoil.NB;
-    const int NB_FLUID = h_airfoil.NB_FLUID;
-    const int NB_SOLID = h_airfoil.NB_SOLID;
+    const int NB = h_annulus.NB;
+    const int NB_FLUID = h_annulus.NB_FLUID;
+    const int NB_SOLID = h_annulus.NB_SOLID;
 
     int count = 0;
     int count2 = 0;
     int count3 = 0;
     for (int z = 0; z < NZ; z++)
     {
-        for (int y = (LS - 2); y < (LS + D + 2); y++)
+        for (int y = 0; y < NY; y++)
         {
-            for (int x = (LW - 2); x < (LW + D + 2); x++)
+            for (int x = 0; x < NX; x++)
             {
                 const size_t idx = IDX_BLOCK(x % BLOCK_THREAD_X,
                                              y % BLOCK_THREAD_Y,
@@ -67,34 +69,37 @@ inline void buildBoundaryList_updateBoundaryNodeType(nodeVar &hMom, airfoilVar &
                                              y / BLOCK_THREAD_Y,
                                              z / BLOCK_THREAD_Z);
 
-                if (hMom.nodeType[idx] >= INNER_NODE && hMom.nodeType[idx] < (INNER_NODE + 256))
+                if (hMom.nodeType[idx] >= BOUNDARY && hMom.nodeType[idx] < (BOUNDARY + 256))
                 {
+                    // std::cout << NB << " " << BOUNDARY << " " << count << " " << hMom.nodeType[idx] << std::endl;
                     if (count >= NB)
                     {
-                        printf("ERROR: boundaryList overflow\n");
+                        std::cout << "Overflow BOUNDARY at idx=" << idx << std::endl;
                         exit(EXIT_FAILURE);
                     }
-                    h_airfoil.boundaryList[count] = idx;
+                    h_annulus.boundaryList[count] = idx;
                     count++;
                 }
                 else if (hMom.nodeType[idx] >= BCFLUID_NODE && hMom.nodeType[idx] < (BCFLUID_NODE + 256))
                 {
+                    // std::cout << NB << " " << BOUNDARY << " " << count << " " << hMom.nodeType[idx] << std::endl;
                     if (count2 >= NB_FLUID)
                     {
-                        printf("ERROR: BcfluidList overflow\n");
+                        std::cout << "Overflow BCFLUID at idx=" << idx << std::endl;
                         exit(EXIT_FAILURE);
                     }
-                    h_airfoil.bcfluidList[count2] = idx;
+                    h_annulus.bcfluidList[count2] = idx;
                     count2++;
                 }
                 else if (hMom.nodeType[idx] >= BCSOLID_NODE && hMom.nodeType[idx] < (BCSOLID_NODE + 256))
                 {
+                    // std::cout << NB << " " << BOUNDARY << " " << count << " " << hMom.nodeType[idx] << std::endl;
                     if (count3 >= NB_SOLID)
                     {
-                        printf("ERROR: BcsolidList overflow\n");
+                        std::cout << "Overflow BCSOLID at idx=" << idx << std::endl;
                         exit(EXIT_FAILURE);
                     }
-                    h_airfoil.bcsolidList[count3] = idx;
+                    h_annulus.bcsolidList[count3] = idx;
                     count3++;
                 }
             }
@@ -106,19 +111,24 @@ inline void buildBoundaryList_updateBoundaryNodeType(nodeVar &hMom, airfoilVar &
         printf("ERROR: Boundary count mismatch! count=%d NB=%d\n", count, NB);
         exit(EXIT_FAILURE);
     }
+}
+
+inline void assignBoundaryIndices(nodeVar &hMom, boundaryVar &h_annulus, const nodeType_t BOUNDARY)
+{
 
     // updating boundary nodetype with idx
+    const int NB = h_annulus.NB;
     for (int i = 0; i < NB; i++)
     {
-        const size_t idx = h_airfoil.boundaryList[i];
-        hMom.nodeType[idx] = toNodeTypeT(INNER_NODE) + i;
+        const size_t idx = h_annulus.boundaryList[i];
+        hMom.nodeType[idx] = BOUNDARY + i;
     }
 }
 
 inline void find_incomings_outgoings(const nodeVar &hMom,
-                                     airfoilVar &airfoil)
+                                     boundaryVar &annulus)
 {
-    const int nb = airfoil.NB;
+    const int nb = annulus.NB;
     if (nb <= 0)
         return;
 
@@ -127,7 +137,7 @@ inline void find_incomings_outgoings(const nodeVar &hMom,
         uint32_t incomingMask = (1u << Q) - 1;
         uint32_t outgoingMask = 0;
 
-        const size_t global_index = airfoil.boundaryList[i];
+        const size_t global_index = annulus.boundaryList[i];
         unsigned int x, y, z;
         GlobalIndexToXYZ(global_index, x, y, z);
 
@@ -152,44 +162,39 @@ inline void find_incomings_outgoings(const nodeVar &hMom,
                 outgoingMask |= (1u << q);
             }
         }
-        airfoil.incomingMask[i] = incomingMask;
-        airfoil.outgoingMask[i] = outgoingMask;
-
-        // // debuggig
-        // if (z == 0)
-        // {
-        //     std::cout << "node " << i << " at (x, y,z) = (" << x << ", " << y << ")\n";
-        //     for (int q = 0; q < Q; q++)
-        //     {
-        //         binary_t incomingMaskBit = (incomingMask >> q) & 1u;
-        //         binary_t outgoingMaskBit = (outgoingMask >> q) & 1u;
-
-        //         std::cout << " q=" << q << " nodetag=" << node[0]
-        //                   << " incomingMask=" << static_cast<int>(incomingMaskBit)
-        //                   << " outgoingMask=" << static_cast<int>(outgoingMaskBit)
-        //                   << "\n";
-        //     }
-        // }
+        annulus.incomingMask[i] = incomingMask;
+        annulus.outgoingMask[i] = outgoingMask;
     }
 }
 
-inline void setup_bcfluid_masks(const nodeVar &hMom, airfoilVar &h_airfoil)
+inline void setup_bcfluid_masks(const nodeVar &hMom, boundaryVar &h_annulus, const nodeType_t BCFLUID_NODE)
 {
     std::vector<bool> computed(MAX_NODE_TAG, false);
 
-    const int NB_FLUID = h_airfoil.NB_FLUID;
+    const int NB_FLUID = h_annulus.NB_FLUID;
 
     for (int i = 0; i < NB_FLUID; i++)
     {
-        size_t global_index = h_airfoil.bcfluidList[i];
+        size_t global_index = h_annulus.bcfluidList[i];
+        unsigned int x, y, z;
+        GlobalIndexToXYZ(global_index, x, y, z);
 
         int nodeTag = hMom.nodeType[global_index] - BCFLUID_NODE;
 
+        if (global_index >= NX * NY * NZ)
+        {
+            std::cout << "ERROR: global_index out of range: " << global_index << std::endl;
+            exit(1);
+        }
+
+        if (nodeTag < 0 || nodeTag >= 256)
+        {
+            std::cout << "ERROR: nodeTag out of range: " << nodeTag << std::endl;
+            std::cout << i << " " << x << " " << y << " " << z << std::endl;
+        }
+
         if (computed[nodeTag])
             continue;
-
-        unsigned int x, y, z;
-        GlobalIndexToXYZ(global_index, x, y, z);
 
         nodeType_t node[Q];
         load_neighbors(node, hMom, x, y, z);
@@ -216,16 +221,16 @@ inline void setup_bcfluid_masks(const nodeVar &hMom, airfoilVar &h_airfoil)
     }
 }
 
-inline void setup_bcsolid_masks(const nodeVar &hMom, airfoilVar &h_airfoil)
+inline void setup_bcsolid_masks(const nodeVar &hMom, boundaryVar &h_annulus, const nodeType_t BCSOLID_NODE)
 {
 #if !Z_PERIODIC
     std::vector<bool> computed(MAX_NODE_TAG, false);
 
-    const int NB_SOLID = h_airfoil.NB_SOLID;
+    const int NB_SOLID = h_annulus.NB_SOLID;
 
     for (int i = 0; i < NB_SOLID; i++)
     {
-        size_t global_index = h_airfoil.bcsolidList[i];
+        size_t global_index = h_annulus.bcsolidList[i];
 
         int nodeTag = hMom.nodeType[global_index] - BCSOLID_NODE;
 
@@ -261,71 +266,63 @@ inline void setup_bcsolid_masks(const nodeVar &hMom, airfoilVar &h_airfoil)
 #endif
 }
 
-inline bool isEdge(nodeType_t t)
-{
-    return (t == NORTH_WEST || t == SOUTH_WEST ||
-            t == WEST_FRONT || t == WEST_BACK ||
-            t == NORTH_EAST || t == SOUTH_EAST ||
-            t == EAST_FRONT || t == EAST_BACK ||
-            t == NORTH_FRONT || t == NORTH_BACK ||
-            t == SOUTH_FRONT || t == SOUTH_BACK);
-}
-
-inline bool isFace(nodeType_t t)
-{
-    return (t == NORTH || t == SOUTH ||
-            t == WEST || t == EAST ||
-            t == FRONT || t == BACK);
-}
-
-inline bool isCorner(nodeType_t t)
-{
-    return (t == NORTH_WEST_FRONT || t == NORTH_WEST_BACK ||
-            t == SOUTH_WEST_FRONT || t == SOUTH_WEST_BACK ||
-            t == NORTH_EAST_FRONT || t == NORTH_EAST_BACK ||
-            t == SOUTH_EAST_FRONT || t == SOUTH_EAST_BACK);
-}
-
-inline bool isairfoil(nodeType_t t)
+inline bool isinner_cylinder(nodeType_t t)
 {
     return (t >= INNER_NODE && t <= INNER_NODE + 256);
 }
 
-inline bool isBcfluid(nodeType_t t)
+inline bool isouter_cylinder(nodeType_t t)
 {
-    return (t >= BCFLUID_NODE && t <= BCFLUID_NODE + 256);
+    return (t >= OUTER_NODE && t <= OUTER_NODE + 256);
 }
 
-inline bool isBcsolid(nodeType_t t)
+inline bool isBcfluid_inner(nodeType_t t)
 {
-    return (t >= BCSOLID_NODE && t <= BCSOLID_NODE + 256);
+    return (t >= BCFLUID_NODE_INNER && t <= BCFLUID_NODE_INNER + 256);
+}
+
+inline bool isBcfluid_outer(nodeType_t t)
+{
+    return (t >= BCFLUID_NODE_OUTER && t <= BCFLUID_NODE_OUTER + 256);
+}
+
+inline bool isBcsolid_inner(nodeType_t t)
+{
+    return (t >= BCSOLID_NODE_INNER && t <= BCSOLID_NODE_INNER + 256);
+}
+
+inline bool isBcsolid_outer(nodeType_t t)
+{
+    return (t >= BCSOLID_NODE_OUTER && t <= BCSOLID_NODE_OUTER + 256);
 }
 
 inline void write_geometry_files(nodeVar hMom)
 {
-    std::ofstream edges_file(construct_path(PATH_FILES, ID_SIM, "grid_layout", "edges.dat"), std::ios::trunc);
-    std::ofstream corners_file(construct_path(PATH_FILES, ID_SIM, "grid_layout", "corners.dat"), std::ios::trunc);
-    std::ofstream faces_file(construct_path(PATH_FILES, ID_SIM, "grid_layout", "faces.dat"), std::ios::trunc);
     std::ofstream fluid_file(construct_path(PATH_FILES, ID_SIM, "grid_layout", "fluid.dat"), std::ios::trunc);
-    std::ofstream bound_file(construct_path(PATH_FILES, ID_SIM, "grid_layout", "bound.dat"), std::ios::trunc);
-    std::ofstream bcfluid_file(construct_path(PATH_FILES, ID_SIM, "grid_layout", "bcfluid.dat"), std::ios::trunc);
-    std::ofstream bcsolid_file(construct_path(PATH_FILES, ID_SIM, "grid_layout", "bcsolid.dat"), std::ios::trunc);
     std::ofstream solid_file(construct_path(PATH_FILES, ID_SIM, "grid_layout", "solid.dat"), std::ios::trunc);
     std::ofstream others_file(construct_path(PATH_FILES, ID_SIM, "grid_layout", "others.dat"), std::ios::trunc);
 
-    const int Z_SLICE = NZ - 1;
+    std::ofstream inner_file(construct_path(PATH_FILES, ID_SIM, "grid_layout", "inner.dat"), std::ios::trunc);
+    std::ofstream outer_file(construct_path(PATH_FILES, ID_SIM, "grid_layout", "outer.dat"), std::ios::trunc);
+
+    std::ofstream bcfluid_inner_file(construct_path(PATH_FILES, ID_SIM, "grid_layout", "bcfluid_inner.dat"), std::ios::trunc);
+    std::ofstream bcfluid_outer_file(construct_path(PATH_FILES, ID_SIM, "grid_layout", "bcfluid_outer.dat"), std::ios::trunc);
+
+    std::ofstream bcsolid_inner_file(construct_path(PATH_FILES, ID_SIM, "grid_layout", "bcsolid_inner.dat"), std::ios::trunc);
+    std::ofstream bcsolid_outer_file(construct_path(PATH_FILES, ID_SIM, "grid_layout", "bcsolid_outer.dat"), std::ios::trunc);
+
+    const int Z_SLICE = -1;
     for (int z = 0; z < NZ; z++)
     {
         if (Z_SLICE >= 0 && z != Z_SLICE)
             continue;
 
         // for (int y = 0; y < NY; y++)
-        for (int y = (LS - 2); y < (LS + D + 2); y++)
+        for (int y = 0; y < NY; y++)
         {
             // for (int x = 0; x < NX; x++)
-            for (int x = (LW - 2); x < (LW + D + 2); x++)
+            for (int x = 0; x < NX; x++)
             {
-
                 const size_t idx = IDX_BLOCK(x % BLOCK_THREAD_X,
                                              y % BLOCK_THREAD_Y,
                                              z % BLOCK_THREAD_Z,
@@ -333,35 +330,35 @@ inline void write_geometry_files(nodeVar hMom)
                                              y / BLOCK_THREAD_Y,
                                              z / BLOCK_THREAD_Z);
 
-                if (isFace(hMom.nodeType[idx]))
+                if (isinner_cylinder(hMom.nodeType[idx]))
                 {
-                    faces_file << x << " " << y << " " << z << " "
+                    inner_file << x << " " << y << " " << z << " "
                                << static_cast<int>(hMom.nodeType[idx]) << "\n";
                 }
-                else if (isEdge(hMom.nodeType[idx]))
+                else if (isouter_cylinder(hMom.nodeType[idx]))
                 {
-                    edges_file << x << " " << y << " " << z << " "
+                    outer_file << x << " " << y << " " << z << " "
                                << static_cast<int>(hMom.nodeType[idx]) << "\n";
                 }
-                else if (isCorner(hMom.nodeType[idx]))
+                else if (isBcfluid_inner(hMom.nodeType[idx]))
                 {
-                    corners_file << x << " " << y << " " << z << " "
-                                 << static_cast<int>(hMom.nodeType[idx]) << "\n";
+                    bcfluid_inner_file << x << " " << y << " " << z << " "
+                                       << static_cast<int>(hMom.nodeType[idx]) << "\n";
                 }
-                else if (isairfoil(hMom.nodeType[idx]))
+                else if (isBcfluid_outer(hMom.nodeType[idx]))
                 {
-                    bound_file << x << " " << y << " " << z << " "
-                               << static_cast<int>(hMom.nodeType[idx]) << "\n";
+                    bcfluid_outer_file << x << " " << y << " " << z << " "
+                                       << static_cast<int>(hMom.nodeType[idx]) << "\n";
                 }
-                else if (isBcfluid(hMom.nodeType[idx]))
+                else if (isBcsolid_inner(hMom.nodeType[idx]))
                 {
-                    bcfluid_file << x << " " << y << " " << z << " "
-                                 << static_cast<int>(hMom.nodeType[idx]) << "\n";
+                    bcsolid_inner_file << x << " " << y << " " << z << " "
+                                       << static_cast<int>(hMom.nodeType[idx]) << "\n";
                 }
-                else if (isBcsolid(hMom.nodeType[idx]))
+                else if (isBcsolid_outer(hMom.nodeType[idx]))
                 {
-                    bcsolid_file << x << " " << y << " " << z << " "
-                                 << static_cast<int>(hMom.nodeType[idx]) << "\n";
+                    bcsolid_outer_file << x << " " << y << " " << z << " "
+                                       << static_cast<int>(hMom.nodeType[idx]) << "\n";
                 }
                 else if (hMom.nodeType[idx] == SOLID)
                 {
@@ -380,5 +377,3 @@ inline void write_geometry_files(nodeVar hMom)
         }
     }
 }
-
-#endif // INITIALIZE_LBM_INLINE_H

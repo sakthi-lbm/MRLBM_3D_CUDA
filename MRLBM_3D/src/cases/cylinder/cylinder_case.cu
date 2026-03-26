@@ -11,8 +11,6 @@ __device__ real d_TotalFy;
 __device__ real d_TotalFz;
 __device__ real d_Totalm;
 
-#endif
-
 void setup_cylinder_case(Case &case_module)
 {
     case_module.initialize = cylinder_initialize;
@@ -25,3 +23,4 @@ void setup_cylinder_case(Case &case_module)
 
     case_module.free_case = cylinder_free;
 }
+#endif

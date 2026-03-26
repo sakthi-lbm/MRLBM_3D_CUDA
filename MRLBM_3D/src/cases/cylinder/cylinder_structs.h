@@ -2,6 +2,8 @@
 
 #include "../../boundary/curvedLBM.cuh"
 
+
+
 struct cylinderVar
 {
     int NB;

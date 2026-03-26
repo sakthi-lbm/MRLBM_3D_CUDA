@@ -172,9 +172,9 @@ __device__ void evaluate_bounday_moments(void *caseData, int x, int y, int z, no
     airfoil_boundary_moments(nodeType, *airfoil, dMom, pop, rho, ux, uy, uz, mxx, myy, mzz, mxy, mxz, myz);
 
 #elif defined(ANNULUS)
-    auto *annulus = static_cast<annulusVar *>(caseData);
+    auto *d_annulus = static_cast<annulusVar *>(caseData);
 
-    annulus_boundary_moments(x, y, z, nodeType, *annulus, dMom, pop, rho, ux, uy, uz,
+    annulus_boundary_moments(nodeType, d_annulus->inner, d_annulus->outer, dMom, pop, rho, ux, uy, uz,
                              mxx, myy, mzz, mxy, mxz, myz);
 #else
 #error "Unknown BC_PROBLEM"

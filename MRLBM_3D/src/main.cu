@@ -11,6 +11,7 @@ int main()
 
     Simulation sim;
     setup_case(sim);
+    
     initialize_simulation(sim);
     restart_simulation(sim);
 

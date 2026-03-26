@@ -1,5 +1,7 @@
 #include "cylinder_kernels.cuh"
 
+#ifdef CYLINDER
+
 void cylinder_initialize(Simulation &sim)
 {
     // allocate struct
@@ -291,3 +293,5 @@ __global__ void compute_surface_pressure(const nodeVar &dMom, const cylinderVar 
 
     d_cylinderPost.Cp_avg[i] = rho_avg * cs2;
 }
+
+#endif

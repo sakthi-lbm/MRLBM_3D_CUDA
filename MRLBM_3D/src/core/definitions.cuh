@@ -15,11 +15,7 @@ constexpr size_t BYTES_PER_KB = (1 << 10);
 constexpr size_t MAX_SHARED_MEM_BYTES = 48 * BYTES_PER_KB; // 48 kb shared memory
 constexpr size_t SHARED_MEM_PER_THREAD = (Q) * sizeof(real);
 
-constexpr size_t BLOCK_THREAD_X = 8; // Number of threads in x direction
-constexpr size_t BLOCK_THREAD_Y = 8; //// Number of threads in y direction
-constexpr size_t BLOCK_THREAD_Z = 4; //// Number of threads in z direction
-
-constexpr size_t BLOCK_NODES = 256; // size of the blocks for boundary nodes 
+constexpr size_t BLOCK_NODES = 256; // size of the blocks for boundary nodes
 
 constexpr size_t GRID_BLOCK_X = (NX + BLOCK_THREAD_X - 1) / BLOCK_THREAD_X; // Number of blocks in x direction
 constexpr size_t GRID_BLOCK_Y = (NY + BLOCK_THREAD_Y - 1) / BLOCK_THREAD_Y; // Number of blocks in y direction

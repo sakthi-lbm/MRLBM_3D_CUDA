@@ -2,14 +2,14 @@
 
 #include "../../boundary/curvedLBM.cuh"
 
-struct airfoilVar
+struct boundaryVar
 {
     int NB;
     int NB_FLUID;
     int NB_SOLID;
 
-    real *unit_nx; // unit normal to the airfoil
-    real *unit_ny; // unit tangential to the airfoil
+    real *unit_nx; // unit normal to the annulus
+    real *unit_ny; // unit tangential to the annulus
     real *delta_w; // distance between wall and boundary node
 
     size_t *boundaryList;   // size NB
@@ -19,19 +19,23 @@ struct airfoilVar
     size_t *bcfluidList; // size NB_FLUID
     size_t *bcsolidList; // size NB_SOLID
 
-    // airfoil forces
+    // annulus forces
     real d_TotalFx;
     real d_TotalFy;
     real d_TotalFz;
     real d_Totalm;
 };
 
-struct airfoilPostProcess
+struct annulusVar
+{
+    boundaryVar inner;
+    boundaryVar outer;
+};
+
+struct annulusPostProcess
 {
     // time averaging
-    real *Cp_avg;      // NB × Nz
-    real *Cp_rms_avg;  // NB × Nz(RMS)
-    real *Cp_span_avg; // NB
-
+    real *ps_avg;     // NB × Nz
+    real *ps_rms_avg; // NB × Nz(RMS)
     int n_avg = 0;
 };

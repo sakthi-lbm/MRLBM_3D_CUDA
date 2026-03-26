@@ -5,7 +5,7 @@
 #define CASE_AIRFOIL 2
 #define CASE_ANNULUS 3
 
-#define CASE_ID CASE_CYLINDER
+#define CASE_ID CASE_ANNULUS
 
 #define REG_ORDER second_order
 #define STENCIL D3Q27

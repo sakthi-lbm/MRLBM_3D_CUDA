@@ -29,6 +29,7 @@ void initialize_simulation(Simulation &sim)
     initialize_host_device_constants();
     copyMomentsDeviceToHost(sim.h_fMom, sim.d_fMom);
     copyHaloInterfaces(sim.d_fHalo, sim.d_gHalo);
+
     writeSimInfo();
 }
 
