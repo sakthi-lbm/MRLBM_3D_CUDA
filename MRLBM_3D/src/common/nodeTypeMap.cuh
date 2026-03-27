@@ -19,70 +19,80 @@ W  +----+----+  E      (FRONT, z=NZ)
      S
 */
 
-// --- SPECIAL ---
-constexpr nodeType_t SOLID = 0;
-constexpr nodeType_t BULK = 255;
+// SOLID combinations:
+constexpr nodeType_t TAG_BCF_1 = 17;
+constexpr nodeType_t TAG_BCF_2 = 34;
+constexpr nodeType_t TAG_BCF_3 = 68;
+constexpr nodeType_t TAG_BCF_4 = 136;
 
-// --- FACE ---
-constexpr nodeType_t NORTH = 51;
-constexpr nodeType_t SOUTH = 204;
-constexpr nodeType_t WEST = 170;
-constexpr nodeType_t EAST = 85;
-constexpr nodeType_t FRONT = 15;
-constexpr nodeType_t BACK = 240;
+// FLUID combinations:
+constexpr nodeType_t TAG_BCS_1 = 7;
+constexpr nodeType_t TAG_BCS_2 = 11;
+constexpr nodeType_t TAG_BCS_3 = 13;
+constexpr nodeType_t TAG_BCS_4 = 14;
+constexpr nodeType_t TAG_BCS_5 = 112;
+constexpr nodeType_t TAG_BCS_6 = 176;
+constexpr nodeType_t TAG_BCS_7 = 208;
+constexpr nodeType_t TAG_BCS_8 = 224;
 
-// --- EDGE ---
-constexpr nodeType_t NORTH_WEST = 34;
-constexpr nodeType_t SOUTH_WEST = 136;
-constexpr nodeType_t WEST_FRONT = 10;
-constexpr nodeType_t WEST_BACK = 160;
+enum NodeTypeEnum : nodeType_t
+{
+    NODE_BULK = 0,
+    NODE_SOLID,
 
-constexpr nodeType_t NORTH_EAST = 17;
-constexpr nodeType_t SOUTH_EAST = 68;
-constexpr nodeType_t EAST_FRONT = 5;
-constexpr nodeType_t EAST_BACK = 80;
+    NODE_INNER,
+    NODE_OUTER,
 
-constexpr nodeType_t NORTH_FRONT = 3;
-constexpr nodeType_t NORTH_BACK = 48;
+    NODE_BCFLUID_INNER,
+    NODE_BCFLUID_OUTER,
 
-constexpr nodeType_t SOUTH_FRONT = 12;
-constexpr nodeType_t SOUTH_BACK = 192;
+    NODE_BCSOLID_INNER,
+    NODE_BCSOLID_OUTER,
 
-// --- CORNER ---
-constexpr nodeType_t NORTH_WEST_FRONT = 2;
-constexpr nodeType_t NORTH_WEST_BACK = 32;
-constexpr nodeType_t SOUTH_WEST_FRONT = 8;
-constexpr nodeType_t SOUTH_WEST_BACK = 128;
+    NODE_NORTH,
+    NODE_SOUTH,
+    NODE_EAST,
+    NODE_WEST,
+    NODE_FRONT,
+    NODE_BACK,
 
-constexpr nodeType_t NORTH_EAST_FRONT = 1;
-constexpr nodeType_t NORTH_EAST_BACK = 16;
-constexpr nodeType_t SOUTH_EAST_FRONT = 4;
-constexpr nodeType_t SOUTH_EAST_BACK = 64;
+    NODE_NORTH_EAST,
+    NODE_NORTH_WEST,
+    NODE_NORTH_FRONT,
+    NODE_NORTH_BACK,
+    NODE_SOUTH_EAST,
+    NODE_SOUTH_WEST,
+    NODE_SOUTH_FRONT,
+    NODE_SOUTH_BACK,
+    NODE_EAST_FRONT,
+    NODE_EAST_BACK,
+    NODE_WEST_FRONT,
+    NODE_WEST_BACK,
 
-// Curved boundary
-constexpr nodeType_t INNER_NODE = 10000;
-constexpr nodeType_t OUTER_NODE = 20000;
+    NODE_NORTH_WEST_FRONT,
+    NODE_NORTH_WEST_BACK,
+    NODE_SOUTH_WEST_FRONT,
+    NODE_SOUTH_WEST_BACK,
+    NODE_NORTH_EAST_FRONT,
+    NODE_NORTH_EAST_BACK,
+    NODE_SOUTH_EAST_FRONT,
+    NODE_SOUTH_EAST_BACK,
+};
 
-constexpr nodeType_t BCFLUID_NODE_INNER = 1000;
-constexpr nodeType_t BCFLUID_NODE_OUTER = 2000;
+constexpr int TYPE_SHIFT = 20;
+constexpr nodeType_t INDEX_MASK = (1u << TYPE_SHIFT) - 1;
 
-constexpr nodeType_t BCSOLID_NODE_INNER = 300;
-constexpr nodeType_t BCSOLID_NODE_OUTER = 500;
+__host__ __device__ inline nodeType_t encodeNode(nodeType_t type, nodeType_t idx)
+{
+    return (type << TYPE_SHIFT) | idx;
+}
 
-//SOLID combinations:
-constexpr nodeType_t BCF_1 = 17;
-constexpr nodeType_t BCF_2 = 34;
-constexpr nodeType_t BCF_3 = 68;
-constexpr nodeType_t BCF_4 = 136;
+__host__ __device__ inline nodeType_t getType(nodeType_t nodeType)
+{
+    return nodeType >> TYPE_SHIFT;
+}
 
-//FLUID combinations:
-constexpr nodeType_t BCS_1 = 7;
-constexpr nodeType_t BCS_2 = 11;
-constexpr nodeType_t BCS_3 = 13;
-constexpr nodeType_t BCS_4 = 14;
-constexpr nodeType_t BCS_5 = 112;
-constexpr nodeType_t BCS_6 = 176;
-constexpr nodeType_t BCS_7 = 208;
-constexpr nodeType_t BCS_8 = 224;
-
-#define MISSING_DEFINITION (0b11111111111111111111111111111111)
+__host__ __device__ inline nodeType_t getIndex(nodeType_t nodeType)
+{
+    return nodeType & INDEX_MASK;
+}

@@ -4,6 +4,8 @@
 
 void setup_environment();
 void initialize_simulation(Simulation &sim);
+void compute_active_blocks(Simulation &sim);
+void find_active_blocks_3d(const nodeVar &fMom, std::vector<int> &h_active_blocks);
 void finalize_simulation(Simulation &sim);
 void restart_simulation(Simulation &sim);
 void streaming(Simulation &sim, int iter);

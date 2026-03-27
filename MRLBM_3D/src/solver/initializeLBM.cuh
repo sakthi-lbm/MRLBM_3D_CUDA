@@ -29,12 +29,12 @@ inline void initialize_host_device_constants()
 {
     for (int q = 0; q < Q; q++)
     {
-        h_Hxx[q] = h_cx[q] * h_cx[q] - cs2;
-        h_Hyy[q] = h_cy[q] * h_cy[q] - cs2;
-        h_Hzz[q] = h_cz[q] * h_cz[q] - cs2;
-        h_Hxy[q] = h_cx[q] * h_cy[q];
-        h_Hxz[q] = h_cx[q] * h_cz[q];
-        h_Hyz[q] = h_cy[q] * h_cz[q];
+        h_Hxx[q] = toReal(h_cx[q]) * toReal(h_cx[q]) - cs2;
+        h_Hyy[q] = toReal(h_cy[q]) * toReal(h_cy[q]) - cs2;
+        h_Hzz[q] = toReal(h_cz[q]) * toReal(h_cz[q]) - cs2;
+        h_Hxy[q] = toReal(h_cx[q]) * toReal(h_cy[q]);
+        h_Hxz[q] = toReal(h_cx[q]) * toReal(h_cz[q]);
+        h_Hyz[q] = toReal(h_cy[q]) * toReal(h_cz[q]);
     }
     // copy to GPU constant memory
     checkCudaErrors(cudaMemcpyToSymbol(d_w, h_w, sizeof(h_w)));
@@ -60,6 +60,7 @@ inline void initialize_nodeType(nodeVar &hMom)
     static_assert(NX % BLOCK_THREAD_X == 0, "NX must tile block size");
     static_assert(NY % BLOCK_THREAD_Y == 0, "NY must tile block size");
     static_assert(NZ % BLOCK_THREAD_Z == 0, "NZ must tile block size");
+    
     for (int z = 0; z < NZ; z++)
     {
         for (int y = 0; y < NY; y++)

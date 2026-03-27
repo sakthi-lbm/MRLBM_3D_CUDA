@@ -20,6 +20,7 @@ constexpr size_t BLOCK_NODES = 256; // size of the blocks for boundary nodes
 constexpr size_t GRID_BLOCK_X = (NX + BLOCK_THREAD_X - 1) / BLOCK_THREAD_X; // Number of blocks in x direction
 constexpr size_t GRID_BLOCK_Y = (NY + BLOCK_THREAD_Y - 1) / BLOCK_THREAD_Y; // Number of blocks in y direction
 constexpr size_t GRID_BLOCK_Z = (NZ + BLOCK_THREAD_Z - 1) / BLOCK_THREAD_Z; // Number of blocks in z direction
+constexpr size_t TOTAL_BLOCKS = GRID_BLOCK_X * GRID_BLOCK_Y * GRID_BLOCK_Z;
 
 // constexpr size_t GRID_BLOCK_X = NX  / BLOCK_THREAD_X; // Number of blocks in x direction
 // constexpr size_t GRID_BLOCK_Y = NY  / BLOCK_THREAD_Y; // Number of blocks in y direction

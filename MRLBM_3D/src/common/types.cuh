@@ -2,9 +2,9 @@
 
 #include <cstdint>
 
-typedef float real;
-typedef uint64_t nodeType_t;
-typedef uint8_t binary_t;
+using  real = float;
+using  nodeType_t = uint32_t;
+using  binary_t = uint8_t;
 
 // ================= GPU BLOCK CONFIG =================
 constexpr size_t BLOCK_THREAD_X = 8;
@@ -17,3 +17,4 @@ enum class MassBC : int
     Strong = 1,
     Weak = 2
 };
+

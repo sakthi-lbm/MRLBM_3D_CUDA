@@ -34,7 +34,7 @@ __device__ void numerical_solution_rhoeq_rotated(real unit_nx, real unit_ny,
 
     constexpr real common_base_factor = toReal(0.5) * as2 * as2;
 
-    for (size_t q = 0; q < Q; q++)
+    for (int q = 0; q < Q; q++)
     {
         const real cx = toReal(d_cx[q]);
         const real cy = toReal(d_cy[q]);
@@ -56,6 +56,7 @@ __device__ void numerical_solution_rhoeq_rotated(real unit_nx, real unit_ny,
 
         if (incomingMask & (1u << q))
         {
+            // printf("incoming, q: %d \n", q);
             const real A_i = wq * (toReal(1.0) + as2 * (ux_prime * cx_prime + uy_prime * cy_prime +
                                                         uz_prime * cz_prime));
             const real E_i = A_i + common_factor * (ux_prime * ux_prime * Hxx_prime +

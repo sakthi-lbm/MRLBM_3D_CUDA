@@ -81,8 +81,12 @@ void compute_convective_outlet_velocity(const real *d_ux)
 }
 
 __global__ void streaming_and_evaluate_Mom(void *caseData, nodeVar dMom, haloData fHalo, haloData gHalo,
-                                           int iter)
+                                           const int *d_active_blocks, int iter)
 {
+
+    const int blockId = blockIdx.y * GRID_BLOCK_X + blockIdx.x;
+    if (d_active_blocks[blockId] == 0)
+        return;
 
     const unsigned int x = threadIdx.x + blockIdx.x * blockDim.x;
     const unsigned int y = threadIdx.y + blockIdx.y * blockDim.y;
@@ -103,7 +107,7 @@ __global__ void streaming_and_evaluate_Mom(void *caseData, nodeVar dMom, haloDat
     // Loading moments from the global memory
     const size_t idx = IDX_BLOCK(tx, ty, tz, bx, by, bz);
 
-    nodeType_t nodeType = dMom.nodeType[idx];
+    nodeType_t nodeType_packed = dMom.nodeType[idx];
     real rho = RHO_0 + dMom.rho[idx];
     real ux = dMom.ux[idx];
     real uy = dMom.uy[idx];
@@ -137,13 +141,15 @@ __global__ void streaming_and_evaluate_Mom(void *caseData, nodeVar dMom, haloDat
     // }
 
     //========================== Moments evaluation ========================================
-    if (nodeType == BULK)
+    const nodeType_t nodeType = getType(nodeType_packed);
+    if (nodeType == NODE_BULK)
     {
         evaluate_moments(rho, ux, uy, uz, mxx, myy, mzz, mxy, mxz, myz, pop);
     }
-    else
+    else if (nodeType == NODE_INNER || nodeType == NODE_OUTER)
     {
-        evaluate_bounday_moments(caseData, x, y, z, nodeType, dMom, pop, rho, ux, uy, uz, mxx, myy, mzz, mxy, mxz, myz);
+        // printf("nodetype: %d \n", toInt(nodeType));
+        evaluate_bounday_moments(caseData, x, y, z, nodeType_packed, dMom, pop, rho, ux, uy, uz, mxx, myy, mzz, mxy, mxz, myz);
     }
 
     dMom.rho[idx] = rho - RHO_0; // Incoming density rhoI only for cylinder boundary nodes
@@ -158,7 +164,7 @@ __global__ void streaming_and_evaluate_Mom(void *caseData, nodeVar dMom, haloDat
     dMom.myz[idx] = myz; // Incoming Moment myzI only for curved boundary nodes
 }
 
-__device__ void evaluate_bounday_moments(void *caseData, int x, int y, int z, nodeType_t nodeType,
+__device__ void evaluate_bounday_moments(void *caseData, int x, int y, int z, nodeType_t nodeType_packed,
                                          nodeVar dMom, real *pop, real &rho, real &ux, real &uy, real &uz,
                                          real &mxx, real &myy, real &mzz, real &mxy, real &mxz, real &myz)
 {
@@ -166,23 +172,24 @@ __device__ void evaluate_bounday_moments(void *caseData, int x, int y, int z, no
     auto *cylinder = static_cast<cylinderVar *>(caseData);
 
     cylinder_boundary_moments(nodeType, *cylinder, dMom, pop, rho, ux, uy, uz, mxx, myy, mzz, mxy, mxz, myz);
-#elif defined(AIRFOIL)
-    auto *airfoil = static_cast<airfoilVar *>(caseData);
-
-    airfoil_boundary_moments(nodeType, *airfoil, dMom, pop, rho, ux, uy, uz, mxx, myy, mzz, mxy, mxz, myz);
 
 #elif defined(ANNULUS)
     auto *d_annulus = static_cast<annulusVar *>(caseData);
 
-    annulus_boundary_moments(nodeType, d_annulus->inner, d_annulus->outer, dMom, pop, rho, ux, uy, uz,
+    annulus_boundary_moments(nodeType_packed, d_annulus->inner, d_annulus->outer, dMom, pop, rho, ux, uy, uz,
                              mxx, myy, mzz, mxy, mxz, myz);
 #else
 #error "Unknown BC_PROBLEM"
 #endif
 }
 
-__global__ void collision_halo_update(nodeVar dMom, haloData fHalo, haloData gHalo, const int iter)
+__global__ void collision_halo_update(nodeVar dMom, haloData fHalo, haloData gHalo,
+                                      const int *d_active_blocks, const int iter)
 {
+
+    const int blockId = blockIdx.y * GRID_BLOCK_X + blockIdx.x;
+    if (d_active_blocks[blockId] == 0)
+        return;
     const unsigned int x = threadIdx.x + blockIdx.x * blockDim.x;
     const unsigned int y = threadIdx.y + blockIdx.y * blockDim.y;
     const unsigned int z = threadIdx.z + blockIdx.z * blockDim.z;

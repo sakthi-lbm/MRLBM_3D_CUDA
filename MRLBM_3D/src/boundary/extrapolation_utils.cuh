@@ -64,25 +64,23 @@ __device__ inline void rotate_velocity_moments(const real unit_nx, const real un
                                                const real ux, const real uy, const real uz,
                                                const real mxx, const real myy, const real mzz,
                                                const real mxy, const real mxz, const real myz,
-                                               real &ux_prime, real &uy_prime, real &uz_prime,
-                                               real &mxx_prime, real &myy_prime, real &mzz_prime,
-                                               real &mxy_prime, real &mxz_prime, real &myz_prime)
+                                               VelocityMoments &vm)
 {
     const real cos_theta = unit_nx;
     const real sin_theta = unit_ny;
     const real sin_two_theta = toReal(2.0) * sin_theta * cos_theta;
     const real cos_two_theta = cos_theta * cos_theta - sin_theta * sin_theta;
 
-    ux_prime = ux * cos_theta + uy * sin_theta;
-    uy_prime = -ux * sin_theta + uy * cos_theta;
-    uz_prime = uz;
+    vm.ux = ux * cos_theta + uy * sin_theta;
+    vm.uy = -ux * sin_theta + uy * cos_theta;
+    vm.uz = uz;
 
-    mxx_prime = mxx * cos_theta * cos_theta + myy * sin_theta * sin_theta + mxy * sin_two_theta;
-    myy_prime = mxx * sin_theta * sin_theta + myy * cos_theta * cos_theta - mxy * sin_two_theta;
-    mzz_prime = mzz;
-    mxy_prime = mxy * cos_two_theta + toReal(0.5) * (myy - mxx) * sin_two_theta;
-    mxz_prime = mxz * cos_theta + myz * sin_theta;
-    myz_prime = myz * cos_theta - mxz * sin_theta;
+    vm.mxx = mxx * cos_theta * cos_theta + myy * sin_theta * sin_theta + mxy * sin_two_theta;
+    vm.myy = mxx * sin_theta * sin_theta + myy * cos_theta * cos_theta - mxy * sin_two_theta;
+    vm.mzz = mzz;
+    vm.mxy = mxy * cos_two_theta + toReal(0.5) * (myy - mxx) * sin_two_theta;
+    vm.mxz = mxz * cos_theta + myz * sin_theta;
+    vm.myz = myz * cos_theta - mxz * sin_theta;
 }
 
 __device__ __forceinline__ VelocityMoments initerpolate_and_rotate(const real unit_nx, const real unit_ny,
@@ -103,8 +101,7 @@ __device__ __forceinline__ VelocityMoments initerpolate_and_rotate(const real un
     const real myz = bilinear_interpolation(x, y, z, dMom.myz);
 
     // Rotate velocity & moments
-    rotate_velocity_moments(unit_nx, unit_ny, ux, uy, uz, mxx, myy, mzz, mxy, mxz, myz,
-                            vm.ux, vm.uy, vm.uz, vm.mxx, vm.myy, vm.mzz, vm.mxy, vm.mxz, vm.myz);
+    rotate_velocity_moments(unit_nx, unit_ny, ux, uy, uz, mxx, myy, mzz, mxy, mxz, myz, vm);
 
     return vm;
 }

@@ -1,7 +1,6 @@
 #ifndef OUTPUTS_H
 #define OUTPUTS_H
 
-// #include "cylinder_structs.h"
 #include "constants.cuh"
 
 #define PATH_FILES "OUTPUT/ANNULUS"
@@ -11,8 +10,8 @@
 
 constexpr bool RESTART = 0;
 
-constexpr int MACR_SAVE = 1000;
-constexpr int MAX_ITER = 10000;
+constexpr int MACR_SAVE = 10000;
+constexpr int MAX_ITER = 500000;
 
 constexpr int STAT_START = MAX_ITER - 1000;
 constexpr int STAT_END = MAX_ITER;

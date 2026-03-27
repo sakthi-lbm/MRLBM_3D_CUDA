@@ -18,6 +18,22 @@ __constant__ real d_Hyz[Q];
 __device__ real d_sumUx;
 __device__ real d_UCONV;
 
+// A simple hash-based random number generator for CUDA
+__device__ real get_noise(size_t idx, real scale)
+{
+    // Basic LCG / Hash to get a pseudo-random float between -1 and 1
+    unsigned int seed = (unsigned int)idx;
+    seed = (seed ^ 61) ^ (seed >> 16);
+    seed *= 9;
+    seed = seed ^ (seed >> 4);
+    seed *= 0x27d4eb2d;
+    seed = seed ^ (seed >> 15);
+
+    // Normalize to [-1.0, 1.0]
+    float r = (float)(seed & 0x7FFFFFFF) / (float)0x7FFFFFFF;
+    return scale * (toReal(2.0) * (real)r - toReal(1.0));
+}
+
 __global__ void gpu_initialize_Moments_GhostInterface(nodeVar dMom, haloData gHalo)
 {
     const unsigned int x = threadIdx.x + blockIdx.x * blockDim.x;
@@ -28,10 +44,17 @@ __global__ void gpu_initialize_Moments_GhostInterface(nodeVar dMom, haloData gHa
     if (x >= NX || y >= NY || z >= NZ)
         return;
 
+    const size_t idx = IDX_BLOCK(threadIdx.x, threadIdx.y, threadIdx.z, blockIdx.x, blockIdx.y, blockIdx.z);
+
     real rho = RHO_0;
     real ux = toReal(0.0);
     real uy = toReal(0.0);
     real uz = toReal(0.0);
+
+    // const real noise_scale = toReal(1e-4) * U_MAX;
+    // real ux = get_noise(idx, noise_scale);
+    // real uy = get_noise(idx + 12345, noise_scale);
+    // real uz = get_noise(idx + 67890, noise_scale);
 
     real mxx, myy, mzz, mxy, mxz, myz;
     real pop[Q];
@@ -70,9 +93,8 @@ __global__ void gpu_initialize_Moments_GhostInterface(nodeVar dMom, haloData gHa
     myz *= inv_rho;
 
     //=================== Writing moments to global memory======================================
-    const size_t idx = IDX_BLOCK(threadIdx.x, threadIdx.y, threadIdx.z,
-                                 blockIdx.x, blockIdx.y, blockIdx.z);
-    dMom.nodeType[idx] = BULK;
+
+    dMom.nodeType[idx] = encodeNode(NODE_BULK, 0);
     dMom.rho[idx] = rho - RHO_0;
     dMom.ux[idx] = ux;
     dMom.uy[idx] = uy;
@@ -96,5 +118,3 @@ __global__ void gpu_initialize_Moments_GhostInterface(nodeVar dMom, haloData gHa
 
     pop_save_to_halo(gHalo, tx, ty, tz, bx, by, bz, pop);
 }
-
-

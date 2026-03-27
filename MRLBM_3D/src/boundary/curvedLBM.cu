@@ -58,7 +58,7 @@ __device__ void evaluate_incoming_moments_rotated(const real unit_nx, const real
     myz = myzI_prime * inv_rho;
 }
 
-__device__ void curved_boundary_condition_rotated(const real unit_nx, const real unit_ny, const real delta,
+__device__ void curved_boundary_condition_rotated(const nodeType_t nodeType, const real unit_nx, const real unit_ny, const real delta,
                                                   const uint32_t incomingMask, const uint32_t outgoingMask,
                                                   unsigned int xb, unsigned int yb, unsigned int zb,
                                                   const real xw, const real yw, const real zw,
@@ -69,13 +69,19 @@ __device__ void curved_boundary_condition_rotated(const real unit_nx, const real
                                                   const real UX_PRIME, const real UY_PRIME, const real UZ_PRIME,
                                                   const int iter)
 {
+    real fluid_dir = 1.0;
+    if (nodeType == NODE_OUTER)
+    {
+        fluid_dir = -1.0; // Point inward toward the fluid gap
+    }
+
     // First reference fluid point
-    const real x1 = xw + delx * unit_nx;
-    const real y1 = yw + delx * unit_ny;
+    const real x1 = xw + fluid_dir * delx * unit_nx;
+    const real y1 = yw + fluid_dir * delx * unit_ny;
 
     // second reference fluid point
-    const real x2 = xw + toReal(2.0) * delx * unit_nx;
-    const real y2 = yw + toReal(2.0) * delx * unit_ny;
+    const real x2 = xw + fluid_dir * toReal(2.0) * delx * unit_nx;
+    const real y2 = yw + fluid_dir * toReal(2.0) * delx * unit_ny;
 
     real ux_prime, uy_prime, uz_prime;
     real mxx_prime, myy_prime, mzz_prime, myz_prime;

@@ -6,7 +6,7 @@
 inline bool check_for_neighbour_type(const nodeType_t *node, const nodeType_t TYPE)
 {
     for (int q = 1; q < Q; q++)
-        if (node[q] == TYPE)
+        if (getType(node[q]) == TYPE)
             return true;
 
     return false;
@@ -29,16 +29,16 @@ inline void load_neighbors(nodeType_t *node, const nodeVar &hMom, int x, int y, 
         int xn = x + h_cx[q];
         int yn = y + h_cy[q];
         int zn = z + h_cz[q];
+
 #if Z_PERIODIC
         if (zn < 0)
             zn += NZ;
         else if (zn >= NZ)
             zn -= NZ;
 
-        // finding neighbour
         if (xn < 0 || xn >= NX || yn < 0 || yn >= NY)
         {
-            node[q] = SOLID;
+            node[q] = encodeNode(NODE_SOLID, 0);
         }
         else
         {
@@ -46,9 +46,13 @@ inline void load_neighbors(nodeType_t *node, const nodeVar &hMom, int x, int y, 
         }
 #else
         if (xn < 0 || xn >= NX || yn < 0 || yn >= NY || zn < 0 || zn >= NZ)
-            node[q] = SOLID;
+        {
+            node[q] = encodeNode(NODE_SOLID, 0);
+        }
         else
+        {
             node[q] = hMom.nodeType[idx3D(xn, yn, zn)];
+        }
 #endif
     }
 }
@@ -76,7 +80,7 @@ inline int compute_bits_type(const nodeType_t node[Q], binary_t bits[8], const n
 
         for (int i = 0; i < DIRS_PER_BIT; i++)
         {
-            if (node[bit_dirs[b][i]] == TYPE)
+            if (getType(node[bit_dirs[b][i]]) == TYPE)
             {
                 bits[b] = 1;
                 break;
@@ -116,7 +120,7 @@ inline void mark_annulus_solid(nodeVar &hMom)
                 const size_t idx = idx3D(x, y, z);
 
                 if (radius <= r_inner || radius >= r_outer)
-                    hMom.nodeType[idx] = SOLID;
+                    hMom.nodeType[idx] = encodeNode(NODE_SOLID, 0);
             }
 }
 
@@ -146,31 +150,30 @@ inline void classify_boundary_nodes_staircase(nodeVar &hMom, int &nb_inner, int 
     int inner_count = 0;
     int outer_count = 0;
     nodeType_t node[Q];
+
     for (int z = Z_BEGIN; z < Z_END; z++)
         for (int y = Y_BEGIN; y < Y_END; y++)
             for (int x = X_BEGIN; x < X_END; x++)
             {
                 load_neighbors(node, hMom, x, y, z);
-                bool anyFluid = check_for_neighbour_type(node, BULK); // check for any FLUID neighbour
+                bool anyFluid = check_for_neighbour_type(node, NODE_BULK); // check for any FLUID neighbour
 
-                if (node[0] == SOLID && anyFluid)
+                if (getType(node[0]) == NODE_SOLID && anyFluid)
                 {
                     const real x_diff = toReal(x) - XC;
                     const real y_diff = toReal(y) - YC;
                     const real radius = sqrt(x_diff * x_diff + y_diff * y_diff);
 
-                    binary_t bits[8] = {0};
+                    const size_t idx = idx3D(x, y, z);
 
                     if (radius < R_mid)
                     {
-                        const int bit_count = compute_bits_type(node, bits, BULK);
-                        assign_tagged_node(hMom, x, y, z, INNER_NODE, bits);
+                        hMom.nodeType[idx] = encodeNode(NODE_INNER, 0);
                         inner_count++;
                     }
                     else
                     {
-                        const int bit_count = compute_bits_type(node, bits, BULK);
-                        assign_tagged_node(hMom, x, y, z, OUTER_NODE, bits);
+                        hMom.nodeType[idx] = encodeNode(NODE_OUTER, 0);
                         outer_count++;
                     }
                 }
@@ -203,26 +206,28 @@ inline void classify_boundary_nodes_triangular(nodeVar &hMom, int &nb_inner, int
                     continue;
 
                 load_neighbors(node, hMom, x, y, z);
-                bool anyFluid = check_for_neighbour_type(node, BULK); // check for any FLUID neighbour
+                bool anyFluid = check_for_neighbour_type(node, NODE_BULK); // check for any FLUID neighbour
 
-                if (node[0] == SOLID && anyFluid)
+                if (getType(node[0]) == NODE_SOLID && anyFluid)
                 {
                     binary_t bits[8] = {0};
-                    const int bit_count = compute_bits_type(node, bits, BULK);
+                    const int bit_count = compute_bits_type(node, bits, NODE_BULK);
                     const real x_diff = toReal(x) - XC;
                     const real y_diff = toReal(y) - YC;
                     const real radius = sqrt(x_diff * x_diff + y_diff * y_diff);
+                    const size_t idx = idx3D(x, y, z);
+
 #if Z_PERIODIC
                     if (bit_count > 2)
                     {
                         if (radius < R_mid)
                         {
-                            assign_tagged_node(hMom, x, y, z, INNER_NODE, bits);
+                            hMom.nodeType[idx] = encodeNode(NODE_INNER, 0);
                             inner_count++;
                         }
                         else
                         {
-                            assign_tagged_node(hMom, x, y, z, OUTER_NODE, bits);
+                            hMom.nodeType[idx] = encodeNode(NODE_OUTER, 0);
                             outer_count++;
                         }
                     }
@@ -232,12 +237,12 @@ inline void classify_boundary_nodes_triangular(nodeVar &hMom, int &nb_inner, int
                     {
                         if (radius < R_mid)
                         {
-                            assign_tagged_node(hMom, x, y, z, INNER_NODE, bits);
+                            hMom.nodeType[idx] = encodeNode(NODE_INNER, 0);
                             inner_count++;
                         }
                         else
                         {
-                            assign_tagged_node(hMom, x, y, z, OUTER_NODE, bits);
+                            hMom.nodeType[idx] = encodeNode(NODE_OUTER, 0);
                             outer_count++;
                         }
                     }
@@ -268,26 +273,27 @@ inline void classify_bcfluid_nodes_triangular(nodeVar &hMom, int &nb_fluid_inner
             for (int x = X_BEGIN; x < X_END; x++)
             {
                 load_neighbors(node, hMom, x, y, z);
-                bool anySolid = check_for_neighbour_type(node, SOLID); // finding for any SOLID neighbour
+                bool anySolid = check_for_neighbour_type(node, NODE_SOLID); // finding for any SOLID neighbour
 
-                if (node[0] == BULK && anySolid)
+                if (getType(node[0]) == NODE_BULK && anySolid)
                 {
                     const real x_diff = toReal(x) - XC;
                     const real y_diff = toReal(y) - YC;
                     const real radius = sqrt(x_diff * x_diff + y_diff * y_diff);
+                    const size_t idx = idx3D(x, y, z);
+
+                    binary_t bits[8] = {0};
+                    const int bit_count = compute_bits_type(node, bits, NODE_SOLID);
+                    const nodeType_t tag = toNodeTypeT(bit_count);
 
                     if (radius < R_mid)
                     {
-                        binary_t bits[8] = {0};
-                        const int bit_count = compute_bits_type(node, bits, SOLID);
-                        assign_tagged_node(hMom, x, y, z, BCFLUID_NODE_INNER, bits);
+                        hMom.nodeType[idx] = encodeNode(NODE_BCFLUID_INNER, tag);
                         inner_count++;
                     }
                     else
                     {
-                        binary_t bits[8] = {0};
-                        const int bit_count = compute_bits_type(node, bits, SOLID);
-                        assign_tagged_node(hMom, x, y, z, BCFLUID_NODE_OUTER, bits);
+                        hMom.nodeType[idx] = encodeNode(NODE_BCFLUID_OUTER, tag);
                         outer_count++;
                     }
                 }
@@ -314,25 +320,28 @@ inline void classify_bcsolid_nodes_triangular(nodeVar &hMom, int &nb_solid_inner
             {
                 load_neighbors(node, hMom, x, y, z);
 
-                if (node[0] == BACK || node[0] == FRONT)
+                if (getType(node[0]) == NODE_BACK || getType(node[0]) == NODE_FRONT)
                 {
                     const real x_diff = toReal(x) - XC;
                     const real y_diff = toReal(y) - YC;
                     const real radius = sqrt(x_diff * x_diff + y_diff * y_diff);
 
+                    const size_t idx = idx3D(x, y, z);
+
                     binary_t bits[8] = {0};
-                    const int bit_count = compute_bits_type(node, bits, BULK);
+                    const int bit_count = compute_bits_type(node, bits, NODE_BULK);
+                    const nodeType_t tag = toNodeTypeT(bit_count);
 
                     if (bit_count < 4)
                     {
                         if (radius < R_mid)
                         {
-                            assign_tagged_node(hMom, x, y, z, BCSOLID_NODE_INNER, bits);
+                            hMom.nodeType[idx] = encodeNode(NODE_BCSOLID_INNER, tag);
                             inner_count++;
                         }
                         else
                         {
-                            assign_tagged_node(hMom, x, y, z, BCSOLID_NODE_OUTER, bits);
+                            hMom.nodeType[idx] = encodeNode(NODE_BCSOLID_OUTER, tag);
                             outer_count++;
                         }
                     }

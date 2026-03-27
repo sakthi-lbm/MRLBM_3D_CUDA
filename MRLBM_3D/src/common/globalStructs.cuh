@@ -1,6 +1,7 @@
 #pragma once
 
 #include "nodeTypeMap.cuh"
+#include <vector>
 
 struct nodeVar
 {
@@ -76,7 +77,7 @@ struct Simulation
     // case specific
     void *h_caseData = nullptr;
     void *d_caseData = nullptr;
-    
+
     void *h_casePost = nullptr;
     void *d_casePost = nullptr;
 
@@ -85,4 +86,9 @@ struct Simulation
     int start_iter = 0;
 
     Profiler profile;
+
+    // ================= ACTIVE BLOCKS =================
+    std::vector<int> h_active_blocks; // host mask
+    int *d_active_blocks = nullptr;   // device mask
+    int total_active_blocks = 0;
 };

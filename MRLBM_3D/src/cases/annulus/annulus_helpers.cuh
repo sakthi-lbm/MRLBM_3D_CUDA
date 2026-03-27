@@ -44,10 +44,11 @@ inline void compute_unit_vectors_boundary_nodes(nodeVar &hMom, boundaryVar &h_an
     }
 }
 
-inline void buildBoundaryList_updateBoundaryNodeType(nodeVar &hMom, boundaryVar &h_annulus,
-                                                     const nodeType_t BOUNDARY,
-                                                     const nodeType_t BCFLUID_NODE,
-                                                     const nodeType_t BCSOLID_NODE)
+inline void buildBoundaryList_updateBoundaryNodeType(nodeVar &hMom,
+                                                     boundaryVar &h_annulus,
+                                                     const uint32_t NODE_BOUNDARY_TYPE,
+                                                     const uint32_t NODE_BCFLUID_TYPE,
+                                                     const uint32_t NODE_BCSOLID_TYPE)
 {
     const int NB = h_annulus.NB;
     const int NB_FLUID = h_annulus.NB_FLUID;
@@ -56,6 +57,7 @@ inline void buildBoundaryList_updateBoundaryNodeType(nodeVar &hMom, boundaryVar 
     int count = 0;
     int count2 = 0;
     int count3 = 0;
+
     for (int z = 0; z < NZ; z++)
     {
         for (int y = 0; y < NY; y++)
@@ -69,38 +71,34 @@ inline void buildBoundaryList_updateBoundaryNodeType(nodeVar &hMom, boundaryVar 
                                              y / BLOCK_THREAD_Y,
                                              z / BLOCK_THREAD_Z);
 
-                if (hMom.nodeType[idx] >= BOUNDARY && hMom.nodeType[idx] < (BOUNDARY + 256))
+                const uint32_t type = getType(hMom.nodeType[idx]);
+
+                if (type == NODE_BOUNDARY_TYPE)
                 {
-                    // std::cout << NB << " " << BOUNDARY << " " << count << " " << hMom.nodeType[idx] << std::endl;
                     if (count >= NB)
                     {
                         std::cout << "Overflow BOUNDARY at idx=" << idx << std::endl;
                         exit(EXIT_FAILURE);
                     }
-                    h_annulus.boundaryList[count] = idx;
-                    count++;
+                    h_annulus.boundaryList[count++] = idx;
                 }
-                else if (hMom.nodeType[idx] >= BCFLUID_NODE && hMom.nodeType[idx] < (BCFLUID_NODE + 256))
+                else if (type == NODE_BCFLUID_TYPE)
                 {
-                    // std::cout << NB << " " << BOUNDARY << " " << count << " " << hMom.nodeType[idx] << std::endl;
                     if (count2 >= NB_FLUID)
                     {
                         std::cout << "Overflow BCFLUID at idx=" << idx << std::endl;
                         exit(EXIT_FAILURE);
                     }
-                    h_annulus.bcfluidList[count2] = idx;
-                    count2++;
+                    h_annulus.bcfluidList[count2++] = idx;
                 }
-                else if (hMom.nodeType[idx] >= BCSOLID_NODE && hMom.nodeType[idx] < (BCSOLID_NODE + 256))
+                else if (type == NODE_BCSOLID_TYPE)
                 {
-                    // std::cout << NB << " " << BOUNDARY << " " << count << " " << hMom.nodeType[idx] << std::endl;
                     if (count3 >= NB_SOLID)
                     {
                         std::cout << "Overflow BCSOLID at idx=" << idx << std::endl;
                         exit(EXIT_FAILURE);
                     }
-                    h_annulus.bcsolidList[count3] = idx;
-                    count3++;
+                    h_annulus.bcsolidList[count3++] = idx;
                 }
             }
         }
@@ -113,20 +111,121 @@ inline void buildBoundaryList_updateBoundaryNodeType(nodeVar &hMom, boundaryVar 
     }
 }
 
-inline void assignBoundaryIndices(nodeVar &hMom, boundaryVar &h_annulus, const nodeType_t BOUNDARY)
+inline void assignBoundaryIndices(nodeVar &hMom, boundaryVar &h_annulus, uint32_t type)
 {
 
     // updating boundary nodetype with idx
     const int NB = h_annulus.NB;
     for (int i = 0; i < NB; i++)
     {
+        if (i >= (1 << TYPE_SHIFT))
+        {
+            std::cout << "Index overflow in encodeNode!" << std::endl;
+            exit(EXIT_FAILURE);
+        }
+
         const size_t idx = h_annulus.boundaryList[i];
-        hMom.nodeType[idx] = BOUNDARY + i;
+        hMom.nodeType[idx] = encodeNode(type, i);
     }
 }
 
-inline void find_incomings_outgoings(const nodeVar &hMom,
-                                     boundaryVar &annulus)
+inline void find_incomings_outgoings(nodeVar &hMom, boundaryVar &annulus)
+{
+    const int nb = annulus.NB;
+    if (nb <= 0)
+        return;
+
+    constexpr int NUM_BITS = 8;
+    constexpr int DIRS_PER_BIT = 7;
+
+    constexpr int bit_dirs[NUM_BITS][DIRS_PER_BIT] = {
+        {2, 4, 6, 8, 10, 12, 20},
+        {1, 4, 6, 12, 13, 15, 26},
+        {2, 3, 6, 10, 14, 17, 24},
+        {1, 3, 6, 7, 15, 17, 21},
+        {2, 4, 5, 8, 16, 18, 22},
+        {1, 4, 5, 9, 13, 18, 23},
+        {2, 3, 5, 11, 14, 16, 25},
+        {1, 3, 5, 7, 9, 11, 19}};
+
+    for (int i = 0; i < nb; i++)
+    {
+        const size_t global_index = annulus.boundaryList[i];
+
+        unsigned int x, y, z;
+        GlobalIndexToXYZ(global_index, x, y, z);
+
+        nodeType_t node[Q];
+        load_neighbors(node, hMom, x, y, z);
+
+        binary_t bits[8];
+
+        // Step 1: compute valid bits
+        for (int b = 0; b < 8; b++)
+        {
+            bits[b] = 1;
+
+            for (int k = 0; k < 7; k++)
+            {
+                int q = bit_dirs[b][k];
+
+                if (getType(node[q]) == NODE_SOLID)
+                {
+                    bits[b] = 0;
+                    break;
+                }
+            }
+        }
+
+        // Step 2: build incomingMask
+        uint32_t incomingMask = 0;
+        incomingMask |= (1u << 0);
+
+        for (int b = 0; b < 8; b++)
+        {
+            if (!bits[b])
+                continue;
+
+            for (int k = 0; k < 7; k++)
+            {
+                int q = bit_dirs[b][k];
+                incomingMask |= (1u << opp[q]);
+            }
+        }
+
+        // Step 3: outgoingMask
+        uint32_t outgoingMask = 0;
+        outgoingMask |= (1u << 0);
+
+        for (int q = 0; q < Q; q++)
+        {
+            if (incomingMask & (1u << opp[q]))
+                outgoingMask |= (1u << q);
+        }
+
+        annulus.incomingMask[i] = incomingMask;
+        annulus.outgoingMask[i] = outgoingMask;
+
+        // if (z == 1)
+        // {
+        //     std::cout << "node " << i << " at (x, y,z) = (" << x << ", " << y << ")\n";
+        //     for (int q = 0; q < Q; q++)
+        //     {
+        //         binary_t incomingMaskBit = (incomingMask >> q) & 1u;
+        //         binary_t outgoingMaskBit = (outgoingMask >> q) & 1u;
+
+        //         std::cout << " q=" << q
+        //                   << " type=" << getType(node[q])
+        //                   << " tag=" << getIndex(node[q])
+        //                   << " incomingMask=" << static_cast<int>(incomingMaskBit)
+        //                   << " outgoingMask=" << static_cast<int>(outgoingMaskBit)
+        //                   << "\n";
+        //     }
+        // }
+    }
+}
+
+inline void find_incomings_outgoings2(const nodeVar &hMom, boundaryVar &annulus)
 {
     const int nb = annulus.NB;
     if (nb <= 0)
@@ -147,7 +246,7 @@ inline void find_incomings_outgoings(const nodeVar &hMom,
         for (int q = 0; q < Q; q++)
         {
             // if any neighbour is solid the incoming from that node is 0
-            if (node[q] == SOLID)
+            if (getType(node[q]) == NODE_SOLID)
             {
                 // clear incoming bit
                 incomingMask &= ~(1u << opp[q]);
@@ -164,10 +263,28 @@ inline void find_incomings_outgoings(const nodeVar &hMom,
         }
         annulus.incomingMask[i] = incomingMask;
         annulus.outgoingMask[i] = outgoingMask;
+
+        // debuggig
+        if (z == 1)
+        {
+            std::cout << "node " << i << " at (x, y,z) = (" << x << ", " << y << ")\n";
+            for (int q = 0; q < Q; q++)
+            {
+                binary_t incomingMaskBit = (incomingMask >> q) & 1u;
+                binary_t outgoingMaskBit = (outgoingMask >> q) & 1u;
+
+                std::cout << " q=" << q
+                          << " type=" << getType(node[q])
+                          << " tag=" << getIndex(node[q])
+                          << " incomingMask=" << static_cast<int>(incomingMaskBit)
+                          << " outgoingMask=" << static_cast<int>(outgoingMaskBit)
+                          << "\n";
+            }
+        }
     }
 }
 
-inline void setup_bcfluid_masks(const nodeVar &hMom, boundaryVar &h_annulus, const nodeType_t BCFLUID_NODE)
+inline void setup_bcfluid_masks(const nodeVar &hMom, boundaryVar &h_annulus)
 {
     std::vector<bool> computed(MAX_NODE_TAG, false);
 
@@ -179,18 +296,21 @@ inline void setup_bcfluid_masks(const nodeVar &hMom, boundaryVar &h_annulus, con
         unsigned int x, y, z;
         GlobalIndexToXYZ(global_index, x, y, z);
 
-        int nodeTag = hMom.nodeType[global_index] - BCFLUID_NODE;
+        nodeType_t nodeType = hMom.nodeType[global_index];
 
-        if (global_index >= NX * NY * NZ)
+        if (getType(nodeType) != NODE_BCFLUID_INNER &&
+            getType(nodeType) != NODE_BCFLUID_OUTER)
         {
-            std::cout << "ERROR: global_index out of range: " << global_index << std::endl;
+            printf("ERROR: Wrong node type in bcfluidList\n");
             exit(1);
         }
 
-        if (nodeTag < 0 || nodeTag >= 256)
+        nodeType_t nodeTag = getIndex(nodeType);
+
+        if (nodeTag >= MAX_NODE_TAG)
         {
-            std::cout << "ERROR: nodeTag out of range: " << nodeTag << std::endl;
-            std::cout << i << " " << x << " " << y << " " << z << std::endl;
+            printf("ERROR: nodeTag out of range: %u\n", nodeTag);
+            exit(1);
         }
 
         if (computed[nodeTag])
@@ -204,7 +324,7 @@ inline void setup_bcfluid_masks(const nodeVar &hMom, boundaryVar &h_annulus, con
 
         for (int q = 0; q < Q; q++)
         {
-            if (node[q] == SOLID)
+            if (getType(node[q]) == NODE_SOLID)
                 incomingMask &= ~(1u << opp[q]);
         }
 
@@ -218,10 +338,27 @@ inline void setup_bcfluid_masks(const nodeVar &hMom, boundaryVar &h_annulus, con
         h_outgoingMask_bcfluid[nodeTag] = outgoingMask;
 
         computed[nodeTag] = true;
+
+        // if (z == 1)
+        // {
+            std::cout << "node " << i << " at (x, y,z) = (" << x << ", " << y << ")\n";
+            for (int q = 0; q < Q; q++)
+            {
+                binary_t incomingMaskBit = (incomingMask >> q) & 1u;
+                binary_t outgoingMaskBit = (outgoingMask >> q) & 1u;
+
+                std::cout << " q=" << q
+                          << " type=" << getType(node[q])
+                          << " tag=" << getIndex(node[q])
+                          << " incomingMask=" << static_cast<int>(incomingMaskBit)
+                          << " outgoingMask=" << static_cast<int>(outgoingMaskBit)
+                          << "\n";
+            }
+        // }
     }
 }
 
-inline void setup_bcsolid_masks(const nodeVar &hMom, boundaryVar &h_annulus, const nodeType_t BCSOLID_NODE)
+inline void setup_bcsolid_masks(const nodeVar &hMom, boundaryVar &h_annulus)
 {
 #if !Z_PERIODIC
     std::vector<bool> computed(MAX_NODE_TAG, false);
@@ -231,14 +368,27 @@ inline void setup_bcsolid_masks(const nodeVar &hMom, boundaryVar &h_annulus, con
     for (int i = 0; i < NB_SOLID; i++)
     {
         size_t global_index = h_annulus.bcsolidList[i];
+        unsigned int x, y, z;
+        GlobalIndexToXYZ(global_index, x, y, z);
 
-        int nodeTag = hMom.nodeType[global_index] - BCSOLID_NODE;
+        nodeType_t nodeType = hMom.nodeType[global_index];
+
+        if (getType(nodeType) != NODE_BCSOLID_INNER &&
+            getType(nodeType) != NODE_BCSOLID_OUTER)
+        {
+            printf("ERROR: Wrong node type in bcsolidList\n");
+            exit(1);
+        }
+
+        nodeType_t nodeTag = getIndex(nodeType);
+        if (nodeTag >= MAX_NODE_TAG)
+        {
+            printf("ERROR: nodeTag out of range: %u\n", nodeTag);
+            exit(1);
+        }
 
         if (computed[nodeTag])
             continue;
-
-        unsigned int x, y, z;
-        GlobalIndexToXYZ(global_index, x, y, z);
 
         nodeType_t node[Q];
         load_neighbors(node, hMom, x, y, z);
@@ -248,7 +398,7 @@ inline void setup_bcsolid_masks(const nodeVar &hMom, boundaryVar &h_annulus, con
 
         for (int q = 0; q < Q; q++)
         {
-            if (node[q] == SOLID)
+            if (getType(node[q]) == NODE_SOLID)
                 incomingMask &= ~(1u << opp[q]);
         }
 
@@ -268,32 +418,32 @@ inline void setup_bcsolid_masks(const nodeVar &hMom, boundaryVar &h_annulus, con
 
 inline bool isinner_cylinder(nodeType_t t)
 {
-    return (t >= INNER_NODE && t <= INNER_NODE + 256);
+    return getType(t) == NODE_INNER;
 }
 
 inline bool isouter_cylinder(nodeType_t t)
 {
-    return (t >= OUTER_NODE && t <= OUTER_NODE + 256);
+    return getType(t) == NODE_OUTER;
 }
 
 inline bool isBcfluid_inner(nodeType_t t)
 {
-    return (t >= BCFLUID_NODE_INNER && t <= BCFLUID_NODE_INNER + 256);
+    return getType(t) == NODE_BCFLUID_INNER;
 }
 
 inline bool isBcfluid_outer(nodeType_t t)
 {
-    return (t >= BCFLUID_NODE_OUTER && t <= BCFLUID_NODE_OUTER + 256);
+    return getType(t) == NODE_BCFLUID_OUTER;
 }
 
 inline bool isBcsolid_inner(nodeType_t t)
 {
-    return (t >= BCSOLID_NODE_INNER && t <= BCSOLID_NODE_INNER + 256);
+    return getType(t) == NODE_BCSOLID_INNER;
 }
 
 inline bool isBcsolid_outer(nodeType_t t)
 {
-    return (t >= BCSOLID_NODE_OUTER && t <= BCSOLID_NODE_OUTER + 256);
+    return getType(t) == NODE_BCSOLID_OUTER;
 }
 
 inline void write_geometry_files(nodeVar hMom)
@@ -311,7 +461,7 @@ inline void write_geometry_files(nodeVar hMom)
     std::ofstream bcsolid_inner_file(construct_path(PATH_FILES, ID_SIM, "grid_layout", "bcsolid_inner.dat"), std::ios::trunc);
     std::ofstream bcsolid_outer_file(construct_path(PATH_FILES, ID_SIM, "grid_layout", "bcsolid_outer.dat"), std::ios::trunc);
 
-    const int Z_SLICE = -1;
+    const int Z_SLICE = 10;
     for (int z = 0; z < NZ; z++)
     {
         if (Z_SLICE >= 0 && z != Z_SLICE)
@@ -333,45 +483,39 @@ inline void write_geometry_files(nodeVar hMom)
                 if (isinner_cylinder(hMom.nodeType[idx]))
                 {
                     inner_file << x << " " << y << " " << z << " "
-                               << static_cast<int>(hMom.nodeType[idx]) << "\n";
+                               << getType(hMom.nodeType[idx]) << "\n";
                 }
                 else if (isouter_cylinder(hMom.nodeType[idx]))
                 {
-                    outer_file << x << " " << y << " " << z << " "
-                               << static_cast<int>(hMom.nodeType[idx]) << "\n";
+                    outer_file << x << " " << y << " " << z << " " << getType(hMom.nodeType[idx]) << "\n";
                 }
                 else if (isBcfluid_inner(hMom.nodeType[idx]))
                 {
-                    bcfluid_inner_file << x << " " << y << " " << z << " "
-                                       << static_cast<int>(hMom.nodeType[idx]) << "\n";
+                    bcfluid_inner_file << x << " " << y << " " << z << " " << getType(hMom.nodeType[idx]) << "\n";
                 }
                 else if (isBcfluid_outer(hMom.nodeType[idx]))
                 {
-                    bcfluid_outer_file << x << " " << y << " " << z << " "
-                                       << static_cast<int>(hMom.nodeType[idx]) << "\n";
+                    bcfluid_outer_file << x << " " << y << " " << z << " " << getType(hMom.nodeType[idx]) << "\n";
                 }
                 else if (isBcsolid_inner(hMom.nodeType[idx]))
                 {
-                    bcsolid_inner_file << x << " " << y << " " << z << " "
-                                       << static_cast<int>(hMom.nodeType[idx]) << "\n";
+                    bcsolid_inner_file << x << " " << y << " " << z << " " << getType(hMom.nodeType[idx]) << "\n";
                 }
                 else if (isBcsolid_outer(hMom.nodeType[idx]))
                 {
-                    bcsolid_outer_file << x << " " << y << " " << z << " "
-                                       << static_cast<int>(hMom.nodeType[idx]) << "\n";
+                    bcsolid_outer_file << x << " " << y << " " << z << " " << getType(hMom.nodeType[idx]) << "\n";
                 }
-                else if (hMom.nodeType[idx] == SOLID)
+                else if (getType(hMom.nodeType[idx]) == NODE_SOLID)
                 {
-                    solid_file << x << " " << y << " " << z << " "
-                               << static_cast<int>(hMom.nodeType[idx]) << "\n";
+                    solid_file << x << " " << y << " " << z << " " << getType(hMom.nodeType[idx]) << "\n";
                 }
-                else if (hMom.nodeType[idx] == BULK)
+                else if (getType(hMom.nodeType[idx]) == NODE_BULK)
                 {
-                    fluid_file << x << " " << y << " " << z << " " << static_cast<int>(hMom.nodeType[idx]) << std::endl;
+                    fluid_file << x << " " << y << " " << z << " " << getType(hMom.nodeType[idx]) << std::endl;
                 }
                 else
                 {
-                    others_file << x << " " << y << " " << z << " " << static_cast<int>(hMom.nodeType[idx]) << std::endl;
+                    others_file << x << " " << y << " " << z << " " << getType(hMom.nodeType[idx]) << std::endl;
                 }
             }
         }

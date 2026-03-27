@@ -6,63 +6,47 @@ void annulus_initialize(Simulation &sim);
 void annulus_apply_boundary(Simulation &sim, int iter);
 void setup_annulus_case(Case &case_module);
 
-__global__ void apply_bc_annulus(const int NB, const nodeType_t NODE_TYPE, const boundaryVar &annulus,
-                                 nodeVar dMom, const real UX_PRIME, const real UY_PRIME, const real UZ_PRIME,
+__global__ void apply_bc_annulus(const int NB, const boundaryVar &annulus, nodeVar dMom,
+                                 const real UX_PRIME, const real UY_PRIME, const real UZ_PRIME,
                                  const real D_WALL, const int iter);
 
 //=================================================================================================================
 
-__device__ __forceinline__ void annulus_boundary_moments(const nodeType_t nodeType, const boundaryVar &inner, const boundaryVar &outer,
+__device__ __forceinline__ void annulus_boundary_moments(const nodeType_t nodeType_packed,
+                                                         const boundaryVar &inner, const boundaryVar &outer,
                                                          nodeVar &dMom, real *pop,
                                                          real &rho, real &ux, real &uy, real &uz,
                                                          real &mxx, real &myy, real &mzz,
                                                          real &mxy, real &mxz, real &myz)
 {
-    const int NB_INNER = inner.NB;
-    const int NB_OUTER = outer.NB;
-    if (nodeType >= INNER_NODE && nodeType < (INNER_NODE + NB_INNER))
+    const nodeType_t nodeType = getType(nodeType_packed);
+    const nodeType_t tag = getIndex(nodeType_packed);
+
+    if (nodeType == NODE_INNER)
     {
-        const nodeType_t id = nodeType - INNER_NODE;
-        const real unit_nx = inner.unit_nx[id];
-        const real unit_ny = inner.unit_ny[id];
-        const uint32_t incomingMask = inner.incomingMask[id];
+        const real unit_nx = inner.unit_nx[tag];
+        const real unit_ny = inner.unit_ny[tag];
+        const uint32_t incomingMask = inner.incomingMask[tag];
 
         evaluate_incoming_moments_rotated(unit_nx, unit_ny, incomingMask, pop, rho, mxx, myy, mzz, mxy, mxz, myz);
     }
-    else if (nodeType >= OUTER_NODE && nodeType < (OUTER_NODE + NB_OUTER))
+    else if (nodeType == NODE_OUTER)
     {
-        const nodeType_t id = nodeType - OUTER_NODE;
-        const real unit_nx = outer.unit_nx[id];
-        const real unit_ny = outer.unit_ny[id];
-        const uint32_t incomingMask = outer.incomingMask[id];
+        const real unit_nx = outer.unit_nx[tag];
+        const real unit_ny = outer.unit_ny[tag];
+        const uint32_t incomingMask = outer.incomingMask[tag];
 
         evaluate_incoming_moments_rotated(unit_nx, unit_ny, incomingMask, pop, rho, mxx, myy, mzz, mxy, mxz, myz);
     }
-    else if (triangular && nodeType >= (BCFLUID_NODE_INNER + 0) && nodeType < (BCFLUID_NODE_INNER + 256))
+    else if (triangular && (nodeType == NODE_BCFLUID_INNER || nodeType == NODE_BCFLUID_OUTER))
     {
-        const nodeType_t nodeTag = nodeType - BCFLUID_NODE_INNER;
-        const uint32_t incomingMask = d_incomingMask_bcfluid[nodeTag];
+        const uint32_t incomingMask = d_incomingMask_bcfluid[tag];
 
-        fluid_boundary_condition(nodeTag, incomingMask, pop, rho, ux, uy, uz, mxx, myy, mzz, mxy, mxz, myz);
+        fluid_boundary_condition(tag, incomingMask, pop, rho, ux, uy, uz, mxx, myy, mzz, mxy, mxz, myz);
     }
-    else if (triangular && nodeType >= (BCFLUID_NODE_OUTER + 0) && nodeType < (BCFLUID_NODE_OUTER + 256))
+    else if (!Z_PERIODIC && (nodeType == NODE_BCSOLID_INNER || nodeType == NODE_BCSOLID_OUTER))
     {
-        const nodeType_t nodeTag = nodeType - BCFLUID_NODE_OUTER;
-        const uint32_t incomingMask = d_incomingMask_bcfluid[nodeTag];
-
-        fluid_boundary_condition(nodeTag, incomingMask, pop, rho, ux, uy, uz, mxx, myy, mzz, mxy, mxz, myz);
-    }
-    else if (!Z_PERIODIC && nodeType >= (BCSOLID_NODE_INNER + 0) && nodeType < (BCSOLID_NODE_INNER + 256))
-    {
-        const nodeType_t nodeTag = nodeType - BCSOLID_NODE_INNER;
-
-        bcsolid_boundary_condition(nodeTag, pop, rho, ux, uy, uz, mxx, myy, mzz, mxy, mxz, myz);
-    }
-    else if (!Z_PERIODIC && nodeType >= (BCSOLID_NODE_OUTER + 0) && nodeType < (BCSOLID_NODE_OUTER + 256))
-    {
-        const nodeType_t nodeTag = nodeType - BCSOLID_NODE_OUTER;
-
-        bcsolid_boundary_condition(nodeTag, pop, rho, ux, uy, uz, mxx, myy, mzz, mxy, mxz, myz);
+        bcsolid_boundary_condition(tag, pop, rho, ux, uy, uz, mxx, myy, mzz, mxy, mxz, myz);
     }
     else
     {

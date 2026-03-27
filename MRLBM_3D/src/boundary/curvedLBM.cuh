@@ -9,7 +9,7 @@ __device__ void evaluate_incoming_moments_rotated(const real unit_nx, const real
                                                   real &mxx, real &myy, real &mzz,
                                                   real &mxy, real &mxz, real &myz);
 
-__device__ void curved_boundary_condition_rotated(const real unit_nx, const real unit_ny, const real delta,
+__device__ void curved_boundary_condition_rotated(const nodeType_t nodeType, const real unit_nx, const real unit_ny, const real delta,
                                                   const uint32_t incomingMask, const uint32_t outgoingMask,
                                                   unsigned int xb, unsigned int yb, unsigned int zb,
                                                   const real xw, const real yw, const real zw,
