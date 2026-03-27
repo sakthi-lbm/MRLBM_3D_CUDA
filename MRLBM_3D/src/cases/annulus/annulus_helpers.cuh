@@ -225,65 +225,6 @@ inline void find_incomings_outgoings(nodeVar &hMom, boundaryVar &annulus)
     }
 }
 
-inline void find_incomings_outgoings2(const nodeVar &hMom, boundaryVar &annulus)
-{
-    const int nb = annulus.NB;
-    if (nb <= 0)
-        return;
-
-    for (int i = 0; i < nb; i++)
-    {
-        uint32_t incomingMask = (1u << Q) - 1;
-        uint32_t outgoingMask = 0;
-
-        const size_t global_index = annulus.boundaryList[i];
-        unsigned int x, y, z;
-        GlobalIndexToXYZ(global_index, x, y, z);
-
-        nodeType_t node[Q];
-        load_neighbors(node, hMom, x, y, z);
-
-        for (int q = 0; q < Q; q++)
-        {
-            // if any neighbour is solid the incoming from that node is 0
-            if (getType(node[q]) == NODE_SOLID)
-            {
-                // clear incoming bit
-                incomingMask &= ~(1u << opp[q]);
-            }
-        }
-
-        for (int q = 0; q < Q; q++)
-        {
-            // outgoing is opposite of the incomings
-            if (incomingMask & (1u << opp[q]))
-            {
-                outgoingMask |= (1u << q);
-            }
-        }
-        annulus.incomingMask[i] = incomingMask;
-        annulus.outgoingMask[i] = outgoingMask;
-
-        // debuggig
-        if (z == 1)
-        {
-            std::cout << "node " << i << " at (x, y,z) = (" << x << ", " << y << ")\n";
-            for (int q = 0; q < Q; q++)
-            {
-                binary_t incomingMaskBit = (incomingMask >> q) & 1u;
-                binary_t outgoingMaskBit = (outgoingMask >> q) & 1u;
-
-                std::cout << " q=" << q
-                          << " type=" << getType(node[q])
-                          << " tag=" << getIndex(node[q])
-                          << " incomingMask=" << static_cast<int>(incomingMaskBit)
-                          << " outgoingMask=" << static_cast<int>(outgoingMaskBit)
-                          << "\n";
-            }
-        }
-    }
-}
-
 inline void setup_bcfluid_masks(const nodeVar &hMom, boundaryVar &h_annulus)
 {
     std::vector<bool> computed(MAX_NODE_TAG, false);

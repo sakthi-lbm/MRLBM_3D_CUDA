@@ -13,7 +13,9 @@ int main()
     setup_case(sim);
     
     initialize_simulation(sim);
+
     compute_active_blocks(sim);
+    
     restart_simulation(sim);
 
     for (int iter = sim.start_iter; iter <= MAX_ITER; iter++)

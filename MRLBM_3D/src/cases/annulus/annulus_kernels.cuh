@@ -50,7 +50,7 @@ __device__ __forceinline__ void annulus_boundary_moments(const nodeType_t nodeTy
     }
     else
     {
-        boundary_condition(nodeType, dMom, pop, rho, ux, uy, uz, mxx, myy, mzz, mxy, mxz, myz);
+        //boundary_condition(nodeType, dMom, pop, rho, ux, uy, uz, mxx, myy, mzz, mxy, mxz, myz);
     }
 }
 

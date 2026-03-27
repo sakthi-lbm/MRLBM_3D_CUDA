@@ -9,9 +9,6 @@
 #define Y_PERIODIC 0 // or 0
 #define Z_PERIODIC 1 // or 0
 
-#define CONVECTIVE_OUTLET 1
-
-constexpr bool NEUMANN_CURRENT_UPDATE = false;
 constexpr bool triangular = false;
 
 constexpr MassBC MASS_CONSERV = MassBC::Equilibrium;
@@ -38,7 +35,7 @@ constexpr real D_IN = toReal(2.0) * R_IN;   // Diameter of the inner cylinder
 
 constexpr int NX_phys = D_out_aligned + 4; // keep minimum 4
 constexpr int NY_phys = D_out_aligned + 4;
-constexpr int NZ_phys = 256; // e.g. 1 or few layers
+constexpr int NZ_phys = 256;
 
 constexpr int NX = ((NX_phys + BLOCK_THREAD_X - 1) / BLOCK_THREAD_X) * BLOCK_THREAD_X;
 constexpr int NY = ((NY_phys + BLOCK_THREAD_Y - 1) / BLOCK_THREAD_Y) * BLOCK_THREAD_Y;
