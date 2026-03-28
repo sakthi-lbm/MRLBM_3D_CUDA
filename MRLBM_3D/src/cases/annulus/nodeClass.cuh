@@ -202,9 +202,6 @@ inline void classify_boundary_nodes_triangular(nodeVar &hMom, int &nb_inner, int
         for (int y = Y_BEGIN; y < Y_END; y++)
             for (int x = X_BEGIN; x < X_END; x++)
             {
-                if (x >= NX_phys || y >= NY_phys || z >= NZ_phys)
-                    continue;
-
                 load_neighbors(node, hMom, x, y, z);
                 bool anyFluid = check_for_neighbour_type(node, NODE_BULK); // check for any FLUID neighbour
 
@@ -284,7 +281,8 @@ inline void classify_bcfluid_nodes_triangular(nodeVar &hMom, int &nb_fluid_inner
 
                     binary_t bits[8] = {0};
                     const int bit_count = compute_bits_type(node, bits, NODE_SOLID);
-                    const nodeType_t tag = toNodeTypeT(bit_count);
+                    const int bit_tag = compute_node_tag(bits);
+                    const nodeType_t tag = toNodeTypeT(bit_tag);
 
                     if (radius < R_mid)
                     {
@@ -330,12 +328,14 @@ inline void classify_bcsolid_nodes_triangular(nodeVar &hMom, int &nb_solid_inner
 
                     binary_t bits[8] = {0};
                     const int bit_count = compute_bits_type(node, bits, NODE_BULK);
-                    const nodeType_t tag = toNodeTypeT(bit_count);
+                    const int bit_tag = compute_node_tag(bits);
+                    const nodeType_t tag = toNodeTypeT(bit_tag);
 
                     if (bit_count < 4)
                     {
                         if (radius < R_mid)
                         {
+                            std::cout << tag << std::endl;
                             hMom.nodeType[idx] = encodeNode(NODE_BCSOLID_INNER, tag);
                             inner_count++;
                         }

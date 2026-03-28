@@ -40,6 +40,7 @@ __device__ __forceinline__ void annulus_boundary_moments(const nodeType_t nodeTy
     }
     else if (triangular && (nodeType == NODE_BCFLUID_INNER || nodeType == NODE_BCFLUID_OUTER))
     {
+        // printf("%d %d \n", toInt(nodeType), toInt(tag));
         const uint32_t incomingMask = d_incomingMask_bcfluid[tag];
 
         fluid_boundary_condition(tag, incomingMask, pop, rho, ux, uy, uz, mxx, myy, mzz, mxy, mxz, myz);
@@ -50,7 +51,7 @@ __device__ __forceinline__ void annulus_boundary_moments(const nodeType_t nodeTy
     }
     else
     {
-        //boundary_condition(nodeType, dMom, pop, rho, ux, uy, uz, mxx, myy, mzz, mxy, mxz, myz);
+        // boundary_condition(nodeType, dMom, pop, rho, ux, uy, uz, mxx, myy, mzz, mxy, mxz, myz);
     }
 }
 

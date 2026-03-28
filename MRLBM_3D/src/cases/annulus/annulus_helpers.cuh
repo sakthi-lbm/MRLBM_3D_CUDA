@@ -280,21 +280,18 @@ inline void setup_bcfluid_masks(const nodeVar &hMom, boundaryVar &h_annulus)
 
         computed[nodeTag] = true;
 
-        // if (z == 1)
+        // std::cout << "node " << i << " at (x, y,z) = (" << x << ", " << y << ")\n";
+        // for (int q = 0; q < Q; q++)
         // {
-            std::cout << "node " << i << " at (x, y,z) = (" << x << ", " << y << ")\n";
-            for (int q = 0; q < Q; q++)
-            {
-                binary_t incomingMaskBit = (incomingMask >> q) & 1u;
-                binary_t outgoingMaskBit = (outgoingMask >> q) & 1u;
+        //     binary_t incomingMaskBit = (incomingMask >> q) & 1u;
+        //     binary_t outgoingMaskBit = (outgoingMask >> q) & 1u;
 
-                std::cout << " q=" << q
-                          << " type=" << getType(node[q])
-                          << " tag=" << getIndex(node[q])
-                          << " incomingMask=" << static_cast<int>(incomingMaskBit)
-                          << " outgoingMask=" << static_cast<int>(outgoingMaskBit)
-                          << "\n";
-            }
+        //     std::cout << " q=" << q
+        //               << " type=" << getType(node[q])
+        //               << " tag=" << getIndex(node[q])
+        //               << " incomingMask=" << static_cast<int>(incomingMaskBit)
+        //               << " outgoingMask=" << static_cast<int>(outgoingMaskBit)
+        //               << "\n";
         // }
     }
 }

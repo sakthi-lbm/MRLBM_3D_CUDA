@@ -146,7 +146,7 @@ __global__ void streaming_and_evaluate_Mom(void *caseData, nodeVar dMom, haloDat
     {
         evaluate_moments(rho, ux, uy, uz, mxx, myy, mzz, mxy, mxz, myz, pop);
     }
-    else if (nodeType == NODE_INNER || nodeType == NODE_OUTER)
+    else
     {
         // printf("nodetype: %d \n", toInt(nodeType));
         evaluate_bounday_moments(caseData, x, y, z, nodeType_packed, dMom, pop, rho, ux, uy, uz, mxx, myy, mzz, mxy, mxz, myz);

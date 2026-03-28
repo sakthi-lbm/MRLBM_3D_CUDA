@@ -9,10 +9,10 @@
 #define Y_PERIODIC 0 // or 0
 #define Z_PERIODIC 1 // or 0
 
-constexpr bool triangular = false;
+constexpr bool triangular = true;
 
-constexpr MassBC MASS_CONSERV = MassBC::Equilibrium;
-constexpr MassBC BCF_MASS_CONSERV = MassBC::Equilibrium;
+constexpr MassBC MASS_CONSERV = MassBC::Strong;
+constexpr MassBC BCF_MASS_CONSERV = MassBC::Strong;
 
 constexpr int BLOCK_SIZE = 4; // Maxmum block based on the register load
 
