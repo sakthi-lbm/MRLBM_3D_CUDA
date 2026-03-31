@@ -2,10 +2,10 @@
 
 // ================= CASE SELECTION =================
 #define CASE_CYLINDER 1
-#define CASE_AIRFOIL 2
-#define CASE_ANNULUS 3
+#define CASE_ANNULUS 2
+#define CASE_AIRFOIL 3
 
-#define CASE_ID CASE_ANNULUS
+#define CASE_ID CASE_CYLINDER
 
 #define REG_ORDER second_order
 #define STENCIL D3Q27

@@ -67,9 +67,6 @@ inline std::string getSimInfoString()
     const real nu_phy = 0.01;
     const real u_phy = RE * nu_phy / L_phy;
 
-    const real delx_phy = L_phy / D_OUT;
-    const real delt_phy = (delx_phy * delx_phy) * VISC / nu_phy;
-
     out << "========================= SIMULATION INFORMATION =========================\n";
     out << std::left;
     out << std::setw(labelWidth) << "Simulation ID" << " : " << ID_SIM << "\n";
@@ -82,15 +79,35 @@ inline std::string getSimInfoString()
     out << std::setw(labelWidth) << "Grid points (in million)" << " : " << toReal(NX * NY) / 1000000.0 << "\n";
     out << "\n";
 
+#ifdef CYLINDER
+    const real delx_phy = L_phy / D_WALL;
+
     out << "----------------------------- CYLINDER properties -----------------------------\n";
     out << std::setw(labelWidth) << "Stair-case" << " : " << !triangular << "\n";
     out << std::setw(labelWidth) << "Triangular" << " : " << triangular << "\n";
-    out << std::setw(labelWidth) << "Diameter" << " : " << D_IN << "\n";
-    out << std::setw(labelWidth) << "Radius" << " : " << R_IN << "\n";
+    out << std::setw(labelWidth) << "Diameter" << " : " << D_WALL << "\n";
+    out << std::setw(labelWidth) << "Radius" << " : " << R_WALL << "\n";
     out << std::setw(labelWidth) << "Center xc" << " : " << XC << "\n";
     out << std::setw(labelWidth) << "Center yc" << " : " << YC << "\n";
 
     out << "\n";
+#endif
+
+#ifdef ANNULUS
+    const real delx_phy = L_phy / D_OUT;
+
+    out << "----------------------------- ANNULUS properties -----------------------------\n";
+    out << std::setw(labelWidth) << "Stair-case" << " : " << !triangular << "\n";
+    out << std::setw(labelWidth) << "Triangular" << " : " << triangular << "\n";
+    out << std::setw(labelWidth) << "Inner Diameter" << " : " << D_IN << "\n";
+    out << std::setw(labelWidth) << "Inner Radius" << " : " << R_IN << "\n";
+    out << std::setw(labelWidth) << "Outer Diameter" << " : " << D_OUT << "\n";
+    out << std::setw(labelWidth) << "Outer Radius" << " : " << R_OUT << "\n";
+    out << std::setw(labelWidth) << "Center xc" << " : " << XC << "\n";
+    out << std::setw(labelWidth) << "Center yc" << " : " << YC << "\n";
+
+    out << "\n";
+#endif
 
     out << "----------------------------- Lattice Units -----------------------------\n";
     out << std::setw(labelWidth) << "uo" << " : " << U_MAX << "\n";
@@ -102,6 +119,8 @@ inline std::string getSimInfoString()
     out << std::setw(labelWidth) << "Nsteps" << " : " << MAX_ITER << "\n";
 
     out << "\n";
+
+    const real delt_phy = (delx_phy * delx_phy) * VISC / nu_phy;
     out << "----------------------------- Physical Units -----------------------------\n";
     out << std::setw(labelWidth) << "L_phy" << " : " << L_phy << "\n";
     out << std::setw(labelWidth) << "dx_phy" << " : " << delx_phy << "\n";

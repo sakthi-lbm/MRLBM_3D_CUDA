@@ -1,9 +1,10 @@
 #pragma once
 #include <iostream>
 
-#include "annulus_structs.h"
+#include "cylinder_structs.h"
 
-#ifdef ANNULUS
+#ifdef CYLINDER
+
 inline bool check_for_neighbour_type(const nodeType_t *node, const nodeType_t TYPE)
 {
     for (int q = 1; q < Q; q++)
@@ -106,7 +107,7 @@ inline int compute_node_tag(const binary_t bits[8])
            bits[7] * 128;
 }
 
-inline void mark_annulus_solid(nodeVar &hMom)
+inline void mark_cylinder_solid(nodeVar &hMom)
 {
     for (int z = 0; z < NZ; z++)
         for (int y = 0; y < NY; y++)
@@ -115,12 +116,10 @@ inline void mark_annulus_solid(nodeVar &hMom)
                 const real x_diff = toReal(x) - XC;
                 const real y_diff = toReal(y) - YC;
                 const real radius = sqrt(x_diff * x_diff + y_diff * y_diff);
-                const real r_inner = R_IN;
-                const real r_outer = R_OUT;
 
                 const size_t idx = idx3D(x, y, z);
 
-                if (radius <= r_inner || radius >= r_outer)
+                if (radius <= R_WALL)
                     hMom.nodeType[idx] = encodeNode(NODE_SOLID, 0);
             }
 }
@@ -136,20 +135,18 @@ inline void assign_tagged_node(nodeVar &hMom,
     hMom.nodeType[idx] = baseType + toNodeTypeT(node_tag);
 }
 
-inline void classify_boundary_nodes_staircase(nodeVar &hMom, int &nb_inner, int &nb_outer)
+inline void classify_boundary_nodes_staircase(nodeVar &hMom, int &nb_inner)
 {
     constexpr int Z_BEGIN = (Z_PERIODIC ? 0 : 1);
     constexpr int Z_END = (Z_PERIODIC ? NZ : NZ - 1);
 
-    constexpr int X_BEGIN = 0;
-    constexpr int X_END = NX;
+    constexpr int X_BEGIN = LW - 4;
+    constexpr int X_END = LW + D + 4;
 
-    constexpr int Y_BEGIN = 0;
-    constexpr int Y_END = NY;
+    constexpr int Y_BEGIN = LS - 4;
+    constexpr int Y_END = LS + D + 4;
 
-    real R_mid = 0.5 * toReal(R_IN + R_OUT);
     int inner_count = 0;
-    int outer_count = 0;
     nodeType_t node[Q];
 
     for (int z = Z_BEGIN; z < Z_END; z++)
@@ -161,42 +158,26 @@ inline void classify_boundary_nodes_staircase(nodeVar &hMom, int &nb_inner, int 
 
                 if (getType(node[0]) == NODE_SOLID && anyFluid)
                 {
-                    const real x_diff = toReal(x) - XC;
-                    const real y_diff = toReal(y) - YC;
-                    const real radius = sqrt(x_diff * x_diff + y_diff * y_diff);
-
                     const size_t idx = idx3D(x, y, z);
-
-                    if (radius < R_mid)
-                    {
-                        hMom.nodeType[idx] = encodeNode(NODE_INNER, 0);
-                        inner_count++;
-                    }
-                    else
-                    {
-                        hMom.nodeType[idx] = encodeNode(NODE_OUTER, 0);
-                        outer_count++;
-                    }
+                    hMom.nodeType[idx] = encodeNode(NODE_INNER, 0);
+                    inner_count++;
                 }
             }
     nb_inner = inner_count;
-    nb_outer = outer_count;
 }
 
-inline void classify_boundary_nodes_triangular(nodeVar &hMom, int &nb_inner, int &nb_outer)
+inline void classify_boundary_nodes_triangular(nodeVar &hMom, int &nb_inner)
 {
     constexpr int Z_BEGIN = (Z_PERIODIC ? 0 : 1);
     constexpr int Z_END = (Z_PERIODIC ? NZ : NZ - 1);
 
-    constexpr int X_BEGIN = 0;
-    constexpr int X_END = NX;
+    constexpr int X_BEGIN = LW - 4;
+    constexpr int X_END = LW + D + 4;
 
-    constexpr int Y_BEGIN = 0;
-    constexpr int Y_END = NY;
+    constexpr int Y_BEGIN = LS - 4;
+    constexpr int Y_END = LS + D + 4;
 
-    const real R_mid = 0.5 * toReal(R_IN + R_OUT);
     int inner_count = 0;
-    int outer_count = 0;
     nodeType_t node[Q];
 
     for (int z = Z_BEGIN; z < Z_END; z++)
@@ -210,66 +191,42 @@ inline void classify_boundary_nodes_triangular(nodeVar &hMom, int &nb_inner, int
                 {
                     binary_t bits[8] = {0};
                     const int bit_count = compute_bits_type(node, bits, NODE_BULK);
-                    const real x_diff = toReal(x) - XC;
-                    const real y_diff = toReal(y) - YC;
-                    const real radius = sqrt(x_diff * x_diff + y_diff * y_diff);
                     const size_t idx = idx3D(x, y, z);
-
 #if Z_PERIODIC
                     if (bit_count > 2)
                     {
-                        if (radius < R_mid)
-                        {
-                            hMom.nodeType[idx] = encodeNode(NODE_INNER, 0);
-                            inner_count++;
-                        }
-                        else
-                        {
-                            hMom.nodeType[idx] = encodeNode(NODE_OUTER, 0);
-                            outer_count++;
-                        }
+                        hMom.nodeType[idx] = encodeNode(NODE_INNER, 0);
+                        inner_count++;
                     }
 #else
                     if (((z == 0 || z == NZ - 1) && bit_count > 1) ||
                         ((z > 0 && z < NZ - 1) && bit_count > 2))
                     {
-                        if (radius < R_mid)
-                        {
-                            hMom.nodeType[idx] = encodeNode(NODE_INNER, 0);
-                            inner_count++;
-                        }
-                        else
-                        {
-                            hMom.nodeType[idx] = encodeNode(NODE_OUTER, 0);
-                            outer_count++;
-                        }
+                        hMom.nodeType[idx] = encodeNode(NODE_INNER, 0);
+                        inner_count++;
                     }
 #endif
                 }
                 if (x == 43 && y == 89 && z == 0)
                 {
                     const size_t idx = idx3D(x, y, z);
-                    std::cout << x << " " << y << " " << z << " " << getType(hMom.nodeType[idx]) << std::endl;
                 }
             }
     nb_inner = inner_count;
-    nb_outer = outer_count;
 }
 
-inline void classify_bcfluid_nodes_triangular(nodeVar &hMom, int &nb_fluid_inner, int &nb_fluid_outer)
+inline void classify_bcfluid_nodes_triangular(nodeVar &hMom, int &nb_fluid_inner)
 {
     constexpr int Z_BEGIN = (Z_PERIODIC ? 0 : 1);
     constexpr int Z_END = (Z_PERIODIC ? NZ : NZ - 1);
 
-    constexpr int X_BEGIN = 0;
-    constexpr int X_END = NX;
+    constexpr int X_BEGIN = LW - 4;
+    constexpr int X_END = LW + D + 4;
 
-    constexpr int Y_BEGIN = 0;
-    constexpr int Y_END = NY;
+    constexpr int Y_BEGIN = LS - 4;
+    constexpr int Y_END = LS + D + 4;
 
-    const real R_mid = toReal(0.5) * (R_IN + R_OUT);
     int inner_count = 0;
-    int outer_count = 0;
     nodeType_t node[Q];
     for (int z = Z_BEGIN; z < Z_END; z++)
         for (int y = Y_BEGIN; y < Y_END; y++)
@@ -280,9 +237,6 @@ inline void classify_bcfluid_nodes_triangular(nodeVar &hMom, int &nb_fluid_inner
 
                 if (getType(node[0]) == NODE_BULK && anySolid)
                 {
-                    const real x_diff = toReal(x) - XC;
-                    const real y_diff = toReal(y) - YC;
-                    const real radius = sqrt(x_diff * x_diff + y_diff * y_diff);
                     const size_t idx = idx3D(x, y, z);
 
                     binary_t bits[8] = {0};
@@ -290,33 +244,22 @@ inline void classify_bcfluid_nodes_triangular(nodeVar &hMom, int &nb_fluid_inner
                     const int bit_tag = compute_node_tag(bits);
                     const nodeType_t tag = toNodeTypeT(bit_tag);
 
-                    if (radius < R_mid)
-                    {
-                        hMom.nodeType[idx] = encodeNode(NODE_BCFLUID_INNER, tag);
-                        inner_count++;
-                    }
-                    else
-                    {
-                        hMom.nodeType[idx] = encodeNode(NODE_BCFLUID_OUTER, tag);
-                        outer_count++;
-                    }
+                    hMom.nodeType[idx] = encodeNode(NODE_BCFLUID_INNER, tag);
+                    inner_count++;
                 }
             }
     nb_fluid_inner = inner_count;
-    nb_fluid_outer = outer_count;
 }
 
-inline void classify_bcsolid_nodes_triangular(nodeVar &hMom, int &nb_solid_inner, int &nb_solid_outer)
+inline void classify_bcsolid_nodes_triangular(nodeVar &hMom, int &nb_solid_inner)
 {
-    constexpr int X_BEGIN = 0;
-    constexpr int X_END = NX;
+    constexpr int X_BEGIN = LW - 4;
+    constexpr int X_END = LW + D + 4;
 
-    constexpr int Y_BEGIN = 0;
-    constexpr int Y_END = NY;
+    constexpr int Y_BEGIN = LS - 4;
+    constexpr int Y_END = LS + D + 4;
 
-    real R_mid = toReal(0.5) * (R_IN + R_OUT);
     int inner_count = 0;
-    int outer_count = 0;
     nodeType_t node[Q];
     for (int z : {0, NZ - 1})
         for (int y = Y_BEGIN; y < Y_END; y++)
@@ -326,10 +269,6 @@ inline void classify_bcsolid_nodes_triangular(nodeVar &hMom, int &nb_solid_inner
 
                 if (getType(node[0]) == NODE_BACK || getType(node[0]) == NODE_FRONT)
                 {
-                    const real x_diff = toReal(x) - XC;
-                    const real y_diff = toReal(y) - YC;
-                    const real radius = sqrt(x_diff * x_diff + y_diff * y_diff);
-
                     const size_t idx = idx3D(x, y, z);
 
                     binary_t bits[8] = {0};
@@ -339,65 +278,47 @@ inline void classify_bcsolid_nodes_triangular(nodeVar &hMom, int &nb_solid_inner
 
                     if (bit_count < 4)
                     {
-                        if (radius < R_mid)
-                        {
-                            std::cout << tag << std::endl;
-                            hMom.nodeType[idx] = encodeNode(NODE_BCSOLID_INNER, tag);
-                            inner_count++;
-                        }
-                        else
-                        {
-                            hMom.nodeType[idx] = encodeNode(NODE_BCSOLID_OUTER, tag);
-                            outer_count++;
-                        }
+                        hMom.nodeType[idx] = encodeNode(NODE_BCSOLID_INNER, tag);
+                        inner_count++;
                     }
                 }
             }
     nb_solid_inner = inner_count;
-    nb_solid_outer = outer_count;
 }
 
-inline void initialize_annulus_nodeType_staircase(nodeVar &hMom, boundaryVar &annulus_inner,
-                                                  boundaryVar &annulus_outer)
+inline void initialize_cylinder_nodeType_staircase(nodeVar &hMom, boundaryVar &cylinder_inner)
 {
-    mark_annulus_solid(hMom);
+    mark_cylinder_solid(hMom);
 
-    int nb_inner, nb_outer;
-    classify_boundary_nodes_staircase(hMom, nb_inner, nb_outer);
-    annulus_inner.NB = nb_inner;
-    annulus_outer.NB = nb_outer;
+    int nb_inner;
+    classify_boundary_nodes_staircase(hMom, nb_inner);
+    cylinder_inner.NB = nb_inner;
     std::cout << "inner: " << nb_inner << std::endl;
-    std::cout << "outer: " << nb_outer << std::endl;
 }
 
-inline void initialize_annulus_nodeType_triangular(nodeVar &hMom, boundaryVar &annulus_inner,
-                                                   boundaryVar &annulus_outer)
+inline void initialize_cylinder_nodeType_triangular(nodeVar &hMom, boundaryVar &cylinder_inner)
 {
-    mark_annulus_solid(hMom);
+    mark_cylinder_solid(hMom);
 
-    int nb_inner, nb_outer;
-    classify_boundary_nodes_triangular(hMom, nb_inner, nb_outer);
+    int nb_inner;
+    classify_boundary_nodes_triangular(hMom, nb_inner);
 
-    annulus_inner.NB = nb_inner;
-    annulus_outer.NB = nb_outer;
+    cylinder_inner.NB = nb_inner;
     std::cout << "inner: " << nb_inner << std::endl;
-    std::cout << "outer: " << nb_outer << std::endl;
 
-    int nb_fluid_inner, nb_fluid_outer;
-    classify_bcfluid_nodes_triangular(hMom, nb_fluid_inner, nb_fluid_outer);
-    annulus_inner.NB_FLUID = nb_fluid_inner;
-    annulus_outer.NB_FLUID = nb_fluid_outer;
+    int nb_fluid_inner;
+    classify_bcfluid_nodes_triangular(hMom, nb_fluid_inner);
+
+    cylinder_inner.NB_FLUID = nb_fluid_inner;
     std::cout << "BcFluid inner nodes: " << nb_fluid_inner << std::endl;
-    std::cout << "BcFluid outer nodes: " << nb_fluid_outer << std::endl;
 
 #if !Z_PERIODIC
 
-    int nb_solid_inner, nb_solid_outer;
-    classify_bcsolid_nodes_triangular(hMom, nb_solid_inner, nb_solid_outer);
-    annulus_inner.NB_SOLID = nb_solid_inner;
-    annulus_outer.NB_SOLID = nb_solid_outer;
+    int nb_solid_inner;
+    classify_bcsolid_nodes_triangular(hMom, nb_solid_inner);
+    
+    cylinder_inner.NB_SOLID = nb_solid_inner;
     std::cout << "Bcsolid inner nodes: " << nb_solid_inner << std::endl;
-    std::cout << "Bcsolid outer nodes: " << nb_solid_outer << std::endl;
 
 #endif
 }

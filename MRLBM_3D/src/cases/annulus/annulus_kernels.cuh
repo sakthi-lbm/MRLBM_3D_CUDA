@@ -10,6 +10,8 @@ __global__ void apply_bc_annulus(const int NB, const boundaryVar &annulus, nodeV
                                  const real UX_PRIME, const real UY_PRIME, const real UZ_PRIME,
                                  const real D_WALL, const int iter);
 
+void cylinder_write_output(Simulation &sim, int iter);
+
 //=================================================================================================================
 
 __device__ __forceinline__ void annulus_boundary_moments(const nodeType_t nodeType_packed,

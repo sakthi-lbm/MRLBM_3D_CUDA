@@ -171,9 +171,10 @@ __device__ void evaluate_bounday_moments(void *caseData, int x, int y, int z, no
                                          real &mxx, real &myy, real &mzz, real &mxy, real &mxz, real &myz)
 {
 #ifdef CYLINDER
-    auto *cylinder = static_cast<cylinderVar *>(caseData);
+    auto *d_cylinder = static_cast<cylinderVar *>(caseData);
 
-    cylinder_boundary_moments(nodeType, *cylinder, dMom, pop, rho, ux, uy, uz, mxx, myy, mzz, mxy, mxz, myz);
+    cylinder_boundary_moments(nodeType_packed, d_cylinder->inner, dMom, pop, rho, ux, uy, uz,
+                             mxx, myy, mzz, mxy, mxz, myz);
 
 #elif defined(ANNULUS)
     auto *d_annulus = static_cast<annulusVar *>(caseData);

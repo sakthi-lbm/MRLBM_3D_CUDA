@@ -114,18 +114,13 @@ void post_collision_pipeline(Simulation &sim, int iter)
 
 void post_step_pipeline(Simulation &sim, int iter)
 {
-    save_checkpoint(sim, iter);
+    handle_checkpoint(sim, iter);
+    handle_output(sim, iter);
+    handle_statistics(sim, iter);
+}
 
-    if (iter % MACR_SAVE == 0)
-    {
-        copyMomentsDeviceToHost(sim.h_fMom, sim.d_fMom);
-        // write_vti_3d(sim.h_fMom, iter);
-        write_vti_3d_annulus(sim.h_fMom, iter);
-
-        printf("\n---------------------- (%d/%d) %.2f%% ----------------------\n", iter, MAX_ITER, toFloat(iter) / toFloat(MAX_ITER) * 100.0f);
-        time_elapsing_count(sim.profile.step_end, sim.profile.step_start, iter, sim.start_iter);
-    }
-
+void handle_statistics(Simulation &sim, int iter)
+{
     if (iter >= STAT_START && iter <= STAT_END)
     {
         if (sim.case_module.post_process_step)
@@ -133,7 +128,21 @@ void post_step_pipeline(Simulation &sim, int iter)
     }
 }
 
-void save_checkpoint(Simulation &sim, int iter)
+void handle_output(Simulation &sim, int iter)
+{
+    if (iter % MACR_SAVE == 0)
+    {
+        copyMomentsDeviceToHost(sim.h_fMom, sim.d_fMom);
+
+        if (sim.case_module.write_output)
+            sim.case_module.write_output(sim, iter);
+
+        printf("\n---------------------- (%d/%d) %.2f%% ----------------------\n", iter, MAX_ITER, toFloat(iter) / toFloat(MAX_ITER) * 100.0f);
+        time_elapsing_count(sim.profile.step_end, sim.profile.step_start, iter, sim.start_iter);
+    }
+}
+
+void handle_checkpoint(Simulation &sim, int iter)
 {
     if (iter > sim.start_iter && (iter % CHECKPOINT_SAVE == 0))
     {

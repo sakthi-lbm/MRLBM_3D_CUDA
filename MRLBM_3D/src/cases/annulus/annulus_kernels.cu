@@ -1,5 +1,7 @@
 #include "annulus_kernels.cuh"
 
+
+#ifdef ANNULUS
 void annulus_initialize(Simulation &sim)
 {
     // allocate struct
@@ -136,4 +138,9 @@ __global__ void apply_bc_annulus(const int NB, const boundaryVar &annulus, nodeV
     dMom.myz[idx] = myz;
 }
 
-//================================================ POST-PROCESS====================================================
+void cylinder_write_output(Simulation &sim, int iter)
+{
+    write_vti_annulus(sim.h_fMom, iter);
+}
+
+#endif

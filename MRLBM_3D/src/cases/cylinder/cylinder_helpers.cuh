@@ -5,7 +5,7 @@
 
 #include "nodeClass.cuh"
 
-#ifdef ANNULUS
+#ifdef CYLINDER
 
 inline void compute_unit_vectors_boundary_nodes(nodeVar &hMom, boundaryVar &h_annulus, const real D_wall)
 {

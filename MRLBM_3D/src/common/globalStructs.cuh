@@ -55,6 +55,8 @@ struct Case
 
     void (*post_process_step)(Simulation &, int iter) = nullptr;
 
+    void (*write_output)(Simulation &, int iter) = nullptr;
+
     void (*finalize)(Simulation &) = nullptr;
     void (*free_case)(Simulation &) = nullptr;
 };

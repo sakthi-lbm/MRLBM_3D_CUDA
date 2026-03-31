@@ -14,4 +14,6 @@ void boundary_treatment(Simulation &sim, int iter);
 void post_streaming_pipeline(Simulation &sim, int iter);
 void post_collision_pipeline(Simulation &sim, int iter);
 void post_step_pipeline(Simulation &sim, int iter);
-void save_checkpoint(Simulation &sim, int iter);
+void handle_checkpoint(Simulation &sim, int iter);
+void handle_output(Simulation &sim, int iter);
+void handle_statistics(Simulation &sim, int iter);
