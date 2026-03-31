@@ -38,7 +38,6 @@ echo "Building for Compute Capability sm_${CompCap}, ID_SIM: ${ID_SIM}, Lattice:
 
 # Cleanup old binaries and outputs safely
 rm -f ../*sim_${LT}_sm${CompCap} 2>/dev/null
-# rm -rf ../LDC/${ID_SIM}/ 2>/dev/null
 
 # Compile all .cu files inside src/
 nvcc -std=c++17 \

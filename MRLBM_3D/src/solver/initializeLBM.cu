@@ -49,13 +49,11 @@ __global__ void gpu_initialize_Moments_GhostInterface(nodeVar dMom, haloData gHa
     real rho = RHO_0;
     real ux = toReal(0.0);
     real uy = toReal(0.0);
-    real uz = toReal(0.0);
+    // real uz = toReal(0.0);
 
-    // const real noise_scale = toReal(1e-4) * U_MAX;
-    // real rho = RHO_0;
-    // real ux = get_noise(idx, noise_scale);
-    // real uy = get_noise(idx + 12345, noise_scale);
-    // real uz = get_noise(idx + 67890, noise_scale);
+    const real noise_scale = toReal(1e-4) * U_MAX;
+    real uz = 1e-4 * U_MAX * sin(2.0 * PI * toReal(z) / toReal(NZ)) +
+              get_noise(idx + 67890, noise_scale);
 
     real mxx, myy, mzz, mxy, mxz, myz;
     real pop[Q];

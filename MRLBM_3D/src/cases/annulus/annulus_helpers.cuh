@@ -399,7 +399,7 @@ inline void write_geometry_files(nodeVar hMom)
     std::ofstream bcsolid_inner_file(construct_path(PATH_FILES, ID_SIM, "grid_layout", "bcsolid_inner.dat"), std::ios::trunc);
     std::ofstream bcsolid_outer_file(construct_path(PATH_FILES, ID_SIM, "grid_layout", "bcsolid_outer.dat"), std::ios::trunc);
 
-    const int Z_SLICE = 10;
+    const int Z_SLICE = 0;
     for (int z = 0; z < NZ; z++)
     {
         if (Z_SLICE >= 0 && z != Z_SLICE)
@@ -421,39 +421,47 @@ inline void write_geometry_files(nodeVar hMom)
                 if (isinner_cylinder(hMom.nodeType[idx]))
                 {
                     inner_file << x << " " << y << " " << z << " "
-                               << getType(hMom.nodeType[idx]) << "\n";
+                               << getType(hMom.nodeType[idx]) << " " << getIndex(hMom.nodeType[idx]) << "\n";
                 }
                 else if (isouter_cylinder(hMom.nodeType[idx]))
                 {
-                    outer_file << x << " " << y << " " << z << " " << getType(hMom.nodeType[idx]) << "\n";
+                    outer_file << x << " " << y << " " << z << " "
+                               << getType(hMom.nodeType[idx]) << " " << getIndex(hMom.nodeType[idx]) << "\n";
                 }
                 else if (isBcfluid_inner(hMom.nodeType[idx]))
                 {
-                    bcfluid_inner_file << x << " " << y << " " << z << " " << getType(hMom.nodeType[idx]) << "\n";
+                    bcfluid_inner_file << x << " " << y << " " << z << " "
+                                       << getType(hMom.nodeType[idx]) << " " << getIndex(hMom.nodeType[idx]) << "\n";
                 }
                 else if (isBcfluid_outer(hMom.nodeType[idx]))
                 {
-                    bcfluid_outer_file << x << " " << y << " " << z << " " << getType(hMom.nodeType[idx]) << "\n";
+                    bcfluid_outer_file << x << " " << y << " " << z << " "
+                                       << getType(hMom.nodeType[idx]) << " " << getIndex(hMom.nodeType[idx]) << "\n";
                 }
                 else if (isBcsolid_inner(hMom.nodeType[idx]))
                 {
-                    bcsolid_inner_file << x << " " << y << " " << z << " " << getType(hMom.nodeType[idx]) << "\n";
+                    bcsolid_inner_file << x << " " << y << " " << z << " "
+                                       << getType(hMom.nodeType[idx]) << " " << getIndex(hMom.nodeType[idx]) << "\n";
                 }
                 else if (isBcsolid_outer(hMom.nodeType[idx]))
                 {
-                    bcsolid_outer_file << x << " " << y << " " << z << " " << getType(hMom.nodeType[idx]) << "\n";
+                    bcsolid_outer_file << x << " " << y << " " << z << " "
+                                       << getType(hMom.nodeType[idx]) << " " << getIndex(hMom.nodeType[idx]) << "\n";
                 }
-                else if (getType(hMom.nodeType[idx]) == NODE_SOLID)
+                else if (getType(hMom.nodeType[idx]) << getIndex(hMom.nodeType[idx]) == NODE_SOLID)
                 {
-                    solid_file << x << " " << y << " " << z << " " << getType(hMom.nodeType[idx]) << "\n";
+                    solid_file << x << " " << y << " " << z << " "
+                               << getType(hMom.nodeType[idx]) << " " << getIndex(hMom.nodeType[idx]) << "\n";
                 }
-                else if (getType(hMom.nodeType[idx]) == NODE_BULK)
+                else if (getType(hMom.nodeType[idx]) << getIndex(hMom.nodeType[idx]) == NODE_BULK)
                 {
-                    fluid_file << x << " " << y << " " << z << " " << getType(hMom.nodeType[idx]) << std::endl;
+                    fluid_file << x << " " << y << " " << z << " "
+                               << getType(hMom.nodeType[idx]) << " " << getIndex(hMom.nodeType[idx]) << std::endl;
                 }
                 else
                 {
-                    others_file << x << " " << y << " " << z << " " << getType(hMom.nodeType[idx]) << std::endl;
+                    others_file << x << " " << y << " " << z << " "
+                                << getType(hMom.nodeType[idx]) << " " << getIndex(hMom.nodeType[idx]) << std::endl;
                 }
             }
         }

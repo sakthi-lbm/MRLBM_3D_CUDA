@@ -10,8 +10,6 @@ void annulus_initialize(Simulation &sim)
     triangular ? initialize_annulus_nodeType_triangular(sim.h_fMom, h_annulus->inner, h_annulus->outer)
                : initialize_annulus_nodeType_staircase(sim.h_fMom, h_annulus->inner, h_annulus->outer);
 
-    write_geometry_files(sim.h_fMom);
-
     // allocate memory using computed sizes
     allocateAnnulusMemory(h_annulus->inner, d_annulus->inner);
     allocateAnnulusMemory(h_annulus->outer, d_annulus->outer);
@@ -32,21 +30,26 @@ void annulus_initialize(Simulation &sim)
     find_incomings_outgoings(sim.h_fMom, h_annulus->inner);
     find_incomings_outgoings(sim.h_fMom, h_annulus->outer);
 
-    setup_bcfluid_masks(sim.h_fMom, h_annulus->inner);
-    setup_bcfluid_masks(sim.h_fMom, h_annulus->outer);
+    if constexpr (triangular)
+    {
+        setup_bcfluid_masks(sim.h_fMom, h_annulus->inner);
+        setup_bcfluid_masks(sim.h_fMom, h_annulus->outer);
 
-    setup_bcsolid_masks(sim.h_fMom, h_annulus->inner);
-    setup_bcsolid_masks(sim.h_fMom, h_annulus->outer);
+        setup_bcsolid_masks(sim.h_fMom, h_annulus->inner);
+        setup_bcsolid_masks(sim.h_fMom, h_annulus->outer);
+
+        annulus_host_device_constants();
+    }
 
     // copy data to device arrays
     copyHostToDevice(d_annulus->inner, h_annulus->inner);
     copyHostToDevice(d_annulus->outer, h_annulus->outer);
 
-    annulus_host_device_constants();
-
-    // store in simulation
+        // store in simulation
     sim.h_caseData = h_annulus;
     sim.d_caseData = d_annulus;
+
+    write_geometry_files(sim.h_fMom);
 }
 
 void annulus_apply_boundary(Simulation &sim, int iter)

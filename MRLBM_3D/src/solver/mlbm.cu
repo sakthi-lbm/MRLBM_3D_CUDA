@@ -152,6 +152,8 @@ __global__ void streaming_and_evaluate_Mom(void *caseData, nodeVar dMom, haloDat
         evaluate_bounday_moments(caseData, x, y, z, nodeType_packed, dMom, pop, rho, ux, uy, uz, mxx, myy, mzz, mxy, mxz, myz);
     }
 
+    __syncthreads();
+    
     dMom.rho[idx] = rho - RHO_0; // Incoming density rhoI only for cylinder boundary nodes
     dMom.ux[idx] = ux;
     dMom.uy[idx] = uy;

@@ -7,12 +7,12 @@
 
 #define X_PERIODIC 0 // or 0
 #define Y_PERIODIC 0 // or 0
-#define Z_PERIODIC 1 // or 0
+#define Z_PERIODIC 0 // or 0
 
 constexpr bool triangular = true;
 
-constexpr MassBC MASS_CONSERV = MassBC::Strong;
-constexpr MassBC BCF_MASS_CONSERV = MassBC::Strong;
+constexpr MassBC MASS_CONSERV = MassBC::Equilibrium;
+constexpr MassBC BCF_MASS_CONSERV = MassBC::Equilibrium;
 
 constexpr int BLOCK_SIZE = 4; // Maxmum block based on the register load
 
@@ -20,7 +20,7 @@ constexpr int N_GAP_BASE = 4;
 constexpr int multiplier = 8;                  // Multiplier to refine the grid
 constexpr int N_GAP = N_GAP_BASE * multiplier; // Number of nodes in the gap
 
-constexpr real RADIUS_RATIO = 0.5;     // r_in/r_out
+constexpr real RADIUS_RATIO = 0.5;   // r_in/r_out
 constexpr real ROTATION_RATIO = 0.0; // omega_out / omega_in
 
 // D_out to maintain N_gap for this radius ratio
@@ -46,8 +46,8 @@ constexpr int N_OUTLET = NY * NZ;
 constexpr real XC = 0.5 * (NX - 1); // Center of the cylinder xc
 constexpr real YC = 0.5 * (NY - 1); // Center of the cylinder yc
 
-constexpr real RE = 100;      // Reynolds number
-constexpr real U_MAX = 0.1;   // lattice characteristic velocity
+constexpr real RE = 70;       // Reynolds number
+constexpr real U_MAX = 0.03;  // lattice characteristic velocity
 constexpr real RHO_0 = 1.0;   // Free-stream density
 constexpr real delta_t = 1.0; // lattice time-step
 
@@ -77,7 +77,7 @@ constexpr real P_NORM = RHO_0 * RHO_0 * VEL_NORM; // Pressure norm for non-dimen
 
 constexpr real GAP = R_OUT - R_IN;
 constexpr real VISC = U_REL * GAP / RE;
-constexpr real TAU = 0.5 + 3.0 * VISC;
+constexpr real TAU = 0.5 + as2 * VISC;
 constexpr real OMEGA = 1.0 / TAU;
 
 constexpr real ETA = R_IN / R_OUT;

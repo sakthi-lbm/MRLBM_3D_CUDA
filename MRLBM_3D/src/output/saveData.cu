@@ -126,7 +126,7 @@ void write_vti_3d_annulus(nodeVar data, int timestep)
     const uint64_t bytes_per_field = total_points * sizeof(float);
     const char *vtkType = "Float32";
 
-    std::vector<std::string> field_names = {"rho", "ux", "uy", "uz", "u_theta", "u_radial"}; // Added uz for 3D
+    std::vector<std::string> field_names = {"rho", "uz", "u_theta", "u_radial"}; // Added uz for 3D
 
     std::ofstream f(filename, std::ios::binary);
     if (!f)
@@ -211,11 +211,11 @@ void write_vti_3d_annulus(nodeVar data, int timestep)
     write_data([&](int, int, int, size_t idx)
                { return RHO_0 + data.rho[idx]; });
 
-    write_data([&](int, int, int, size_t idx)
-               { return (getType(data.nodeType[idx]) == NODE_SOLID) ? NAN : (float)data.ux[idx]; });
+    // write_data([&](int, int, int, size_t idx)
+    //            { return (getType(data.nodeType[idx]) == NODE_SOLID) ? NAN : (float)data.ux[idx]; });
 
-    write_data([&](int, int, int, size_t idx)
-               { return (getType(data.nodeType[idx]) == NODE_SOLID) ? NAN : (float)data.uy[idx]; });
+    // write_data([&](int, int, int, size_t idx)
+    //            { return (getType(data.nodeType[idx]) == NODE_SOLID) ? NAN : (float)data.uy[idx]; });
 
     write_data([&](int, int, int, size_t idx)
                { return (getType(data.nodeType[idx]) == NODE_SOLID) ? NAN : (float)data.uz[idx]; });

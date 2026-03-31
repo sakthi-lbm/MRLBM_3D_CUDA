@@ -45,7 +45,7 @@ __device__ __forceinline__ void annulus_boundary_moments(const nodeType_t nodeTy
 
         fluid_boundary_condition(tag, incomingMask, pop, rho, ux, uy, uz, mxx, myy, mzz, mxy, mxz, myz);
     }
-    else if (!Z_PERIODIC && (nodeType == NODE_BCSOLID_INNER || nodeType == NODE_BCSOLID_OUTER))
+    else if (triangular && !Z_PERIODIC && (nodeType == NODE_BCSOLID_INNER || nodeType == NODE_BCSOLID_OUTER))
     {
         bcsolid_boundary_condition(tag, pop, rho, ux, uy, uz, mxx, myy, mzz, mxy, mxz, myz);
     }
@@ -89,10 +89,13 @@ inline void allocateAnnulusMemory(boundaryVar &h_annulus, boundaryVar &d_annulus
         const int NB_SOLID = h_annulus.NB_SOLID;
 
         checkCudaErrors(cudaMallocHost(&h_annulus.bcfluidList, NB_FLUID * sizeof(size_t)));
-        checkCudaErrors(cudaMallocHost(&h_annulus.bcsolidList, NB_SOLID * sizeof(size_t)));
-
         checkCudaErrors(cudaMalloc(&d_annulus.bcfluidList, NB_FLUID * sizeof(size_t)));
-        checkCudaErrors(cudaMalloc(&d_annulus.bcsolidList, NB_SOLID * sizeof(size_t)));
+
+        if (!Z_PERIODIC)
+        {
+            checkCudaErrors(cudaMallocHost(&h_annulus.bcsolidList, NB_SOLID * sizeof(size_t)));
+            checkCudaErrors(cudaMalloc(&d_annulus.bcsolidList, NB_SOLID * sizeof(size_t)));
+        }
     }
 }
 
@@ -165,7 +168,8 @@ inline void copyHostToDevice(boundaryVar &d_annulus, boundaryVar &h_annulus)
         d_annulus.NB_SOLID = NB_SOLID;
 
         checkCudaErrors(cudaMemcpy(d_annulus.bcfluidList, h_annulus.bcfluidList, NB_FLUID * sizeof(size_t), cudaMemcpyHostToDevice));
-        checkCudaErrors(cudaMemcpy(d_annulus.bcsolidList, h_annulus.bcsolidList, NB_SOLID * sizeof(size_t), cudaMemcpyHostToDevice));
+        if (!Z_PERIODIC)
+            checkCudaErrors(cudaMemcpy(d_annulus.bcsolidList, h_annulus.bcsolidList, NB_SOLID * sizeof(size_t), cudaMemcpyHostToDevice));
     }
 }
 
@@ -174,6 +178,9 @@ inline void annulus_host_device_constants()
     cudaMemcpyToSymbol(d_incomingMask_bcfluid, h_incomingMask_bcfluid, MAX_NODE_TAG * sizeof(uint32_t));
     cudaMemcpyToSymbol(d_outgoingMask_bcfluid, h_outgoingMask_bcfluid, MAX_NODE_TAG * sizeof(uint32_t));
 
-    cudaMemcpyToSymbol(d_incomingMask_bcsolid, h_incomingMask_bcsolid, MAX_NODE_TAG * sizeof(uint32_t));
-    cudaMemcpyToSymbol(d_outgoingMask_bcsolid, h_outgoingMask_bcsolid, MAX_NODE_TAG * sizeof(uint32_t));
+    if (!Z_PERIODIC)
+    {
+        cudaMemcpyToSymbol(d_incomingMask_bcsolid, h_incomingMask_bcsolid, MAX_NODE_TAG * sizeof(uint32_t));
+        cudaMemcpyToSymbol(d_outgoingMask_bcsolid, h_outgoingMask_bcsolid, MAX_NODE_TAG * sizeof(uint32_t));
+    }
 }

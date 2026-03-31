@@ -245,6 +245,11 @@ inline void classify_boundary_nodes_triangular(nodeVar &hMom, int &nb_inner, int
                     }
 #endif
                 }
+                if (x == 43 && y == 89 && z == 0)
+                {
+                    const size_t idx = idx3D(x, y, z);
+                    std::cout << x << " " << y << " " << z << " " << getType(hMom.nodeType[idx]) << std::endl;
+                }
             }
     nb_inner = inner_count;
     nb_outer = outer_count;
