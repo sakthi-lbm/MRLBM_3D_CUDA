@@ -43,6 +43,7 @@ rm -f ../*sim_${LT}_sm${CompCap} 2>/dev/null
 nvcc -std=c++17 \
     -gencode arch=compute_${CompCap},code=sm_${CompCap} \
     -rdc=true $FLAGS --restrict \
+    -Xptxas -v \
      -I. \
     -Iinclude \
     -Isrc \

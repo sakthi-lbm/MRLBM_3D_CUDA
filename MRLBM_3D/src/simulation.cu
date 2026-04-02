@@ -138,7 +138,8 @@ void handle_output(Simulation &sim, int iter)
             sim.case_module.write_output(sim, iter);
 
         printf("\n---------------------- (%d/%d) %.2f%% ----------------------\n", iter, MAX_ITER, toFloat(iter) / toFloat(MAX_ITER) * 100.0f);
-        time_elapsing_count(sim.profile.step_end, sim.profile.step_start, iter, sim.start_iter);
+        time_elapsing_count(sim.profile.sim_start_time, sim.profile.step_end, sim.profile.step_start,
+                            iter, sim.start_iter);
     }
 }
 

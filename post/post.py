@@ -2,7 +2,7 @@ import numpy as np
 import sys
 import matplotlib.pyplot as plt
 
-PATH = "../OUTPUT/CYLINDER_NEW"
+PATH = "../OUTPUT/CYLINDER"
 
 if len(sys.argv) < 2:
     raise RuntimeError("Usage: python plot.py <run_name>")
@@ -10,12 +10,12 @@ if len(sys.argv) < 2:
 run = sys.argv[1]
 print("Post-processing run:", run)
 
-info_path = f"{PATH}/{run}/cp_surface.dat"
+info_path = f"{PATH}/{run}/pressure.dat"
 data = np.loadtxt(info_path, skiprows=1)
 
 theta = data[:,0]
 z     = data[:,1]
-p     = data[:,2]   # <-- this is pressure, not Cp
+p     = data[:,2] 
 
 # ---- constants ----
 cs2 = 1.0 / 3.0

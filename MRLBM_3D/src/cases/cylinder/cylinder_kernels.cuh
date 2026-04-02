@@ -20,9 +20,9 @@ __global__ void apply_bc_cylinder(const int NB, const boundaryVar &cylinder, nod
                                   const real UX_PRIME, const real UY_PRIME, const real UZ_PRIME,
                                   const real D_WALL, const int iter);
 
-__global__ void compute_surface_pressure(const nodeVar &dMom, const cylinderVar &d_cylinder,
-                                         const cylinderPostProcess &d_cylinderPost,
-                                         const int n_avg);
+__global__ void compute_surface_pressure(const nodeVar &dMom, const int nb,
+                                         size_t *boundaryList, real *d_unit_nx, real *d_unit_ny,
+                                         real *d_ps_avg, const int n_avg);
 
 //=================================================================================================================
 
@@ -61,7 +61,8 @@ __device__ __forceinline__ void cylinder_boundary_moments(const nodeType_t nodeT
     }
 }
 
-inline void allocatecylinderMemory(boundaryVar &h_cylinder, boundaryVar &d_cylinder)
+inline void allocatecylinderMemory(boundaryVar &h_cylinder, boundaryVar &d_cylinder,
+                                   cylinderPostProcess &h_cylinderPost, cylinderPostProcess &d_cylinderPost)
 {
     const int NB = h_cylinder.NB;
 
@@ -89,6 +90,7 @@ inline void allocatecylinderMemory(boundaryVar &h_cylinder, boundaryVar &d_cylin
     checkCudaErrors(cudaMalloc(&d_cylinder.unit_ny, NB * sizeof(real)));
     checkCudaErrors(cudaMalloc(&d_cylinder.delta_w, NB * sizeof(real)));
 
+    // Triangular part
     if constexpr (triangular)
     {
         const int NB_FLUID = h_cylinder.NB_FLUID;
@@ -103,6 +105,21 @@ inline void allocatecylinderMemory(boundaryVar &h_cylinder, boundaryVar &d_cylin
             checkCudaErrors(cudaMalloc(&d_cylinder.bcsolidList, NB_SOLID * sizeof(size_t)));
         }
     }
+
+    // ================= POST-PROCESS =================
+    checkCudaErrors(cudaMallocHost(&h_cylinderPost.ps_avg, NB * sizeof(real)));
+    checkCudaErrors(cudaMallocHost(&h_cylinderPost.ps_rms_avg, NB * sizeof(real)));
+
+    memset(h_cylinderPost.ps_avg, 0, NB * sizeof(real));
+    memset(h_cylinderPost.ps_rms_avg, 0, NB * sizeof(real));
+    h_cylinderPost.n_avg = 0;
+
+    checkCudaErrors(cudaMalloc(&d_cylinderPost.ps_avg, NB * sizeof(real)));
+    checkCudaErrors(cudaMalloc(&d_cylinderPost.ps_rms_avg, NB * sizeof(real)));
+
+    cudaMemset(d_cylinderPost.ps_avg, 0, NB * sizeof(real));
+    cudaMemset(d_cylinderPost.ps_rms_avg, 0, NB * sizeof(real));
+    d_cylinderPost.n_avg = 0;
 }
 
 inline void free_boundary(boundaryVar &h_b, boundaryVar &d_b)
@@ -132,23 +149,48 @@ inline void free_boundary(boundaryVar &h_b, boundaryVar &d_b)
     cudaFree(d_b.delta_w);
 }
 
+inline void free_boundaryPost(cylinderPostProcess &h_Post, cylinderPostProcess &d_Post)
+{
+    // host
+    cudaFreeHost(h_Post.ps_avg);
+    cudaFreeHost(h_Post.ps_rms_avg);
+
+    // device
+    cudaFree(d_Post.ps_avg);
+    cudaFree(d_Post.ps_rms_avg);
+}
+
 inline void cylinder_free(Simulation &sim)
 {
 
     auto *h_cylinder = static_cast<cylinderVar *>(sim.h_caseData);
     auto *d_cylinder = static_cast<cylinderVar *>(sim.d_caseData);
 
-    if (!h_cylinder || !d_cylinder)
-        return;
+    auto *h_cylinderPost = static_cast<cylinderPostProcess *>(sim.h_casePost);
+    auto *d_cylinderPost = static_cast<cylinderPostProcess *>(sim.d_casePost);
 
-    free_boundary(h_cylinder->inner, d_cylinder->inner);
+    if (h_cylinder && d_cylinder)
+    {
+        free_boundary(h_cylinder->inner, d_cylinder->inner);
 
-    // delete structs
-    delete h_cylinder;
-    delete d_cylinder;
+        delete h_cylinder;
+        delete d_cylinder;
 
-    sim.h_caseData = nullptr;
-    sim.d_caseData = nullptr;
+        sim.h_caseData = nullptr;
+        sim.d_caseData = nullptr;
+    }
+
+    // -------- post-process --------
+    if (h_cylinderPost && d_cylinderPost)
+    {
+        free_boundaryPost(*h_cylinderPost, *d_cylinderPost);
+
+        delete h_cylinderPost;
+        delete d_cylinderPost;
+
+        sim.h_casePost = nullptr;
+        sim.d_casePost = nullptr;
+    }
 }
 
 inline void copyHostToDevice(boundaryVar &d_cylinder, boundaryVar &h_cylinder)
@@ -226,7 +268,7 @@ inline void write_pressure(const cylinderVar &h_cylinder,
         real dx = x - XC;
         real dy = y - YC;
 
-        real theta = atan2(dy, dx) * 180.0 / M_PI;
+        real theta = atan2(dy, dx) * 180.0 / PI;
         if (theta < 0)
             theta += 360.0;
 

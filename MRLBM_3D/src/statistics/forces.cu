@@ -22,19 +22,13 @@ __device__ __forceinline__ void compute_forces_mass(const uint32_t dir_mask, con
     }
 }
 
-__global__ void compute_force_mass_kernel(
-    const nodeVar dMom,
-
-    const size_t *boundaryList,
-    const size_t *bcfluidList,
-
-    const uint32_t *boundaryMask,
-    const uint32_t *bcfluidMask,
-
-    const int NB,
-    const int NB_FLUID,
-
-    const real sign)
+__global__ void compute_force_mass_kernel(const nodeVar dMom,
+                                          const size_t *boundaryList,
+                                          const size_t *bcfluidList,
+                                          const uint32_t *boundaryMask,
+                                          const int NB, const int NB_FLUID,
+                                          const MaskType masktype,
+                                          const real sign)
 {
     int tid = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -59,11 +53,10 @@ __global__ void compute_force_mass_kernel(
         const real myz = dMom.myz[idx];
 
         real pop[Q];
-        pop_reconstruction(rho, ux, uy, uz,
-                           mxx, myy, mzz,
-                           mxy, mxz, myz, pop);
+        pop_reconstruction(rho, ux, uy, uz, mxx, myy, mzz, mxy, mxz, myz, pop);
 
         const uint32_t mask = boundaryMask[tid];
+
         compute_forces_mass(mask, pop, Fx_local, Fy_local, Fz_local, m_local);
     }
     else if (tid < NB + NB_FLUID)
@@ -87,8 +80,18 @@ __global__ void compute_force_mass_kernel(
                            mxx, myy, mzz,
                            mxy, mxz, myz, pop);
 
-        const size_t nodeTag = dMom.nodeType[idx];// - BCFLUID_NODE;
-        const uint32_t mask = bcfluidMask[nodeTag];
+        const nodeType_t nodeType_masked = dMom.nodeType[idx];
+        const nodeType_t tag = getIndex(nodeType_masked);
+
+        uint32_t mask;
+        if (masktype == INCOMING)
+        {
+            mask = d_incomingMask_bcfluid[tag];
+        }
+        else
+        {
+            mask = d_outgoingMask_bcfluid[tag];
+        }
 
         compute_forces_mass(mask, pop, Fx_local, Fy_local, Fz_local, m_local);
     }

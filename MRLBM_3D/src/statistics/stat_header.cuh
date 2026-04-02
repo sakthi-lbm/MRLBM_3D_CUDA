@@ -5,19 +5,13 @@
 
 #include CASE_BOUNDARY
 
-__global__ void compute_force_mass_kernel(
-    const nodeVar dMom,
-
-    const size_t *boundaryList,
-    const size_t *bcfluidList,
-
-    const uint32_t *boundaryMask,
-    const uint32_t *bcfluidMask,
-
-    const int NB,
-    const int NB_FLUID,
-
-    const real sign);
+__global__ void compute_force_mass_kernel(const nodeVar dMom,
+                                          const size_t *boundaryList,
+                                          const size_t *bcfluidList,
+                                          const uint32_t *boundaryMask,
+                                          const int NB, const int NB_FLUID,
+                                          const MaskType masktype,
+                                          const real sign);
 
 inline void write_forces(const int iter)
 {

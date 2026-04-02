@@ -18,3 +18,9 @@ enum class MassBC : int
     Weak = 2
 };
 
+enum MaskType
+{
+    INCOMING = 0,
+    OUTGOING = 1
+};
+

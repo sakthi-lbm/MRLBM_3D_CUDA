@@ -138,7 +138,7 @@ __global__ void apply_bc_annulus(const int NB, const boundaryVar &annulus, nodeV
     dMom.myz[idx] = myz;
 }
 
-void cylinder_write_output(Simulation &sim, int iter)
+void annulus_write_output(Simulation &sim, int iter)
 {
     write_vti_annulus(sim.h_fMom, iter);
 }

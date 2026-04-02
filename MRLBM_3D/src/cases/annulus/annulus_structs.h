@@ -4,26 +4,20 @@
 
 struct boundaryVar
 {
-    int NB;
-    int NB_FLUID;
-    int NB_SOLID;
+    int NB = 0;
+    int NB_FLUID = 0;
+    int NB_SOLID = 0;
 
-    real *unit_nx; // unit normal to the annulus
-    real *unit_ny; // unit tangential to the annulus
-    real *delta_w; // distance between wall and boundary node
+    real *unit_nx = nullptr;
+    real *unit_ny = nullptr;
+    real *delta_w = nullptr;
 
-    size_t *boundaryList;   // size NB
-    uint32_t *incomingMask; // NB
-    uint32_t *outgoingMask; // NB
+    size_t *boundaryList = nullptr;
+    uint32_t *incomingMask = nullptr;
+    uint32_t *outgoingMask = nullptr;
 
-    size_t *bcfluidList; // size NB_FLUID
-    size_t *bcsolidList; // size NB_SOLID
-
-    // annulus forces
-    real d_TotalFx;
-    real d_TotalFy;
-    real d_TotalFz;
-    real d_Totalm;
+    size_t *bcfluidList = nullptr;
+    size_t *bcsolidList = nullptr;
 };
 
 struct annulusVar
@@ -35,7 +29,7 @@ struct annulusVar
 struct annulusPostProcess
 {
     // time averaging
-    real *ps_avg;     // NB × Nz
-    real *ps_rms_avg; // NB × Nz(RMS)
+    real *ps_avg = nullptr;     // NB × Nz
+    real *ps_rms_avg = nullptr; // NB × Nz(RMS)
     int n_avg = 0;
 };

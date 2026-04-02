@@ -16,9 +16,9 @@ void setup_cylinder_case(Case &case_module)
     case_module.initialize = cylinder_initialize;
     case_module.apply_boundary = cylinder_apply_boundary;
 
-    case_module.post_streaming = nullptr;
-    case_module.post_collision = nullptr;
-    case_module.post_process_step = nullptr;
+    case_module.post_streaming = cylinder_post_streaming;
+    case_module.post_collision = cylinder_post_collision;
+    case_module.post_process_step = cylinder_post_process;
     case_module.write_output = cylinder_write_output;
     case_module.finalize = nullptr;
 

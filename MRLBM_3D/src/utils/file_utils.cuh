@@ -239,10 +239,11 @@ inline void gpu_properties()
     }
 }
 
-__host__ inline void time_elapsing_count(timestep &step_end, timestep &step_start, size_t step, int start_step)
+__host__ inline void time_elapsing_count(timestep &sim_start, timestep &step_end, timestep &step_start, size_t step, int start_step)
 {
     step_end = std::chrono::high_resolution_clock::now();
     double step_time = std::chrono::duration<double>(step_end - step_start).count();
+    double sim_time = std::chrono::duration<double>(step_end - sim_start).count();
 
     // Calculate MLUPS for the current step
     real MLUPS = (NUM_LBM_NODES * MACR_SAVE / 1e6) / step_time;
@@ -258,7 +259,16 @@ __host__ inline void time_elapsing_count(timestep &step_end, timestep &step_star
 
     if (step > start_step)
     {
-        std::cout << "Elapsed time: " << step_time << " seconds" << std::endl;
+        int hours = static_cast<int>(sim_time) / 3600;
+        int minutes = (static_cast<int>(sim_time) % 3600) / 60;
+        double seconds = sim_time - hours * 3600 - minutes * 60;
+
+        std::cout << "Elapsed time: "
+                  << hours << " h, "
+                  << minutes << " min, "
+                  << std::fixed << std::setprecision(2)
+                  << seconds << " s\n";
+
         std::cout << "MLUPS: " << MLUPS << std::endl;
 
         std::cout << "Estimated time left: "

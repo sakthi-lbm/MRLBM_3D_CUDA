@@ -17,7 +17,7 @@ constexpr MassBC BCF_MASS_CONSERV = MassBC::Equilibrium;
 
 constexpr int BLOCK_SIZE = 4; // Maxmum block based on the register load
 
-constexpr int D = 16;    // Diameter of the cylinder
+constexpr int D = 32;    // Diameter of the cylinder
 constexpr int R = D / 2; // radius of the cylinder
 constexpr real D_WALL = toReal(D);
 constexpr real R_WALL = 0.5 * D_WALL;
@@ -29,7 +29,7 @@ constexpr int LS = LN;     // bottom wall from cylinder
 
 constexpr int NX = LW + D + LE; // size x of the grid
 constexpr int NY = LN + D + LS; // size y of the grid
-constexpr int NZ = 5 * D;       // size z of the grid in one GPU
+constexpr int NZ = 3 * D;       // size z of the grid in one GPU
 
 constexpr int N_OUTLET = NY * NZ;
 
