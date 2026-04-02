@@ -259,15 +259,15 @@ __host__ inline void time_elapsing_count(timestep &sim_start, timestep &step_end
 
     if (step > start_step)
     {
-        int hours = static_cast<int>(sim_time) / 3600;
-        int minutes = (static_cast<int>(sim_time) % 3600) / 60;
-        double seconds = sim_time - hours * 3600 - minutes * 60;
+        int sim_hours = static_cast<int>(sim_time) / 3600;
+        int sim_minutes = (static_cast<int>(sim_time) % 3600) / 60;
+        double sim_seconds = sim_time - hours * 3600 - minutes * 60;
 
         std::cout << "Elapsed time: "
-                  << hours << " h, "
-                  << minutes << " min, "
+                  << sim_hours << "h "
+                  << sim_minutes << "min "
                   << std::fixed << std::setprecision(2)
-                  << seconds << " s\n";
+                  << sim_seconds << "s\n";
 
         std::cout << "MLUPS: " << MLUPS << std::endl;
 

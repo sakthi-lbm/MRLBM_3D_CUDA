@@ -19,13 +19,14 @@ p     = data[:,2]
 
 # ---- constants ----
 cs2 = 1.0 / 3.0
-rho_inf = 1.0
+rho_inf = 1.36
 u_inf = 0.1
 
 p_inf = cs2 * rho_inf
 
 # ---- compute Cp ----
-Cp = (p - p_inf) / (0.5 * rho_inf * u_inf**2)
+Cp = (3.0*p - p_inf) / (0.5 * rho_inf * u_inf*u_inf)
+#Cp = p 
 
 # ---- select z plane ----
 z_loc = 10
@@ -39,9 +40,10 @@ idx = np.argsort(theta_z)
 
 # ---- plot ----
 plt.plot(theta_z[idx], Cp_z[idx])
+plt.xlim(0, 180)
 plt.xlabel("theta (deg)")
 plt.ylabel("Cp")
-plt.gca().invert_yaxis()
+plt.gca().invert_xaxis()
 plt.title(f"Cp at z = {z_loc}")
 plt.grid()
 plt.show()

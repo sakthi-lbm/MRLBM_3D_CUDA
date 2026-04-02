@@ -270,8 +270,7 @@ __global__ void compute_surface_pressure(const nodeVar &dMom, const int nb,
     const real rho3 = RHO_0 + bilinear_interpolation(x3, y3, z, dMom.rho);
 
     // surface pressure extrapolation
-    const real rho_s = surface_pressure_extrapolation(xw, yw, x1, y1, x2, y2, x3, y3, rho1, rho2, rho3);
-    const real ps = rho_s * cs2;
+    const real ps = surface_pressure_extrapolation(xw, yw, x1, y1, x2, y2, x3, y3, rho1, rho2, rho3);
 
     real ps_avg = d_ps_avg[i];
 

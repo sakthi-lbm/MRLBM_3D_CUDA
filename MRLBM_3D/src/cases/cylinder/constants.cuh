@@ -9,7 +9,7 @@
 #define Y_PERIODIC 1 // or 0
 #define Z_PERIODIC 1 // or 0
 
-#define CONVECTIVE_OUTLET 1
+#define CONVECTIVE_OUTLET 0
 constexpr bool triangular = true;
 
 constexpr MassBC MASS_CONSERV = MassBC::Equilibrium;
@@ -17,7 +17,7 @@ constexpr MassBC BCF_MASS_CONSERV = MassBC::Equilibrium;
 
 constexpr int BLOCK_SIZE = 4; // Maxmum block based on the register load
 
-constexpr int D = 32;    // Diameter of the cylinder
+constexpr int D = 16;    // Diameter of the cylinder
 constexpr int R = D / 2; // radius of the cylinder
 constexpr real D_WALL = toReal(D);
 constexpr real R_WALL = 0.5 * D_WALL;
@@ -54,6 +54,7 @@ constexpr real OMEGA = 1.0 / TAU;
 constexpr real VEL_NORM = U_MAX;
 
 inline real rho_infty = 0.0f;
+constexpr real U_MIN = 0.1 * U_MAX;
 
 // ---------- RUNTIME CONSTANTS (HOST) ----------
 inline real h_Hxx[Q] = {0};

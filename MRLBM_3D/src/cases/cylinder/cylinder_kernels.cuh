@@ -272,9 +272,9 @@ inline void write_pressure(const cylinderVar &h_cylinder,
         if (theta < 0)
             theta += 360.0;
 
-        real Cp = h_cylinderPost.ps_avg[i];
+        real ps = h_cylinderPost.ps_avg[i];
 
-        file << std::setprecision(12) << theta << " " << z << " " << Cp << "\n";
+        file << std::setprecision(12) << theta << " " << z << " " << ps << "\n";
     }
 
     file.close();

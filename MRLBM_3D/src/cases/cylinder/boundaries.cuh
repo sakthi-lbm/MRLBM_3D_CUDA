@@ -113,8 +113,10 @@ __device__ inline void update_neumaan_density_velocity(nodeVar dMom, real &rho, 
         const real uyb = dMom.uy[idx];
         const real uzb = dMom.uz[idx];
 
-        // const real Uc = sqrt(uxi * uxi);
-        const real Uc = d_UCONV;
+        const real Uc = sqrt(uxi * uxi);
+        // const real Uc = d_UCONV;
+        // real Uc = uxi;
+        // Uc = fmax(Uc, U_MIN);
         rho = (1.0 - Uc) * rhob + Uc * rhoi;
         // rho = RHO_0;
         ux = (1.0 - Uc) * uxb + Uc * uxi;
