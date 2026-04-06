@@ -6,10 +6,12 @@ void cylinder_initialize(Simulation &sim)
 {
     // allocate struct
     cylinderVar *h_cylinder = new cylinderVar;
-    cylinderVar *d_cylinder = new cylinderVar;
+    cylinderVar *d_cylinder = nullptr;
+    checkCudaErrors(cudaMallocManaged(&d_cylinder, sizeof(cylinderVar)));
 
     cylinderPostProcess *h_cylinderPost = new cylinderPostProcess;
-    cylinderPostProcess *d_cylinderPost = new cylinderPostProcess;
+    cylinderPostProcess *d_cylinderPost = nullptr;
+    checkCudaErrors(cudaMallocManaged(&d_cylinderPost, sizeof(cylinderPostProcess)));
 
     // compute geometry + counts (NB, etc.)
     triangular ? initialize_cylinder_nodeType_triangular(sim.h_fMom, h_cylinder->inner)

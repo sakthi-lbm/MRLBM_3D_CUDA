@@ -84,7 +84,7 @@ __global__ void streaming_and_evaluate_Mom(void *caseData, nodeVar dMom, haloDat
                                            const int *d_active_blocks, int iter)
 {
 
-    const int blockId = blockIdx.y * GRID_BLOCK_X + blockIdx.x;
+    const int blockId = blockIdx.x + GRID_BLOCK_X * (blockIdx.y + GRID_BLOCK_Y * blockIdx.z);
     if (d_active_blocks[blockId] == 0)
         return;
 
@@ -187,7 +187,7 @@ __global__ void collision_halo_update(nodeVar dMom, haloData fHalo, haloData gHa
                                       const int *d_active_blocks, const int iter)
 {
 
-    const int blockId = blockIdx.y * GRID_BLOCK_X + blockIdx.x;
+    const int blockId = blockIdx.x + GRID_BLOCK_X * (blockIdx.y + GRID_BLOCK_Y * blockIdx.z);
     if (d_active_blocks[blockId] == 0)
         return;
     const unsigned int x = threadIdx.x + blockIdx.x * blockDim.x;
