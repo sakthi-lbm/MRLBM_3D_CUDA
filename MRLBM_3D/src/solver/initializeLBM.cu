@@ -18,6 +18,8 @@ __constant__ real d_Hyz[Q];
 __device__ real d_sumUx;
 __device__ real d_UCONV;
 
+__device__ real d_sumRhoIn;
+
 // A simple hash-based random number generator for CUDA
 __device__ real get_noise(size_t idx, real scale)
 {

@@ -19,13 +19,13 @@ p     = data[:,2]
 
 # ---- constants ----
 cs2 = 1.0 / 3.0
-rho_inf = 1.36
+rho_inf = 1.32925
 u_inf = 0.1
 
 p_inf = cs2 * rho_inf
 
 # ---- compute Cp ----
-Cp = (3.0*p - p_inf) / (0.5 * rho_inf * u_inf*u_inf)
+Cp = (p - p_inf) / (0.5 * rho_inf * u_inf*u_inf)
 #Cp = p 
 
 # ---- select z plane ----

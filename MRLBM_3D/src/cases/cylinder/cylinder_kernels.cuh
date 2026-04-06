@@ -16,6 +16,9 @@ void cylinder_outgoing_force_kernal(Simulation &sim, const int iter);
 
 void cylinder_post_process(Simulation &sim, int iter);
 
+__global__ void inlet_avg_density(const real *__restrict__ rho);
+void compute_inlet_average_density(const real *d_rho);
+
 __global__ void apply_bc_cylinder(const int NB, const boundaryVar &cylinder, nodeVar dMom,
                                   const real UX_PRIME, const real UY_PRIME, const real UZ_PRIME,
                                   const real D_WALL, const int iter);
@@ -28,7 +31,7 @@ __global__ void compute_surface_pressure(const nodeVar &dMom, const int nb,
 
 __device__ __forceinline__ void cylinder_boundary_moments(const nodeType_t nodeType_packed,
                                                           const boundaryVar &inner,
-                                                          nodeVar &dMom, real *pop,
+                                                          nodeVar &dMom, real *pop, real *s_pop,
                                                           real &rho, real &ux, real &uy, real &uz,
                                                           real &mxx, real &myy, real &mzz,
                                                           real &mxy, real &mxz, real &myz)
@@ -57,7 +60,7 @@ __device__ __forceinline__ void cylinder_boundary_moments(const nodeType_t nodeT
     }
     else
     {
-        boundary_condition(nodeType, dMom, pop, rho, ux, uy, uz, mxx, myy, mzz, mxy, mxz, myz);
+        boundary_condition(nodeType, dMom, pop, s_pop, rho, ux, uy, uz, mxx, myy, mzz, mxy, mxz, myz);
     }
 }
 
@@ -233,7 +236,7 @@ inline void cylinder_host_device_constants()
 }
 
 //================================ POST-PROCESS ====================================================
-inline void write_forces_mass(const nodeVar &fMom, const int iter)
+inline void write_forces_mass_density(const nodeVar &fMom, const int iter)
 {
     cudaMemcpyFromSymbol(&h_TotalFx, d_TotalFx, sizeof(real));
     cudaMemcpyFromSymbol(&h_TotalFy, d_TotalFy, sizeof(real));
@@ -242,6 +245,7 @@ inline void write_forces_mass(const nodeVar &fMom, const int iter)
 
     write_forces(iter);
     write_mass_flux(iter);
+    write_average_inlet_density(iter);
 }
 
 inline void write_pressure(const cylinderVar &h_cylinder,

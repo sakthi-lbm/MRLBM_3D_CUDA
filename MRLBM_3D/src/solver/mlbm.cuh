@@ -7,7 +7,7 @@ __global__ void streaming_and_evaluate_Mom(void *caseData, nodeVar dMom, haloDat
                                            const int *d_active_blocks, int iter);
 
 __device__ void evaluate_bounday_moments(void *caseData, int x, int y, int z, nodeType_t nodeType_packed,
-                                         nodeVar dMom, real *pop, real &rho, real &ux, real &uy, real &uz,
+                                         nodeVar dMom, real *pop, real *s_pop, real &rho, real &ux, real &uy, real &uz,
                                          real &mxx, real &myy, real &mzz, real &mxy, real &mxz, real &myz);
 
 __global__ void collision_halo_update(nodeVar dMom, haloData fHalo, haloData gHalo,

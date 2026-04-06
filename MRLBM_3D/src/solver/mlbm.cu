@@ -134,11 +134,11 @@ __global__ void streaming_and_evaluate_Mom(void *caseData, nodeVar dMom, haloDat
     pop_load_from_halo(fHalo, tx, ty, tz, bx, by, bz, pop);
 
     // updating shared memory pop with streamed populations for neumann condition
-    // if constexpr (NEUMANN_CURRENT_UPDATE)
-    // {
-    //     save_pop(s_pop, pop);
-    //     __syncthreads();
-    // }
+    if constexpr (NEUMANN_CURRENT_UPDATE)
+    {
+        save_pop(s_pop, pop);
+        __syncthreads();
+    }
 
     //========================== Moments evaluation ========================================
     const nodeType_t nodeType = getType(nodeType_packed);
@@ -148,12 +148,9 @@ __global__ void streaming_and_evaluate_Mom(void *caseData, nodeVar dMom, haloDat
     }
     else
     {
-        // printf("nodetype: %d \n", toInt(nodeType));
-        evaluate_bounday_moments(caseData, x, y, z, nodeType_packed, dMom, pop, rho, ux, uy, uz, mxx, myy, mzz, mxy, mxz, myz);
+        evaluate_bounday_moments(caseData, x, y, z, nodeType_packed, dMom, pop, s_pop, rho, ux, uy, uz, mxx, myy, mzz, mxy, mxz, myz);
     }
 
-    __syncthreads();
-    
     dMom.rho[idx] = rho - RHO_0; // Incoming density rhoI only for cylinder boundary nodes
     dMom.ux[idx] = ux;
     dMom.uy[idx] = uy;
@@ -167,14 +164,14 @@ __global__ void streaming_and_evaluate_Mom(void *caseData, nodeVar dMom, haloDat
 }
 
 __device__ void evaluate_bounday_moments(void *caseData, int x, int y, int z, nodeType_t nodeType_packed,
-                                         nodeVar dMom, real *pop, real &rho, real &ux, real &uy, real &uz,
+                                         nodeVar dMom, real *pop, real *s_pop, real &rho, real &ux, real &uy, real &uz,
                                          real &mxx, real &myy, real &mzz, real &mxy, real &mxz, real &myz)
 {
 #ifdef CYLINDER
     auto *d_cylinder = static_cast<cylinderVar *>(caseData);
 
-    cylinder_boundary_moments(nodeType_packed, d_cylinder->inner, dMom, pop, rho, ux, uy, uz,
-                             mxx, myy, mzz, mxy, mxz, myz);
+    cylinder_boundary_moments(nodeType_packed, d_cylinder->inner, dMom, pop, s_pop, rho, ux, uy, uz,
+                              mxx, myy, mzz, mxy, mxz, myz);
 
 #elif defined(ANNULUS)
     auto *d_annulus = static_cast<annulusVar *>(caseData);

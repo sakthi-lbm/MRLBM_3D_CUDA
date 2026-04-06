@@ -50,4 +50,25 @@ inline void write_mass_flux(const int iter)
     }
 }
 
+inline void write_average_inlet_density(const int iter)
+{
+    std::string filename = construct_path(PATH_FILES, ID_SIM, "inlet_density.dat");
+    static bool first_call = true;
+    if (first_call)
+    {
+        std::ofstream clear(filename, std::ios::trunc); // delete contents
+        first_call = false;
+    }
+
+    std::ofstream densityfile(filename, std::ios::app);
+
+    if (densityfile.is_open())
+    {
+        densityfile << std::setprecision(16) << std::fixed
+                    << iter << " "
+                    << h_rho_inlet << " "
+                    << h_rho_inlet_average << std::endl;
+    }
+}
+
 #endif // STAT_HEADER_H

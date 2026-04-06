@@ -9,7 +9,9 @@
 #define Y_PERIODIC 1 // or 0
 #define Z_PERIODIC 1 // or 0
 
-#define CONVECTIVE_OUTLET 0
+#define CONVECTIVE_OUTLET 1
+
+constexpr bool NEUMANN_CURRENT_UPDATE = false;
 constexpr bool triangular = true;
 
 constexpr MassBC MASS_CONSERV = MassBC::Equilibrium;
@@ -67,6 +69,10 @@ inline real h_Hyz[Q] = {0};
 inline real h_sumUx = 0.0f;
 inline real h_UCONV = 1.0 * U_MAX;
 
+inline real h_sumRhoIn;
+inline real h_rho_inlet = 1.0;
+inline real h_rho_inlet_average = 0.0;
+
 inline real h_TotalFx = 0.0f;
 inline real h_TotalFy = 0.0f;
 inline real h_TotalFz = 0.0f;
@@ -93,6 +99,8 @@ extern __constant__ real d_Hyz[Q];
 
 extern __device__ real d_sumUx;
 extern __device__ real d_UCONV;
+
+extern __device__ real d_sumRhoIn;
 
 extern __constant__ uint32_t d_incomingMask_bcfluid[MAX_NODE_TAG];
 extern __constant__ uint32_t d_outgoingMask_bcfluid[MAX_NODE_TAG];

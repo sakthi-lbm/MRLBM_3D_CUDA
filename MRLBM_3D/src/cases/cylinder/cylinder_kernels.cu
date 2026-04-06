@@ -148,7 +148,8 @@ void cylinder_post_process(Simulation &sim, int iter)
 {
     if (iter >= STAT_START && iter <= STAT_END)
     {
-        write_forces_mass(sim.h_fMom, iter);
+        compute_inlet_average_density(sim.d_fMom.rho);
+        write_forces_mass_density(sim.h_fMom, iter);
 
         auto *h_cylinder = static_cast<cylinderVar *>(sim.h_caseData);
         auto *d_cylinder = static_cast<cylinderVar *>(sim.d_caseData);
@@ -167,7 +168,8 @@ void cylinder_post_process(Simulation &sim, int iter)
         compute_surface_pressure<<<grid_block, boundary_block>>>(sim.d_fMom, NB, d_cylinder->inner.boundaryList,
                                                                  d_cylinder->inner.unit_nx, d_cylinder->inner.unit_ny,
                                                                  d_cylinderPost->ps_avg, h_cylinderPost->n_avg);
-
+        // inlet average density
+        h_rho_inlet_average += (h_rho_inlet - h_rho_inlet_average) / toReal(h_cylinderPost->n_avg);
         if (iter == STAT_END)
         {
             cudaMemcpy(h_cylinderPost->ps_avg, d_cylinderPost->ps_avg, NB * sizeof(real), cudaMemcpyDeviceToHost);
@@ -278,6 +280,61 @@ __global__ void compute_surface_pressure(const nodeVar &dMom, const int nb,
     ps_avg += (ps - ps_avg) / toReal(n_avg);
 
     d_ps_avg[i] = ps_avg;
+}
+
+__global__ void inlet_avg_density(const real *__restrict__ rho)
+{
+    extern __shared__ real s_sum[];
+
+    int tid = blockIdx.x * blockDim.x + threadIdx.x;
+    int lane = threadIdx.x;
+
+    real local_sum = 0.0;
+    const int x = 0;
+
+    for (int i = tid; i < N_OUTLET; i += blockDim.x * gridDim.x)
+    {
+        int y = i % NY;
+        int z = i / NY;
+
+        size_t idx = IDX_BLOCK(x % BLOCK_THREAD_X,
+                               y % BLOCK_THREAD_Y,
+                               z % BLOCK_THREAD_Z,
+                               x / BLOCK_THREAD_X,
+                               y / BLOCK_THREAD_Y,
+                               z / BLOCK_THREAD_Z);
+
+        local_sum += RHO_0 + rho[idx];
+    }
+
+    s_sum[lane] = local_sum;
+    __syncthreads();
+
+    for (int s = blockDim.x / 2; s > 0; s >>= 1)
+    {
+        if (lane < s)
+            s_sum[lane] += s_sum[lane + s];
+        __syncthreads();
+    }
+
+    if (lane == 0)
+        atomicAdd(&d_sumRhoIn, s_sum[0]);
+}
+
+void compute_inlet_average_density(const real *d_rho)
+{
+    real zero = 0.0;
+    checkCudaErrors(cudaMemcpyToSymbol(d_sumRhoIn, &zero, sizeof(real)));
+
+    constexpr size_t threads = 256;
+    constexpr size_t blocks = (N_OUTLET + threads - 1) / threads;
+
+    inlet_avg_density<<<blocks, threads, threads * sizeof(real)>>>(d_rho);
+    checkKernelExecution();
+
+    checkCudaErrors(cudaMemcpyFromSymbol(&h_sumRhoIn, d_sumRhoIn, sizeof(real)));
+
+    h_rho_inlet = h_sumRhoIn / N_OUTLET;
 }
 
 #endif
