@@ -23,6 +23,18 @@ __global__ void apply_bc_cylinder(const int NB, const boundaryVar &cylinder, nod
                                   const real UX_PRIME, const real UY_PRIME, const real UZ_PRIME,
                                   const real D_WALL, const int iter);
 
+__global__ void cylinder_force_mass_kernel(const nodeVar dMom,
+                                           const cylinderVar *cylinder,
+                                           const int NB, const int NB_FLUID,
+                                           const MaskType masktype,
+                                           const real sign);
+
+__global__ void cylinder_surface_pressure_kernel(const nodeVar dMom,
+                                                 const cylinderVar *cylinder,
+                                                 cylinderPostProcess *cylinderPost,
+                                                 const int NB,
+                                                 const int n_avg);
+
 __global__ void compute_surface_pressure(const nodeVar &dMom, const int nb,
                                          size_t *boundaryList, real *d_unit_nx, real *d_unit_ny,
                                          real *d_ps_avg, const int n_avg);
@@ -64,65 +76,140 @@ __device__ __forceinline__ void cylinder_boundary_moments(const nodeType_t nodeT
     }
 }
 
-inline void allocatecylinderMemory(boundaryVar &h_cylinder, boundaryVar &d_cylinder,
-                                   cylinderPostProcess &h_cylinderPost, cylinderPostProcess &d_cylinderPost)
+inline void allocatecylinderMemory_Host(boundaryVar &h)
 {
-    const int NB = h_cylinder.NB;
-
+    int NB = h.NB;
     if (NB <= 0)
     {
         std::cerr << "Error: NB not initialized!\n";
         exit(EXIT_FAILURE);
     }
 
-    // ================= HOST =================
-    checkCudaErrors(cudaMallocHost(&h_cylinder.boundaryList, NB * sizeof(size_t)));
-    checkCudaErrors(cudaMallocHost(&h_cylinder.incomingMask, NB * sizeof(uint32_t)));
-    checkCudaErrors(cudaMallocHost(&h_cylinder.outgoingMask, NB * sizeof(uint32_t)));
+    checkCudaErrors(cudaMallocHost(&h.boundaryList, NB * sizeof(size_t)));
+    checkCudaErrors(cudaMallocHost(&h.incomingMask, NB * sizeof(uint32_t)));
+    checkCudaErrors(cudaMallocHost(&h.outgoingMask, NB * sizeof(uint32_t)));
 
-    checkCudaErrors(cudaMallocHost(&h_cylinder.unit_nx, NB * sizeof(real)));
-    checkCudaErrors(cudaMallocHost(&h_cylinder.unit_ny, NB * sizeof(real)));
-    checkCudaErrors(cudaMallocHost(&h_cylinder.delta_w, NB * sizeof(real)));
+    checkCudaErrors(cudaMallocHost(&h.unit_nx, NB * sizeof(real)));
+    checkCudaErrors(cudaMallocHost(&h.unit_ny, NB * sizeof(real)));
+    checkCudaErrors(cudaMallocHost(&h.delta_w, NB * sizeof(real)));
 
-    // ================= DEVICE =================
-    checkCudaErrors(cudaMalloc(&d_cylinder.boundaryList, NB * sizeof(size_t)));
-    checkCudaErrors(cudaMalloc(&d_cylinder.incomingMask, NB * sizeof(uint32_t)));
-    checkCudaErrors(cudaMalloc(&d_cylinder.outgoingMask, NB * sizeof(uint32_t)));
-
-    checkCudaErrors(cudaMalloc(&d_cylinder.unit_nx, NB * sizeof(real)));
-    checkCudaErrors(cudaMalloc(&d_cylinder.unit_ny, NB * sizeof(real)));
-    checkCudaErrors(cudaMalloc(&d_cylinder.delta_w, NB * sizeof(real)));
-
-    // Triangular part
     if constexpr (triangular)
     {
-        const int NB_FLUID = h_cylinder.NB_FLUID;
-        const int NB_SOLID = h_cylinder.NB_SOLID;
+        const int NB_FLUID = h.NB_FLUID;
+        const int NB_SOLID = h.NB_SOLID;
 
-        checkCudaErrors(cudaMallocHost(&h_cylinder.bcfluidList, NB_FLUID * sizeof(size_t)));
-        checkCudaErrors(cudaMalloc(&d_cylinder.bcfluidList, NB_FLUID * sizeof(size_t)));
+        checkCudaErrors(cudaMallocHost(&h.bcfluidList, NB_FLUID * sizeof(size_t)));
 
         if (!Z_PERIODIC)
         {
-            checkCudaErrors(cudaMallocHost(&h_cylinder.bcsolidList, NB_SOLID * sizeof(size_t)));
-            checkCudaErrors(cudaMalloc(&d_cylinder.bcsolidList, NB_SOLID * sizeof(size_t)));
+            checkCudaErrors(cudaMallocHost(&h.bcsolidList, NB_SOLID * sizeof(size_t)));
         }
     }
+}
 
-    // ================= POST-PROCESS =================
-    checkCudaErrors(cudaMallocHost(&h_cylinderPost.ps_avg, NB * sizeof(real)));
-    checkCudaErrors(cudaMallocHost(&h_cylinderPost.ps_rms_avg, NB * sizeof(real)));
+inline void allocatecylinderMemory_Device(boundaryVar &d, const boundaryVar &h)
+{
+    int NB = h.NB;
 
-    memset(h_cylinderPost.ps_avg, 0, NB * sizeof(real));
-    memset(h_cylinderPost.ps_rms_avg, 0, NB * sizeof(real));
-    h_cylinderPost.n_avg = 0;
+    d.NB = h.NB;
 
-    checkCudaErrors(cudaMalloc(&d_cylinderPost.ps_avg, NB * sizeof(real)));
-    checkCudaErrors(cudaMalloc(&d_cylinderPost.ps_rms_avg, NB * sizeof(real)));
+    checkCudaErrors(cudaMalloc(&d.boundaryList, NB * sizeof(size_t)));
+    checkCudaErrors(cudaMalloc(&d.incomingMask, NB * sizeof(uint32_t)));
+    checkCudaErrors(cudaMalloc(&d.outgoingMask, NB * sizeof(uint32_t)));
 
-    cudaMemset(d_cylinderPost.ps_avg, 0, NB * sizeof(real));
-    cudaMemset(d_cylinderPost.ps_rms_avg, 0, NB * sizeof(real));
-    d_cylinderPost.n_avg = 0;
+    checkCudaErrors(cudaMalloc(&d.unit_nx, NB * sizeof(real)));
+    checkCudaErrors(cudaMalloc(&d.unit_ny, NB * sizeof(real)));
+    checkCudaErrors(cudaMalloc(&d.delta_w, NB * sizeof(real)));
+
+    if constexpr (triangular)
+    {
+        const int NB_FLUID = h.NB_FLUID;
+        const int NB_SOLID = h.NB_SOLID;
+
+        d.NB_FLUID = h.NB_FLUID;
+        d.NB_SOLID = h.NB_SOLID;
+
+        checkCudaErrors(cudaMalloc(&d.bcfluidList, NB_FLUID * sizeof(size_t)));
+
+        if (!Z_PERIODIC)
+        {
+            checkCudaErrors(cudaMalloc(&d.bcsolidList, NB_SOLID * sizeof(size_t)));
+        }
+    }
+}
+
+inline void copyCylinder_HostToDevice(boundaryVar &d, const boundaryVar &h)
+{
+    int NB = h.NB;
+
+    cudaMemcpy(d.boundaryList, h.boundaryList, NB * sizeof(size_t), cudaMemcpyHostToDevice);
+    cudaMemcpy(d.incomingMask, h.incomingMask, NB * sizeof(uint32_t), cudaMemcpyHostToDevice);
+    cudaMemcpy(d.outgoingMask, h.outgoingMask, NB * sizeof(uint32_t), cudaMemcpyHostToDevice);
+
+    cudaMemcpy(d.unit_nx, h.unit_nx, NB * sizeof(real), cudaMemcpyHostToDevice);
+    cudaMemcpy(d.unit_ny, h.unit_ny, NB * sizeof(real), cudaMemcpyHostToDevice);
+    cudaMemcpy(d.delta_w, h.delta_w, NB * sizeof(real), cudaMemcpyHostToDevice);
+
+    if constexpr (triangular)
+    {
+        const int NB_FLUID = h.NB_FLUID;
+        const int NB_SOLID = h.NB_SOLID;
+
+        cudaMemcpy(d.bcfluidList, h.bcfluidList, NB_FLUID * sizeof(size_t), cudaMemcpyHostToDevice);
+
+        if (!Z_PERIODIC)
+        {
+            cudaMemcpy(d.bcsolidList, h.bcsolidList, NB_SOLID * sizeof(size_t), cudaMemcpyHostToDevice);
+        }
+    }
+}
+
+inline void allocateCylinderPost_Host(cylinderPostProcess &h_post, int NB)
+{
+    if (NB <= 0)
+    {
+        std::cerr << "Error: NB not initialized for post-process!\n";
+        exit(EXIT_FAILURE);
+    }
+
+    checkCudaErrors(cudaMallocHost(&h_post.ps_avg, NB * sizeof(real)));
+    checkCudaErrors(cudaMallocHost(&h_post.ps_rms_avg, NB * sizeof(real)));
+
+    memset(h_post.ps_avg, 0, NB * sizeof(real));
+    memset(h_post.ps_rms_avg, 0, NB * sizeof(real));
+
+    h_post.n_avg = 0;
+}
+
+inline void allocateCylinderPost_Device(cylinderPostProcess &d_post, int NB)
+{
+    if (NB <= 0)
+    {
+        std::cerr << "Error: NB not initialized for device post-process!\n";
+        exit(EXIT_FAILURE);
+    }
+
+    checkCudaErrors(cudaMalloc(&d_post.ps_avg, NB * sizeof(real)));
+    checkCudaErrors(cudaMalloc(&d_post.ps_rms_avg, NB * sizeof(real)));
+
+    cudaMemset(d_post.ps_avg, 0, NB * sizeof(real));
+    cudaMemset(d_post.ps_rms_avg, 0, NB * sizeof(real));
+
+    d_post.n_avg = 0;
+}
+
+inline void copyCylinderPost_HostToDevice(cylinderPostProcess &d_post, const cylinderPostProcess &h_post, int NB)
+{
+    cudaMemcpy(d_post.ps_avg, h_post.ps_avg, NB * sizeof(real), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_post.ps_rms_avg, h_post.ps_rms_avg, NB * sizeof(real), cudaMemcpyHostToDevice);
+    d_post.n_avg = h_post.n_avg; // scalar copy
+}
+
+inline void copyCylinderPost_DeviceToHost(cylinderPostProcess &h_post, const cylinderPostProcess &d_post, int NB)
+{
+    cudaMemcpy(h_post.ps_avg, d_post.ps_avg, NB * sizeof(real), cudaMemcpyDeviceToHost);
+    cudaMemcpy(h_post.ps_rms_avg, d_post.ps_rms_avg, NB * sizeof(real), cudaMemcpyDeviceToHost);
+    h_post.n_avg = d_post.n_avg;
 }
 
 inline void free_boundary(boundaryVar &h_b, boundaryVar &d_b)
@@ -132,8 +219,10 @@ inline void free_boundary(boundaryVar &h_b, boundaryVar &d_b)
     cudaFreeHost(h_b.incomingMask);
     cudaFreeHost(h_b.outgoingMask);
 
-    cudaFreeHost(h_b.bcfluidList);
-    cudaFreeHost(h_b.bcsolidList);
+    if (h_b.bcfluidList)
+        cudaFreeHost(h_b.bcfluidList);
+    if (h_b.bcsolidList)
+        cudaFreeHost(h_b.bcsolidList);
 
     cudaFreeHost(h_b.unit_nx);
     cudaFreeHost(h_b.unit_ny);
@@ -144,8 +233,10 @@ inline void free_boundary(boundaryVar &h_b, boundaryVar &d_b)
     cudaFree(d_b.incomingMask);
     cudaFree(d_b.outgoingMask);
 
-    cudaFree(d_b.bcfluidList);
-    cudaFree(d_b.bcsolidList);
+    if (d_b.bcfluidList)
+        cudaFree(d_b.bcfluidList);
+    if (d_b.bcsolidList)
+        cudaFree(d_b.bcsolidList);
 
     cudaFree(d_b.unit_nx);
     cudaFree(d_b.unit_ny);
@@ -251,7 +342,6 @@ inline void write_forces_mass_density(const nodeVar &fMom, const int iter)
 inline void write_pressure(const cylinderVar &h_cylinder,
                            const cylinderPostProcess &h_cylinderPost)
 {
-
     std::string filename = construct_path(PATH_FILES, ID_SIM, "pressure.dat");
 
     std::ofstream file(filename);

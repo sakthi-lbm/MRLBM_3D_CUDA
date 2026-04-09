@@ -31,7 +31,6 @@ int main()
         post_collision_pipeline(sim, iter);
 
         post_step_pipeline(sim, iter);
-
     }
 
     finalize_simulation(sim);

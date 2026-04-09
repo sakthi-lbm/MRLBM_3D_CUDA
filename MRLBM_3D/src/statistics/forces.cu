@@ -1,28 +1,7 @@
 #include "stat_header.cuh"
 
-__device__ __forceinline__ void compute_forces_mass(const uint32_t dir_mask, const real *pop,
-                                                    real &Fx, real &Fy, real &Fz, real &m)
-{
-    Fx = toReal(0.0);
-    Fy = toReal(0.0);
-    Fz = toReal(0.0);
-    m = toReal(0.0);
 
-    uint32_t mask = dir_mask;
-    while (mask)
-    {
-        const int q = __ffs(mask) - 1;
-        mask &= mask - 1;
-
-        const real f = pop[q];
-        Fx += f * toReal(d_cx[q]);
-        Fy += f * toReal(d_cy[q]);
-        Fz += f * toReal(d_cz[q]);
-        m += f;
-    }
-}
-
-__global__ void compute_force_mass_kernel(const nodeVar dMom,
+__global__ void cylinder_force_mass_kernel(const nodeVar dMom,
                                           const size_t *boundaryList,
                                           const size_t *bcfluidList,
                                           const uint32_t *boundaryMask,
@@ -40,45 +19,14 @@ __global__ void compute_force_mass_kernel(const nodeVar dMom,
     if (tid < NB)
     {
         const size_t idx = boundaryList[tid];
-
-        const real rho = RHO_0 + dMom.rho[idx];
-        const real ux = dMom.ux[idx];
-        const real uy = dMom.uy[idx];
-        const real uz = dMom.uz[idx];
-        const real mxx = dMom.mxx[idx];
-        const real myy = dMom.myy[idx];
-        const real mzz = dMom.mzz[idx];
-        const real mxy = dMom.mxy[idx];
-        const real mxz = dMom.mxz[idx];
-        const real myz = dMom.myz[idx];
-
-        real pop[Q];
-        pop_reconstruction(rho, ux, uy, uz, mxx, myy, mzz, mxy, mxz, myz, pop);
-
         const uint32_t mask = boundaryMask[tid];
 
-        compute_forces_mass(mask, pop, Fx_local, Fy_local, Fz_local, m_local);
+        compute_node_force(dMom, idx, mask, Fx_local, Fy_local, Fz_local, m_local);
     }
     else if (tid < NB + NB_FLUID)
     {
         int fid = tid - NB;
         const size_t idx = bcfluidList[fid];
-
-        const real rho = RHO_0 + dMom.rho[idx];
-        const real ux = dMom.ux[idx];
-        const real uy = dMom.uy[idx];
-        const real uz = dMom.uz[idx];
-        const real mxx = dMom.mxx[idx];
-        const real myy = dMom.myy[idx];
-        const real mzz = dMom.mzz[idx];
-        const real mxy = dMom.mxy[idx];
-        const real mxz = dMom.mxz[idx];
-        const real myz = dMom.myz[idx];
-
-        real pop[Q];
-        pop_reconstruction(rho, ux, uy, uz,
-                           mxx, myy, mzz,
-                           mxy, mxz, myz, pop);
 
         const nodeType_t nodeType_masked = dMom.nodeType[idx];
         const nodeType_t tag = getIndex(nodeType_masked);
@@ -92,8 +40,7 @@ __global__ void compute_force_mass_kernel(const nodeVar dMom,
         {
             mask = d_outgoingMask_bcfluid[tag];
         }
-
-        compute_forces_mass(mask, pop, Fx_local, Fy_local, Fz_local, m_local);
+        compute_node_force(dMom, idx, mask, Fx_local, Fy_local, Fz_local, m_local);
     }
 
     // ================= BLOCK REDUCTION =================

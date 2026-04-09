@@ -22,13 +22,15 @@ void initialize_simulation(Simulation &sim)
     gpu_initialize_Moments_GhostInterface<<<grid, block>>>(sim.d_fMom, sim.d_gHalo);
     checkKernelExecution();
 
+    copyMomentsDeviceToHost(sim.h_fMom, sim.d_fMom);
+
     initialize_nodeType(sim.h_fMom);
 
     sim.case_module.initialize(sim);
 
     copyNodeTypeHostToDevice(sim.d_fMom, sim.h_fMom);
     initialize_host_device_constants();
-    copyMomentsDeviceToHost(sim.h_fMom, sim.d_fMom);
+    
     copyHaloInterfaces(sim.d_fHalo, sim.d_gHalo);
 
     writeSimInfo();

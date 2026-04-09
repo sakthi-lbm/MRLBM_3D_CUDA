@@ -4,21 +4,30 @@
 
 void cylinder_initialize(Simulation &sim)
 {
-    // allocate struct
-    cylinderVar *h_cylinder = new cylinderVar;
+    //  HOST STRUCT
+    cylinderVar *h_cylinder = new cylinderVar{};
+    cylinderPostProcess *h_cylinderPost = new cylinderPostProcess{};
+
+    // DEVICE STRUCT (HOST MIRROR)
+    cylinderVar h_cylinder_dev{};
+    cylinderPostProcess h_cylinderPost_dev{};
+
+    // DEVICE STRUCT (GPU)
     cylinderVar *d_cylinder = nullptr;
-    checkCudaErrors(cudaMallocManaged(&d_cylinder, sizeof(cylinderVar)));
+    checkCudaErrors(cudaMalloc(&d_cylinder, sizeof(cylinderVar)));
 
-    cylinderPostProcess *h_cylinderPost = new cylinderPostProcess;
     cylinderPostProcess *d_cylinderPost = nullptr;
-    checkCudaErrors(cudaMallocManaged(&d_cylinderPost, sizeof(cylinderPostProcess)));
+    checkCudaErrors(cudaMalloc(&d_cylinderPost, sizeof(cylinderPostProcess)));
 
-    // compute geometry + counts (NB, etc.)
+    // GEOMETRY
     triangular ? initialize_cylinder_nodeType_triangular(sim.h_fMom, h_cylinder->inner)
                : initialize_cylinder_nodeType_staircase(sim.h_fMom, h_cylinder->inner);
 
-    // allocate memory using computed sizes
-    allocatecylinderMemory(h_cylinder->inner, d_cylinder->inner, *h_cylinderPost, *d_cylinderPost);
+    // Memory Allocation
+    allocatecylinderMemory_Host(h_cylinder->inner);
+    allocatecylinderMemory_Device(h_cylinder_dev.inner, h_cylinder->inner);
+    allocateCylinderPost_Host(*h_cylinderPost, h_cylinder->inner.NB);
+    allocateCylinderPost_Device(h_cylinderPost_dev, h_cylinder->inner.NB);
 
     buildBoundaryList_updateBoundaryNodeType(sim.h_fMom, h_cylinder->inner,
                                              NODE_INNER, NODE_BCFLUID_INNER, NODE_BCSOLID_INNER);
@@ -38,7 +47,12 @@ void cylinder_initialize(Simulation &sim)
     }
 
     // copy data to device arrays
-    copyHostToDevice(d_cylinder->inner, h_cylinder->inner);
+    copyCylinder_HostToDevice(h_cylinder_dev.inner, h_cylinder->inner);
+    copyCylinderPost_HostToDevice(h_cylinderPost_dev, *h_cylinderPost, h_cylinder->inner.NB);
+
+    // COPY STRUCT → DEVICE
+    checkCudaErrors(cudaMemcpy(d_cylinder, &h_cylinder_dev, sizeof(cylinderVar), cudaMemcpyHostToDevice));
+    checkCudaErrors(cudaMemcpy(d_cylinderPost, &h_cylinderPost_dev, sizeof(cylinderPostProcess), cudaMemcpyHostToDevice));
 
     // store in simulation
     sim.h_caseData = h_cylinder;
@@ -167,14 +181,20 @@ void cylinder_post_process(Simulation &sim, int iter)
         dim3 boundary_grid(grid_block);
 
         h_cylinderPost->n_avg++;
-        compute_surface_pressure<<<grid_block, boundary_block>>>(sim.d_fMom, NB, d_cylinder->inner.boundaryList,
-                                                                 d_cylinder->inner.unit_nx, d_cylinder->inner.unit_ny,
-                                                                 d_cylinderPost->ps_avg, h_cylinderPost->n_avg);
+        const int n_avg_local = h_cylinderPost->n_avg;
+        cylinder_surface_pressure_kernel<<<grid_block, boundary_block>>>(sim.d_fMom,
+                                                                         d_cylinder,
+                                                                         d_cylinderPost,
+                                                                         NB, n_avg_local);
+        cudaDeviceSynchronize();
+
         // inlet average density
         h_rho_inlet_average += (h_rho_inlet - h_rho_inlet_average) / toReal(h_cylinderPost->n_avg);
         if (iter == STAT_END)
         {
-            cudaMemcpy(h_cylinderPost->ps_avg, d_cylinderPost->ps_avg, NB * sizeof(real), cudaMemcpyDeviceToHost);
+            cylinderPostProcess temp;
+            cudaMemcpy(&temp, d_cylinderPost, sizeof(cylinderPostProcess), cudaMemcpyDeviceToHost);
+            cudaMemcpy(h_cylinderPost->ps_avg, temp.ps_avg, NB * sizeof(real), cudaMemcpyDeviceToHost);
             write_pressure(*h_cylinder, *h_cylinderPost);
         }
     }
@@ -200,14 +220,11 @@ void cylinder_incoming_force_kernal(Simulation &sim, const int iter)
         const size_t FORCE_GRID = (NB + NB_FLUID + BLOCK_NODES - 1) / BLOCK_NODES;
         const dim3 force_grid(FORCE_GRID);
 
-        compute_force_mass_kernel<<<force_grid, BLOCK_NODES>>>(sim.d_fMom,
-                                                               d_cylinder->inner.boundaryList,
-                                                               d_cylinder->inner.bcfluidList,
-                                                               d_cylinder->inner.incomingMask,
-                                                               d_cylinder->inner.NB,
-                                                               d_cylinder->inner.NB_FLUID,
-                                                               MaskType::INCOMING,
-                                                               +1.0);
+        cylinder_force_mass_kernel<<<force_grid, BLOCK_NODES>>>(sim.d_fMom, d_cylinder,
+                                                                NB, NB_FLUID,
+                                                                MaskType::INCOMING,
+                                                                1.0);
+        checkCudaErrors(cudaDeviceSynchronize());
         checkKernelExecution();
     }
 }
@@ -225,16 +242,106 @@ void cylinder_outgoing_force_kernal(Simulation &sim, const int iter)
         const size_t FORCE_GRID = (NB + NB_FLUID + BLOCK_NODES - 1) / BLOCK_NODES;
         const dim3 force_grid(FORCE_GRID);
 
-        compute_force_mass_kernel<<<force_grid, BLOCK_NODES>>>(sim.d_fMom,
-                                                               d_cylinder->inner.boundaryList,
-                                                               d_cylinder->inner.bcfluidList,
-                                                               d_cylinder->inner.outgoingMask,
-                                                               d_cylinder->inner.NB,
-                                                               d_cylinder->inner.NB_FLUID,
-                                                               MaskType::OUTGOING,
-                                                               -1.0);
+        cylinder_force_mass_kernel<<<force_grid, BLOCK_NODES>>>(sim.d_fMom, d_cylinder,
+                                                                NB, NB_FLUID,
+                                                                MaskType::OUTGOING,
+                                                                -1.0);
+
         checkKernelExecution();
     }
+}
+
+__global__ void cylinder_force_mass_kernel(const nodeVar dMom,
+                                           const cylinderVar *cylinder,
+                                           const int NB, const int NB_FLUID,
+                                           const MaskType masktype,
+                                           const real sign)
+{
+    int tid = threadIdx.x + blockIdx.x * blockDim.x;
+
+    real Fx_local = 0.0;
+    real Fy_local = 0.0;
+    real Fz_local = 0.0;
+    real m_local = 0.0;
+
+    const size_t *boundaryList = cylinder->inner.boundaryList;
+    const size_t *bcfluidList = cylinder->inner.bcfluidList;
+
+    const uint32_t *maskList;
+    if (masktype == INCOMING)
+    {
+        maskList = cylinder->inner.incomingMask;
+    }
+    else
+    {
+        maskList = cylinder->inner.outgoingMask;
+    }
+
+    compute_force_generic(dMom, tid, boundaryList, bcfluidList, maskList,
+                          NB, NB_FLUID, masktype, Fx_local, Fy_local, Fz_local, m_local);
+
+    // ================= BLOCK REDUCTION =================
+    __shared__ real sFx[BLOCK_NODES];
+    __shared__ real sFy[BLOCK_NODES];
+    __shared__ real sFz[BLOCK_NODES];
+    __shared__ real sm[BLOCK_NODES];
+
+    const unsigned int tx = threadIdx.x;
+
+    sFx[tx] = Fx_local;
+    sFy[tx] = Fy_local;
+    sFz[tx] = Fz_local;
+    sm[tx] = m_local;
+
+    __syncthreads();
+
+    for (int stride = blockDim.x / 2; stride > 0; stride >>= 1)
+    {
+        if (tx < stride)
+        {
+            sFx[tx] += sFx[tx + stride];
+            sFy[tx] += sFy[tx + stride];
+            sFz[tx] += sFz[tx + stride];
+            sm[tx] += sm[tx + stride];
+        }
+        __syncthreads();
+    }
+
+    if (tx == 0)
+    {
+        atomicAdd(&d_TotalFx, sign * sFx[0]);
+        atomicAdd(&d_TotalFy, sign * sFy[0]);
+        atomicAdd(&d_TotalFz, sign * sFz[0]);
+        atomicAdd(&d_Totalm, sign * sm[0]);
+    }
+}
+
+__global__ void cylinder_surface_pressure_kernel(const nodeVar dMom,
+                                                 const cylinderVar *cylinder,
+                                                 cylinderPostProcess *cylinderPost,
+                                                 const int NB,
+                                                 const int n_avg)
+{
+    int i = threadIdx.x + blockIdx.x * blockDim.x;
+    if (i >= NB)
+        return;
+
+    // ✔ device-side dereference
+    const size_t *boundaryList = cylinder->inner.boundaryList;
+    const real *unit_nx = cylinder->inner.unit_nx;
+    const real *unit_ny = cylinder->inner.unit_ny;
+
+    const size_t idx = boundaryList[i];
+    const real nx = unit_nx[i];
+    const real ny = unit_ny[i];
+
+    real ps;
+    compute_surface_pressure_node(dMom, idx, nx, ny, ps);
+
+    // incremental averaging
+    real ps_avg = cylinderPost->ps_avg[i];
+    ps_avg += (ps - ps_avg) / toReal(n_avg);
+    cylinderPost->ps_avg[i] = ps_avg;
 }
 
 __global__ void compute_surface_pressure(const nodeVar &dMom, const int nb,
